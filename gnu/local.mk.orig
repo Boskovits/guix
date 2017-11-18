@@ -79,7 +79,6 @@ GNU_SYSTEM_MODULES =				\
   %D%/packages/boost.scm			\
   %D%/packages/bootloaders.scm			\
   %D%/packages/bootstrap.scm			\
-  %D%/packages/bootstrappable.scm		\
   %D%/packages/build-tools.scm			\
   %D%/packages/busybox.scm			\
   %D%/packages/c.scm				\
@@ -543,7 +542,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/ath9k-htc-firmware-binutils.patch	\
   %D%/packages/patches/ath9k-htc-firmware-gcc.patch		\
   %D%/packages/patches/ath9k-htc-firmware-objcopy.patch		\
-  %D%/packages/patches/audacity-build-with-system-portaudio.patch \
   %D%/packages/patches/automake-skip-amhello-tests.patch	\
   %D%/packages/patches/automake-regexp-syntax.patch		\
   %D%/packages/patches/automake-test-gzip-warning.patch		\
@@ -609,7 +607,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/einstein-build.patch			\
   %D%/packages/patches/emacs-exec-path.patch			\
   %D%/packages/patches/emacs-fix-scheme-indent-function.patch	\
-  %D%/packages/patches/emacs-highlight-stages-add-gexp.patch	\
   %D%/packages/patches/emacs-scheme-complete-scheme-r5rs-info.patch	\
   %D%/packages/patches/emacs-source-date-epoch.patch		\
   %D%/packages/patches/erlang-man-path.patch			\
@@ -655,9 +652,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/gcc-5-source-date-epoch-2.patch		\
   %D%/packages/patches/gcc-6-arm-none-eabi-multilib.patch	\
   %D%/packages/patches/gcc-6-cross-environment-variables.patch	\
-  %D%/packages/patches/gcc-6-source-date-epoch-1.patch		\
-  %D%/packages/patches/gcc-6-source-date-epoch-2.patch		\
-  %D%/packages/patches/gcc-7-build-path-prefix-map.patch	\
   %D%/packages/patches/gcr-disable-failing-tests.patch		\
   %D%/packages/patches/gcr-fix-collection-tests-to-work-with-gpg-21.patch	\
   %D%/packages/patches/gd-fix-tests-on-i686.patch		\
@@ -941,14 +935,12 @@ dist_patch_DATA =						\
   %D%/packages/patches/orpheus-cast-errors-and-includes.patch	\
   %D%/packages/patches/osip-CVE-2017-7853.patch			\
   %D%/packages/patches/ots-no-include-missing-file.patch	\
-  %D%/packages/patches/owncloud-disable-updatecheck.patch	\
   %D%/packages/patches/p7zip-CVE-2016-9296.patch			\
   %D%/packages/patches/p7zip-remove-unused-code.patch		\
   %D%/packages/patches/patchelf-page-size.patch			\
   %D%/packages/patches/patchelf-rework-for-arm.patch		\
   %D%/packages/patches/patchutils-xfail-gendiff-tests.patch	\
   %D%/packages/patches/patch-hurd-path-max.patch		\
-  %D%/packages/patches/pcmanfm-CVE-2017-8934.patch		\
   %D%/packages/patches/pcre-CVE-2017-7186.patch			\
   %D%/packages/patches/pcre2-CVE-2017-7186.patch		\
   %D%/packages/patches/pcre2-CVE-2017-8786.patch		\
@@ -982,7 +974,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/portmidi-modular-build.patch		\
   %D%/packages/patches/procmail-ambiguous-getline-debian.patch  \
   %D%/packages/patches/procmail-CVE-2014-3618.patch		\
-  %D%/packages/patches/procmail-CVE-2017-16844.patch		\
   %D%/packages/patches/proot-test-fhs.patch			\
   %D%/packages/patches/psm-arch.patch				\
   %D%/packages/patches/psm-ldflags.patch			\
@@ -1072,6 +1063,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/spice-CVE-2017-7506.patch		\
   %D%/packages/patches/steghide-fixes.patch			\
   %D%/packages/patches/superlu-dist-scotchmetis.patch		\
+  %D%/packages/patches/supertuxkart-angelscript-ftbfs.patch		\
   %D%/packages/patches/swish-e-search.patch			\
   %D%/packages/patches/swish-e-format-security.patch		\
   %D%/packages/patches/synfigstudio-fix-ui-with-gtk3.patch 	\
