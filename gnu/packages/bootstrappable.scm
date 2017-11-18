@@ -348,9 +348,9 @@
            (zero? (system* "diffoscope" gcc/bin/gcc clang-gcc/bin/gcc))
            ;;(zero? (system* "diffoscope" gcc clang-gcc))
            ))))
-    (synopsis "test gcc+clang DDC property for gcc-7.2.0")
-    (description "gcc-dcc is a meta-package that depends on repro-gcc-7.2.0
-and on clang-gcc-7.2.0 (the same GCC built with clang).  The builder checks if
+    (synopsis "test gcc+clang DDC property for gcc-4.7.4")
+    (description "gcc-dcc is a meta-package that depends on repro-gcc-4.7.4
+and on clang-gcc-4.7.4 (the same GCC built with clang).  The builder checks if
 both gcc's are bit-for-bit identical and fails if they differ.")
     (home-page "http://bootstrappable.org")
     (license gpl3+)))
