@@ -250,6 +250,18 @@
                        "BUILD_PATH_PREFIX_MAP=~s\n"
                        (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
 
+(define-public repro-gcc-debuggable-4.7
+  (package
+    (inherit repro-gcc-4.7)
+    (name "repro-gcc-debuggable")
+    (arguments
+     (substitute-keyword-arguments (package-arguments repro-gcc-4.7)
+       ((#:make-flags original-flags)
+        `(cons* "BOOT_CFLAGS=-O0 -g3"
+                (delete "BOOT_CFLAGS=-O2 "
+                        (delete "-g0" ,original-flags))))))))
+
+
 (define-public repr2-gcc-4.7
   (package
     (inherit repro-gcc-4.7)
