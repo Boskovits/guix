@@ -244,6 +244,7 @@
         `(modify-phases ,original-phases
            (add-before 'configure 'build-prefix-path
              (lambda* (#:key inputs #:allow-other-keys)
+               (setenv "STANDARD_LIBEXEC_PREFIX" (string-append (assoc-ref %output "out") "/libexec/gcc"))
                (setenv "BUILD_PATH_PREFIX_MAP"
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
@@ -258,9 +259,15 @@
      (substitute-keyword-arguments (package-arguments repro-gcc-4.7)
        ((#:make-flags original-flags)
         `(cons* "BOOT_CFLAGS=-O0 -g3"
-                (delete "BOOT_CFLAGS=-O2 "
-                        (delete "-g0" ,original-flags))))))))
+                (delete "BOOT_CFLAGS=-O2 -g0" ,original-flags)))))))
 
+(define-public repro-gcc-debuggable-nostrip-4.7
+  (package
+    (inherit repro-gcc-debuggable-4.7)
+    (name "repro-gcc-debuggable-nostrip")
+    (arguments
+     (substitute-keyword-arguments (package-arguments repro-gcc-debuggable-4.7)
+        ((#:strip-binaries? _ #f) #f)))))
 
 (define-public repr2-gcc-4.7
   (package
