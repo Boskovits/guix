@@ -226,7 +226,6 @@
                  (("^TOPLEVEL_CONFIGURE_ARGUMENTS=(.*)$" _ rest)
                   "TOPLEVEL_CONFIGURE_ARGUMENTS=\n"))))))))))
 
-
 (define-public repro-gcc-4.7
   (package
     (inherit gcc-4.7-$ORIGIN)
@@ -245,7 +244,32 @@
         `(modify-phases ,original-phases
            (add-before 'configure 'build-prefix-path
              (lambda* (#:key inputs #:allow-other-keys)
-               (let ((out (assoc-ref %output "out")))
+               (setenv "BUILD_PATH_PREFIX_MAP"
+                       (string-append "gcc" "-" ,version "=" (getcwd)))
+               (format (current-error-port)
+                       "BUILD_PATH_PREFIX_MAP=~s\n"
+                       (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
+
+(define-public repro-gcc-wrapped-4.7
+  (package
+    (inherit gcc-4.7-$ORIGIN)
+    (source
+     (origin
+       (inherit (package-source gcc-4.7-$ORIGIN))
+       (patches (append ((compose origin-patches package-source) gcc-4.7)
+                        (search-patches "gcc-5-reproducibility-drop-profile.patch"
+                                        ;;"gcc-4-compile-with-gcc-5.patch"
+                                        "gcc-4-build-path-prefix-map.patch"
+					"gcc-4-reproducibility-wrapper.patch")))))
+    (name "repro-gcc-wrapped")
+    (version "4.7.4")
+    (arguments
+     (substitute-keyword-arguments (package-arguments gcc-4.7-$ORIGIN)
+       ((#:phases original-phases)
+        `(modify-phases ,original-phases
+           (add-before 'configure 'build-prefix-path
+             (lambda* (#:key inputs #:allow-other-keys)
+               (let ((out (assoc-ref %outputs "out")))
                  (setenv "STANDARD_EXEC_PREFIX" (string-append out "/lib/gcc"))
                  (setenv "STANDARD_LIBEXEC_PREFIX" (string-append out "/libexec/gcc"))
                  (setenv "STANDARD_BINDIR_PREFIX" (string-append out "/bin")))
@@ -255,22 +279,22 @@
                        "BUILD_PATH_PREFIX_MAP=~s\n"
                        (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
 
-(define-public repro-gcc-wrapped-4.7
-  (package
-    (inherit repro-gcc-4.7)
-    (name "repro-gcc-wrapped")
-    (source
-     (origin
-       (inherit (package-source repro-gcc-4.7))
-       (patches (append ((compose origin-patches package-source) repro-gcc-4.7)
-                        (search-patches "gcc-4-reproducibility-wrapper.patch")))))))
-
 (define-public repro-gcc-debuggable-4.7
   (package
     (inherit repro-gcc-4.7)
     (name "repro-gcc-debuggable")
     (arguments
      (substitute-keyword-arguments (package-arguments repro-gcc-4.7)
+       ((#:make-flags original-flags)
+        `(cons* "BOOT_CFLAGS=-O0 -g3"
+                (delete "BOOT_CFLAGS=-O2 -g0" ,original-flags)))))))
+
+(define-public repro-gcc-wrapped-debuggable-4.7
+  (package
+    (inherit repro-gcc-wrapped-4.7)
+    (name "repro-gcc-wrapped-debuggable")
+    (arguments
+     (substitute-keyword-arguments (package-arguments repro-gcc-wrapped-4.7)
        ((#:make-flags original-flags)
         `(cons* "BOOT_CFLAGS=-O0 -g3"
                 (delete "BOOT_CFLAGS=-O2 -g0" ,original-flags)))))))
@@ -283,10 +307,23 @@
      (substitute-keyword-arguments (package-arguments repro-gcc-debuggable-4.7)
         ((#:strip-binaries? _ #f) #f)))))
 
+(define-public repro-gcc-wrapped-debuggable-nostrip-4.7
+  (package
+    (inherit repro-gcc-wrapped-debuggable-4.7)
+    (name "repro-gcc-wrapped-debuggable-nostrip")
+    (arguments
+     (substitute-keyword-arguments (package-arguments repro-gcc-wrapped-debuggable-4.7)
+        ((#:strip-binaries? _ #f) #f)))))
+
 (define-public repr2-gcc-4.7
   (package
     (inherit repro-gcc-4.7)
     (name "repr2-gcc")))
+
+(define-public repr2-gcc-wrapped-4.7
+  (package
+    (inherit repro-gcc-wrapped-4.7)
+    (name "repr2-gcc-wrapped")))
 
 (define-public repro-gcc-7
   (package
@@ -340,6 +377,62 @@
     (native-inputs `(;;("clang-gcc" ,clang-gcc-7)
                      ("clang-gcc" ,repr2-gcc-4.7)
                      ("gcc" ,repro-gcc-4.7)
+
+                     ("diffoscope" ,diffoscope)
+                     ("acl" ,acl)       ; For diffoscope
+                     ("binutils" ,binutils)
+                     ("coreutils" ,coreutils)
+                     ("diffutils" ,diffutils)
+                     ("xxd" ,xxd)))
+    (build-system trivial-build-system)
+    (arguments
+     `(#:modules ((guix build utils))
+       #:builder
+       (begin
+         (use-modules (guix build utils))
+         (let* ((diffoscope (assoc-ref %build-inputs "diffoscope"))
+                (acl (assoc-ref %build-inputs "acl"))
+                (binutils (assoc-ref %build-inputs "binutils"))
+                (coreutils (assoc-ref %build-inputs "coreutils"))
+                (diffutils (assoc-ref %build-inputs "diffutils"))
+                (xxd (assoc-ref %build-inputs "xxd"))
+                (gcc (assoc-ref %build-inputs "gcc"))
+                (gcc/bin/gcc (string-append gcc "/bin/gcc"))
+                (clang-gcc (assoc-ref %build-inputs "clang-gcc"))
+                (clang-gcc/bin/gcc (string-append clang-gcc "/bin/gcc")))
+           ;; diffoscope.exc.RequiredToolNotFound: cmp
+           ;; diffoscope.comparators.directory: 'stat' not found! Is PATH wrong?
+           ;; FileNotFoundError: [Errno 2] No such file or directory: 'readelf'
+           ;; diffoscope.comparators.directory: Unable to find 'getfacl'
+           (setenv "PATH" (string-append diffoscope "/bin:"
+
+                                         acl "/acl:"
+                                         binutils "/bin:"
+                                         coreutils "/bin:"
+                                         diffutils "/bin:"
+                                         xxd "/bin:"))
+           ;; ?? xxd not available in path. Falling back to Python hexlify.
+           ;; diffoscope.presenters.formats: Console is unable to print Unicode characters. Set e.g. PYTHONIOENCODING=utf-8
+           (setenv "PYTHONIOENCODING" "utf-8")
+           ;; for starters, only check the gcc binary
+           (zero? (system* "diffoscope" gcc/bin/gcc clang-gcc/bin/gcc))
+           ;;(zero? (system* "diffoscope" gcc clang-gcc))
+           ))))
+    (synopsis "test gcc+clang DDC property for gcc-4.7.4")
+    (description "gcc-dcc is a meta-package that depends on repro-gcc-4.7.4
+and on clang-gcc-4.7.4 (the same GCC built with clang).  The builder checks if
+both gcc's are bit-for-bit identical and fails if they differ.")
+    (home-page "http://bootstrappable.org")
+    (license gpl3+)))
+
+(define-public gcc-wrapped-ddc-gcc+clang
+  (package
+    (name "gcc-wrapped-ddc")
+    (version "4.7.4")
+    (source #f)
+    (native-inputs `(;;("clang-gcc" ,clang-gcc-7)
+                     ("clang-gcc" ,repr2-gcc-wrapped-4.7)
+                     ("gcc" ,repro-gcc-wrapped-4.7)
 
                      ("diffoscope" ,diffoscope)
                      ("acl" ,acl)       ; For diffoscope
