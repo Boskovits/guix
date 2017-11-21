@@ -270,6 +270,7 @@
            (add-before 'configure 'build-prefix-path
              (lambda* (#:key inputs #:allow-other-keys)
                (let ((out (assoc-ref %outputs "out")))
+                 (setenv "PREFIX" out)
                  (setenv "STANDARD_EXEC_PREFIX" (string-append out "/lib/gcc"))
                  (setenv "STANDARD_LIBEXEC_PREFIX" (string-append out "/libexec/gcc"))
                  (setenv "STANDARD_BINDIR_PREFIX" (string-append out "/bin")))
