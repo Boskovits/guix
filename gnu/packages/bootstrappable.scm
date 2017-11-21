@@ -254,6 +254,16 @@
                        "BUILD_PATH_PREFIX_MAP=~s\n"
                        (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
 
+(define-public repro-gcc-wrapped-4.7
+  (package
+    (inherit repro-gcc-4.7)
+    (name "repro-gcc-wrapped")
+    (source
+     (origin
+       (inherit (package-source repro-gcc-4.7))
+       (patches (append ((compose origin-patches package-source) repro-gcc-4.7)
+                        (search-patches "gcc-4-reproducibility-wrapper.patch")))))))
+
 (define-public repro-gcc-debuggable-4.7
   (package
     (inherit repro-gcc-4.7)
