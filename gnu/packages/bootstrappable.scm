@@ -244,7 +244,10 @@
         `(modify-phases ,original-phases
            (add-before 'configure 'build-prefix-path
              (lambda* (#:key inputs #:allow-other-keys)
-               (setenv "STANDARD_LIBEXEC_PREFIX" (string-append (assoc-ref %output "out") "/libexec/gcc"))
+               (let ((out (assoc-ref %output "out")))
+                 (setenv "STANDARD_EXEC_PREFIX" (string-append out "/lib/gcc"))
+                 (setenv "STANDARD_LIBEXEC_PREFIX" (string-append out "/libexec/gcc"))
+                 (setenv "STANDARD_BINDIR_PREFIX" (string-append out "/bin")))
                (setenv "BUILD_PATH_PREFIX_MAP"
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
