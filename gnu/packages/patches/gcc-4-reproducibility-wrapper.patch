@@ -1,12 +1,45 @@
-From 17878706e414e6cccc9400cd324bed5c97a70c64 Mon Sep 17 00:00:00 2001
+From 582afab28a3c94e2c6c2bb2ab195a94cdfe68765 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Tue, 21 Nov 2017 09:02:36 +0100
+Date: Tue, 21 Nov 2017 18:24:12 +0100
 Subject: [PATCH] Add wrapper support.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 Squashed commit of the following:
+
+commit e3749ab19f7a660f9f47abd1e0959c3773df937f
+Merge: 685201b 4d2c62d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 18:21:13 2017 +0100
+
+    Merge branch 'tmp_squash'
+
+commit 4d2c62dc015407a14175a58d33b5c3a27e0a0755
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 18:19:47 2017 +0100
+
+    Prepare gcc/prefix.c for wrapper.
+
+commit 17878706e414e6cccc9400cd324bed5c97a70c64
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 09:02:36 2017 +0100
+
+    Add wrapper support.
+
+    Squashed commit of the following:
+
+    commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:58:37 2017 +0100
+
+        Prepare gcc-ar.c for the wrapper.
+
+    commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:45:20 2017 +0100
+
+        Prepare source code for the wrapper.
 
 commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -22,7 +55,8 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 ---
  gcc/gcc-ar.c |  7 +++++--
  gcc/gcc.c    | 10 +++++++---
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ gcc/prefix.c | 21 ++++++++++++++++-----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
 diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
 index 5f78378..4b0352a 100644
@@ -77,6 +111,67 @@ index 939dcc8..f75f88e 100644
    p = argv[0] + strlen (argv[0]);
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
+diff --git a/gcc/prefix.c b/gcc/prefix.c
+index c7003f8..1ae66f7 100644
+--- a/gcc/prefix.c
++++ b/gcc/prefix.c
+@@ -73,7 +73,7 @@ License along with GCC; see the file COPYING3.  If not see
+ #include "prefix.h"
+ #include "common/common-target.h"
+ 
+-static const char *std_prefix = PREFIX;
++static const char *std_prefix;
+ 
+ static const char *get_key_value (char *);
+ static char *translate_name (char *);
+@@ -85,6 +85,17 @@ static char *lookup_key (char *);
+ static HKEY reg_key = (HKEY) INVALID_HANDLE_VALUE;
+ #endif
+ 
++/* Return std_prefix, factory method. */
++
++static const char *
++get_std_prefix (void)
++{
++  if (std_prefix == 0)
++    std_prefix = getenv ("PREFIX");
++
++  return std_prefix;
++}
++
+ /* Given KEY, as above, return its value.  */
+ 
+ static const char *
+@@ -101,7 +112,7 @@ get_key_value (char *key)
+     prefix = getenv (temp = concat (key, "_ROOT", NULL));
+ 
+   if (prefix == 0)
+-    prefix = std_prefix;
++    prefix = get_std_prefix();
+ 
+   free (temp);
+ 
+@@ -207,7 +218,7 @@ translate_name (char *name)
+ 	{
+ 	  prefix = get_key_value (key);
+ 	  if (prefix == 0)
+-	    prefix = std_prefix;
++	    prefix = get_std_prefix();
+ 	}
+       else
+ 	prefix = getenv (key);
+@@ -248,9 +259,9 @@ char *
+ update_path (const char *path, const char *key)
+ {
+   char *result, *p;
+-  const int len = strlen (std_prefix);
++  const int len = strlen (get_std_prefix());
+ 
+-  if (! filename_ncmp (path, std_prefix, len)
++  if (! filename_ncmp (path, get_std_prefix(), len)
+       && (IS_DIR_SEPARATOR(path[len])
+           || path[len] == '\0')
+       && key != 0)
 -- 
 2.15.0
 
