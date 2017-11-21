@@ -1,0 +1,82 @@
+From 17878706e414e6cccc9400cd324bed5c97a70c64 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
+Date: Tue, 21 Nov 2017 09:02:36 +0100
+Subject: [PATCH] Add wrapper support.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Squashed commit of the following:
+
+commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 02:58:37 2017 +0100
+
+    Prepare gcc-ar.c for the wrapper.
+
+commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 02:45:20 2017 +0100
+
+    Prepare source code for the wrapper.
+---
+ gcc/gcc-ar.c |  7 +++++--
+ gcc/gcc.c    | 10 +++++++---
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
+index 5f78378..4b0352a 100644
+--- a/gcc/gcc-ar.c
++++ b/gcc/gcc-ar.c
+@@ -26,8 +26,8 @@ along with GCC; see the file COPYING3.  If not see
+ #error "Please set personality"
+ #endif
+ 
+-static const char standard_libexec_prefix[] = STANDARD_LIBEXEC_PREFIX;
+-static const char standard_bin_prefix[] = STANDARD_BINDIR_PREFIX;
++static const char *standard_libexec_prefix;
++static const char *standard_bin_prefix;
+ static const char *const target_machine = TARGET_MACHINE;
+ 
+ static const char dir_separator[] = { DIR_SEPARATOR, 0 };
+@@ -44,6 +44,9 @@ main(int ac, char **av)
+   bool is_ar = !strcmp (PERSONALITY, "ar");
+   int exit_code = FATAL_EXIT_CODE;
+ 
++  standard_libexec_prefix=getenv("STANDARD_LIBEXEC_PREFIX");
++  standard_bin_prefix=getenv("STANDARD_BINDIR_PREFIX");
++
+   exe_name = PERSONALITY;
+ #ifdef CROSS_DIRECTORY_STRUCTURE
+   exe_name = concat (target_machine, "-", exe_name, NULL);
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 939dcc8..f75f88e 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -1125,9 +1125,9 @@ static const char *gcc_libexec_prefix;
+    gcc_exec_prefix is set because, in that case, we know where the
+    compiler has been installed, and use paths relative to that
+    location instead.  */
+-static const char *const standard_exec_prefix = STANDARD_EXEC_PREFIX;
+-static const char *const standard_libexec_prefix = STANDARD_LIBEXEC_PREFIX;
+-static const char *const standard_bindir_prefix = STANDARD_BINDIR_PREFIX;
++static const char *standard_exec_prefix;
++static const char *standard_libexec_prefix;
++static const char *standard_bindir_prefix;
+ static const char *const standard_startfile_prefix = STANDARD_STARTFILE_PREFIX;
+ 
+ /* For native compilers, these are well-known paths containing
+@@ -6154,6 +6154,10 @@ main (int argc, char **argv)
+      on ?: in file-scope variable initializations.  */
+   asm_debug = ASM_DEBUG_SPEC;
+ 
++  standard_exec_prefix=getenv("STANDARD_EXEC_PREFIX");
++  standard_libexec_prefix=getenv("STANDARD_LIBEXEC_PREFIX");
++  standard_bindir_prefix=getenv("STANDARD_BINDIR_PREFIX");
++
+   p = argv[0] + strlen (argv[0]);
+   while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
+     --p;
+-- 
+2.15.0
+
