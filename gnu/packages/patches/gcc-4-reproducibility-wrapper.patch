@@ -1,15 +1,21 @@
-From 582afab28a3c94e2c6c2bb2ab195a94cdfe68765 Mon Sep 17 00:00:00 2001
+From 8646998bf1ced61c4fe212eae68a3fb43772d2b9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Tue, 21 Nov 2017 18:24:12 +0100
-Subject: [PATCH] Add wrapper support.
+Date: Wed, 22 Nov 2017 09:18:47 +0100
+Subject: [PATCH] Prepare gcc for wrapper.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 Squashed commit of the following:
 
+commit b1d80031fed7f094789fd83b02d089376bb4374f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 22 09:16:57 2017 +0100
+
+    Prepare gcc/prefix.c for wrapper, eliminate remaining PREFIX references.
+
 commit e3749ab19f7a660f9f47abd1e0959c3773df937f
-Merge: 685201b 4d2c62d
+Merge: 685201b4d 4d2c62dc0
 Author: Gábor Boskovits <boskovits@gmail.com>
 Date:   Tue Nov 21 18:21:13 2017 +0100
 
@@ -55,11 +61,11 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 ---
  gcc/gcc-ar.c |  7 +++++--
  gcc/gcc.c    | 10 +++++++---
- gcc/prefix.c | 21 ++++++++++++++++-----
- 3 files changed, 28 insertions(+), 10 deletions(-)
+ gcc/prefix.c | 23 +++++++++++++++++------
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
 diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
-index 5f78378..4b0352a 100644
+index 5f78378de..4b0352a72 100644
 --- a/gcc/gcc-ar.c
 +++ b/gcc/gcc-ar.c
 @@ -26,8 +26,8 @@ along with GCC; see the file COPYING3.  If not see
@@ -84,7 +90,7 @@ index 5f78378..4b0352a 100644
  #ifdef CROSS_DIRECTORY_STRUCTURE
    exe_name = concat (target_machine, "-", exe_name, NULL);
 diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 939dcc8..f75f88e 100644
+index 939dcc873..f75f88eec 100644
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
 @@ -1125,9 +1125,9 @@ static const char *gcc_libexec_prefix;
@@ -112,7 +118,7 @@ index 939dcc8..f75f88e 100644
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
 diff --git a/gcc/prefix.c b/gcc/prefix.c
-index c7003f8..1ae66f7 100644
+index c7003f8c6..01408e2e5 100644
 --- a/gcc/prefix.c
 +++ b/gcc/prefix.c
 @@ -73,7 +73,7 @@ License along with GCC; see the file COPYING3.  If not see
@@ -151,7 +157,7 @@ index c7003f8..1ae66f7 100644
  
    free (temp);
  
-@@ -207,7 +218,7 @@ translate_name (char *name)
+@@ -207,13 +218,13 @@ translate_name (char *name)
  	{
  	  prefix = get_key_value (key);
  	  if (prefix == 0)
@@ -160,6 +166,13 @@ index c7003f8..1ae66f7 100644
  	}
        else
  	prefix = getenv (key);
+ 
+       if (prefix == 0)
+-	prefix = PREFIX;
++	prefix = getenv("PREFIX");
+ 
+       /* We used to strip trailing DIR_SEPARATORs here, but that can
+ 	 sometimes yield a result with no separator when one was coded
 @@ -248,9 +259,9 @@ char *
  update_path (const char *path, const char *key)
  {
