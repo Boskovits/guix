@@ -431,8 +431,7 @@ both gcc's are bit-for-bit identical and fails if they differ.")
     (name "gcc-wrapped-ddc")
     (version "4.7.4")
     (source #f)
-    (native-inputs `(;;("clang-gcc" ,clang-gcc-7)
-                     ("clang-gcc" ,repr2-gcc-wrapped-4.7)
+    (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-4.7)
                      ("gcc" ,repro-gcc-wrapped-4.7)
 
                      ("diffoscope" ,diffoscope)
@@ -472,12 +471,12 @@ both gcc's are bit-for-bit identical and fails if they differ.")
            ;; diffoscope.presenters.formats: Console is unable to print Unicode characters. Set e.g. PYTHONIOENCODING=utf-8
            (setenv "PYTHONIOENCODING" "utf-8")
            ;; for starters, only check the gcc binary
-           (zero? (system* "diffoscope" gcc/bin/gcc clang-gcc/bin/gcc))
+           (zero? (system* "diffoscope" gcc clang-gcc))
            ;;(zero? (system* "diffoscope" gcc clang-gcc))
            ))))
     (synopsis "test gcc+clang DDC property for gcc-4.7.4")
-    (description "gcc-dcc is a meta-package that depends on repro-gcc-4.7.4
-and on clang-gcc-4.7.4 (the same GCC built with clang).  The builder checks if
+    (description "gcc-dcc is a meta-package that depends on repro-gcc-wrapped-4.7.4
+and on repr2-gcc-wrapped-4.7.4.  The builder checks if
 both gcc's are bit-for-bit identical and fails if they differ.")
     (home-page "http://bootstrappable.org")
     (license gpl3+)))
