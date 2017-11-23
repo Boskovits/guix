@@ -420,7 +420,7 @@
            ;; diffoscope.comparators.directory: Unable to find 'getfacl'
            (setenv "PATH" (string-append diffoscope "/bin:"
 
-                                         acl "/acl:"
+                                         acl "/bin:"
                                          binutils "/bin:"
                                          coreutils "/bin:"
                                          diffutils "/bin:"
@@ -475,7 +475,7 @@ both gcc's are bit-for-bit identical and fails if they differ.")
            ;; diffoscope.comparators.directory: Unable to find 'getfacl'
            (setenv "PATH" (string-append diffoscope "/bin:"
 
-                                         acl "/acl:"
+                                         acl "/bin:"
                                          binutils "/bin:"
                                          coreutils "/bin:"
                                          diffutils "/bin:"
