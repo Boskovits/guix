@@ -248,7 +248,9 @@
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
                        "BUILD_PATH_PREFIX_MAP=~s\n"
-                       (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
+                       (getenv "BUILD_PATH_PREFIX_MAP"))))
+           (add-before 'configure 'set-cflags
+             (lambda _ (setenv "CFLAGS" "-g0 -O2")))))))))
 
 (define-public repro-gcc-wrapped-4.7
   (package
@@ -278,7 +280,9 @@
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
                        "BUILD_PATH_PREFIX_MAP=~s\n"
-                       (getenv "BUILD_PATH_PREFIX_MAP"))))))))))
+                       (getenv "BUILD_PATH_PREFIX_MAP"))))
+           (add-before 'configure 'set-cflags
+             (lambda _ (setenv "CFLAGS" "-g0 -O2")))))))))
 
 (define-public repro-gcc-debuggable-4.7
   (package
@@ -286,6 +290,10 @@
     (name "repro-gcc-debuggable")
     (arguments
      (substitute-keyword-arguments (package-arguments repro-gcc-4.7)
+       ((#:phases original-phases)
+        `(modify-phases ,original-phases
+           (replace 'set-cflags
+             (lambda _ (setenv "CFLAGS" "-O0 -g3")))))
        ((#:make-flags original-flags)
         `(cons* "BOOT_CFLAGS=-O0 -g3"
                 (delete "BOOT_CFLAGS=-O2 -g0" ,original-flags)))))))
@@ -296,6 +304,10 @@
     (name "repro-gcc-wrapped-debuggable")
     (arguments
      (substitute-keyword-arguments (package-arguments repro-gcc-wrapped-4.7)
+       ((#:phases original-phases)
+        `(modify-phases ,original-phases
+           (replace 'set-cflags
+             (lambda _ (setenv "CFLAGS" "-O0 -g3")))))
        ((#:make-flags original-flags)
         `(cons* "BOOT_CFLAGS=-O0 -g3"
                 (delete "BOOT_CFLAGS=-O2 -g0" ,original-flags)))))))
