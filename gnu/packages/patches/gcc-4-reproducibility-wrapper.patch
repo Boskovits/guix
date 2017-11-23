@@ -1,12 +1,88 @@
-From 8646998bf1ced61c4fe212eae68a3fb43772d2b9 Mon Sep 17 00:00:00 2001
+From 43a19be0b43324a120d7791d4133348a7fe2ed48 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Wed, 22 Nov 2017 09:18:47 +0100
-Subject: [PATCH] Prepare gcc for wrapper.
+Date: Thu, 23 Nov 2017 13:24:49 +0100
+Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-Squashed commit of the following:
+commit 8ad0c768d3617035cc8dbee53eef0d73f0f9f990
+Merge: b1d80031f 6054dc9a7
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:22:10 2017 +0100
+
+    Merge branch 'tmp_squash'
+
+commit 6054dc9a76ce61415e584f024cda3c3c0577797f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:12:37 2017 +0100
+
+    Change environment variable names to avoid name conflicts.
+
+commit eb6fc013a78f439ba09b5812077272c4d7c16c75
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:08:37 2017 +0100
+
+    Prepare cc1 for wrapper.
+
+commit 8646998bf1ced61c4fe212eae68a3fb43772d2b9
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 22 09:18:47 2017 +0100
+
+    Prepare gcc for wrapper.
+
+    Squashed commit of the following:
+
+    commit b1d80031fed7f094789fd83b02d089376bb4374f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Wed Nov 22 09:16:57 2017 +0100
+
+        Prepare gcc/prefix.c for wrapper, eliminate remaining PREFIX references.
+
+    commit e3749ab19f7a660f9f47abd1e0959c3773df937f
+    Merge: 685201b4d 4d2c62dc0
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 18:21:13 2017 +0100
+
+        Merge branch 'tmp_squash'
+
+    commit 4d2c62dc015407a14175a58d33b5c3a27e0a0755
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 18:19:47 2017 +0100
+
+        Prepare gcc/prefix.c for wrapper.
+
+    commit 17878706e414e6cccc9400cd324bed5c97a70c64
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 09:02:36 2017 +0100
+
+        Add wrapper support.
+
+        Squashed commit of the following:
+
+        commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+        Author: Gábor Boskovits <boskovits@gmail.com>
+        Date:   Tue Nov 21 02:58:37 2017 +0100
+
+            Prepare gcc-ar.c for the wrapper.
+
+        commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+        Author: Gábor Boskovits <boskovits@gmail.com>
+        Date:   Tue Nov 21 02:45:20 2017 +0100
+
+            Prepare source code for the wrapper.
+
+    commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:58:37 2017 +0100
+
+        Prepare gcc-ar.c for the wrapper.
+
+    commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:45:20 2017 +0100
+
+        Prepare source code for the wrapper.
 
 commit b1d80031fed7f094789fd83b02d089376bb4374f
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -59,13 +135,29 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 
     Prepare source code for the wrapper.
 ---
- gcc/gcc-ar.c |  7 +++++--
- gcc/gcc.c    | 10 +++++++---
- gcc/prefix.c | 23 +++++++++++++++++------
- 3 files changed, 29 insertions(+), 11 deletions(-)
+ gcc/c-family/c-opts.c |  4 ++--
+ gcc/gcc-ar.c          |  7 +++++--
+ gcc/gcc.c             | 10 +++++++---
+ gcc/prefix.c          | 23 +++++++++++++++++------
+ 4 files changed, 31 insertions(+), 13 deletions(-)
 
+diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
+index f2a797178..66d31dada 100644
+--- a/gcc/c-family/c-opts.c
++++ b/gcc/c-family/c-opts.c
+@@ -1310,8 +1310,8 @@ add_prefixed_path (const char *suffix, size_t chain)
+   size_t prefix_len, suffix_len;
+ 
+   suffix_len = strlen (suffix);
+-  prefix     = iprefix ? iprefix : cpp_GCC_INCLUDE_DIR;
+-  prefix_len = iprefix ? strlen (iprefix) : cpp_GCC_INCLUDE_DIR_len;
++  prefix     = iprefix ? iprefix : getenv("GUIX_GCC_cpp_GCC_INCLUDE_DIR");
++  prefix_len = strlen(prefix);
+ 
+   path = (char *) xmalloc (prefix_len + suffix_len + 1);
+   memcpy (path, prefix, prefix_len);
 diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
-index 5f78378de..4b0352a72 100644
+index 5f78378de..db2dc2958 100644
 --- a/gcc/gcc-ar.c
 +++ b/gcc/gcc-ar.c
 @@ -26,8 +26,8 @@ along with GCC; see the file COPYING3.  If not see
@@ -83,14 +175,14 @@ index 5f78378de..4b0352a72 100644
    bool is_ar = !strcmp (PERSONALITY, "ar");
    int exit_code = FATAL_EXIT_CODE;
  
-+  standard_libexec_prefix=getenv("STANDARD_LIBEXEC_PREFIX");
-+  standard_bin_prefix=getenv("STANDARD_BINDIR_PREFIX");
++  standard_libexec_prefix=getenv("GUIX_GCC_STANDARD_LIBEXEC_PREFIX");
++  standard_bin_prefix=getenv("GUIX_GCC_STANDARD_BINDIR_PREFIX");
 +
    exe_name = PERSONALITY;
  #ifdef CROSS_DIRECTORY_STRUCTURE
    exe_name = concat (target_machine, "-", exe_name, NULL);
 diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 939dcc873..f75f88eec 100644
+index 939dcc873..21b465c70 100644
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
 @@ -1125,9 +1125,9 @@ static const char *gcc_libexec_prefix;
@@ -110,15 +202,15 @@ index 939dcc873..f75f88eec 100644
       on ?: in file-scope variable initializations.  */
    asm_debug = ASM_DEBUG_SPEC;
  
-+  standard_exec_prefix=getenv("STANDARD_EXEC_PREFIX");
-+  standard_libexec_prefix=getenv("STANDARD_LIBEXEC_PREFIX");
-+  standard_bindir_prefix=getenv("STANDARD_BINDIR_PREFIX");
++  standard_exec_prefix=getenv("GUIX_GCC_STANDARD_EXEC_PREFIX");
++  standard_libexec_prefix=getenv("GUIX_GCC_STANDARD_LIBEXEC_PREFIX");
++  standard_bindir_prefix=getenv("GUIX_GCC_STANDARD_BINDIR_PREFIX");
 +
    p = argv[0] + strlen (argv[0]);
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
 diff --git a/gcc/prefix.c b/gcc/prefix.c
-index c7003f8c6..01408e2e5 100644
+index c7003f8c6..9a20b3816 100644
 --- a/gcc/prefix.c
 +++ b/gcc/prefix.c
 @@ -73,7 +73,7 @@ License along with GCC; see the file COPYING3.  If not see
@@ -140,7 +232,7 @@ index c7003f8c6..01408e2e5 100644
 +get_std_prefix (void)
 +{
 +  if (std_prefix == 0)
-+    std_prefix = getenv ("PREFIX");
++    std_prefix = getenv ("GUIX_GCC_PREFIX");
 +
 +  return std_prefix;
 +}
