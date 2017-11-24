@@ -1689,7 +1689,7 @@ IcedTea build harness.")
                  '("jdk" "openjdk-src" "corba-drop" "jaxp-drop" "jaxws-drop"
                    "jdk-drop" "langtools-drop" "hotspot-drop")))))))
 
-(define-public icedtea icedtea-7)
+(define-public icedtea icedtea-8)
 
 
 (define-public ant/java8
