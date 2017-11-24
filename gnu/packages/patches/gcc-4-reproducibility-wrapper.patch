@@ -1,10 +1,16 @@
-From 43a19be0b43324a120d7791d4133348a7fe2ed48 Mon Sep 17 00:00:00 2001
+From 22436b83900b75c6bbfe19e1fa15b668d210bb8b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Thu, 23 Nov 2017 13:24:49 +0100
+Date: Fri, 24 Nov 2017 13:40:24 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit 373eb77e95d2b1d1bf01384b17b2ccdad6b21bed
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Fri Nov 24 13:37:30 2017 +0100
+
+    Remove cpp_GCC_INCLUDE_DIR reference from gcc/incpath.c.
 
 commit 8ad0c768d3617035cc8dbee53eef0d73f0f9f990
 Merge: b1d80031f 6054dc9a7
@@ -138,8 +144,9 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/c-family/c-opts.c |  4 ++--
  gcc/gcc-ar.c          |  7 +++++--
  gcc/gcc.c             | 10 +++++++---
+ gcc/incpath.c         |  4 ++--
  gcc/prefix.c          | 23 +++++++++++++++++------
- 4 files changed, 31 insertions(+), 13 deletions(-)
+ 5 files changed, 33 insertions(+), 15 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..66d31dada 100644
@@ -209,6 +216,28 @@ index 939dcc873..21b465c70 100644
    p = argv[0] + strlen (argv[0]);
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
+diff --git a/gcc/incpath.c b/gcc/incpath.c
+index efcd2c75e..8afbd3b8b 100644
+--- a/gcc/incpath.c
++++ b/gcc/incpath.c
+@@ -133,7 +133,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+   int relocated = cpp_relocated();
+   size_t len;
+ 
+-  if (iprefix && (len = cpp_GCC_INCLUDE_DIR_len) != 0)
++  if (iprefix && (len = strlen(getenv("GUIX_GCC_cpp_GCC_INCLUDE_DIR"))) != 0)
+     {
+       /* Look for directories that start with the standard prefix.
+ 	 "Translate" them, i.e. replace /usr/local/lib/gcc... with
+@@ -147,7 +147,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 		 now.  */
+ 	      if (sysroot && p->add_sysroot)
+ 		continue;
+-	      if (!filename_ncmp (p->fname, cpp_GCC_INCLUDE_DIR, len))
++	      if (!filename_ncmp (p->fname, getenv("GUIX_GCC_cpp_GCC_INCLUDE_DIR"), len))
+ 		{
+ 		  char *str = concat (iprefix, p->fname + len, NULL);
+ 		  if (p->multilib == 1 && imultilib)
 diff --git a/gcc/prefix.c b/gcc/prefix.c
 index c7003f8c6..9a20b3816 100644
 --- a/gcc/prefix.c
