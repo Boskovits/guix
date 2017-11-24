@@ -1,10 +1,16 @@
-From 22436b83900b75c6bbfe19e1fa15b668d210bb8b Mon Sep 17 00:00:00 2001
+From b13c67d93798dfb932b944bf5e67f639970da455 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Fri, 24 Nov 2017 13:40:24 +0100
+Date: Fri, 24 Nov 2017 14:57:20 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit 01cb0d4dd0df03bcee82f9bd6f501131cd57cfe7
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Fri Nov 24 14:55:30 2017 +0100
+
+    Remove references of cpp_PREFIX from incpath.c.
 
 commit 373eb77e95d2b1d1bf01384b17b2ccdad6b21bed
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -144,9 +150,9 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/c-family/c-opts.c |  4 ++--
  gcc/gcc-ar.c          |  7 +++++--
  gcc/gcc.c             | 10 +++++++---
- gcc/incpath.c         |  4 ++--
+ gcc/incpath.c         | 10 +++++-----
  gcc/prefix.c          | 23 +++++++++++++++++------
- 5 files changed, 33 insertions(+), 15 deletions(-)
+ 5 files changed, 36 insertions(+), 18 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..66d31dada 100644
@@ -217,7 +223,7 @@ index 939dcc873..21b465c70 100644
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
 diff --git a/gcc/incpath.c b/gcc/incpath.c
-index efcd2c75e..8afbd3b8b 100644
+index efcd2c75e..4673105d6 100644
 --- a/gcc/incpath.c
 +++ b/gcc/incpath.c
 @@ -133,7 +133,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
@@ -238,6 +244,28 @@ index efcd2c75e..8afbd3b8b 100644
  		{
  		  char *str = concat (iprefix, p->fname + len, NULL);
  		  if (p->multilib == 1 && imultilib)
+@@ -182,7 +182,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 	      free (sysroot_no_trailing_dir_separator);
+ 	    }
+ 	  else if (!p->add_sysroot && relocated
+-		   && !filename_ncmp (p->fname, cpp_PREFIX, cpp_PREFIX_len))
++		   && !filename_ncmp (p->fname, getenv("GUIX_GCC_cpp_PREFIX"), strlen(getenv("GUIX_GCC_cpp_PREFIX"))))
+ 	    {
+  	      static const char *relocated_prefix;
+ 	      /* If this path starts with the configure-time prefix,
+@@ -199,10 +199,10 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 		  relocated_prefix
+ 		    = make_relative_prefix (dummy,
+ 					    cpp_EXEC_PREFIX,
+-					    cpp_PREFIX);
++					    getenv("GUIX_GCC_cpp_PREFIX"));
+ 		}
+ 	      str = concat (relocated_prefix,
+-			    p->fname + cpp_PREFIX_len,
++			    p->fname + strlen(getenv("GUIX_GCC_cpp_PREFIX")),
+ 			    NULL);
+ 	      str = update_path (str, p->component);
+ 	    }
 diff --git a/gcc/prefix.c b/gcc/prefix.c
 index c7003f8c6..9a20b3816 100644
 --- a/gcc/prefix.c
