@@ -276,8 +276,7 @@
                  (setenv "GUIX_GCC_STANDARD_EXEC_PREFIX" (string-append out "/lib/gcc"))
                  (setenv "GUIX_GCC_STANDARD_LIBEXEC_PREFIX" (string-append out "/libexec/gcc"))
                  (setenv "GUIX_GCC_STANDARD_BINDIR_PREFIX" (string-append out "/bin"))
-                 (setenv "GUIX_GCC_cpp_GCC_INCLUDE_DIR" (string-append out "lib/gcc/x86_64-unknown-linux-gnu/4.7.4/include"));fixme, architecture specific
-                 (setenv "GUIX_GCC_Cpp_PREFIX" out))
+                 (setenv "GUIX_GCC_cpp_GCC_INCLUDE_DIR" (string-append out "lib/gcc/x86_64-unknown-linux-gnu/4.7.4/include")));fixme, architecture specific
                (setenv "BUILD_PATH_PREFIX_MAP"
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
