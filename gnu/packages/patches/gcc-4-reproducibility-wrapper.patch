@@ -1,10 +1,16 @@
-From 4b68cadbe11efa2331c2a3f8c9b5156b6e6d5eb1 Mon Sep 17 00:00:00 2001
+From df51d977a52fd12b282450f2baa7b1187bb2d6e2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Sat, 25 Nov 2017 14:43:22 +0100
+Date: Sat, 25 Nov 2017 22:11:33 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit d498ffb1adbe041b4d2b695bad5a04e5bdf27f70
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Sat Nov 25 22:10:30 2017 +0100
+
+    Add factory method declarations to header.
 
 commit 303151085a01970db6a977cceee5163af39450a9
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -156,11 +162,12 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/c-family/c-opts.c |  4 ++--
  gcc/config/darwin-c.c |  4 ++--
  gcc/cppdefault.c      | 30 ++++++++++++++++++++++++++++++
+ gcc/cppdefault.h      |  7 +++++++
  gcc/gcc-ar.c          |  7 +++++--
  gcc/gcc.c             | 10 +++++++---
  gcc/incpath.c         | 12 ++++++------
  gcc/prefix.c          | 23 +++++++++++++++++------
- 7 files changed, 69 insertions(+), 21 deletions(-)
+ 8 files changed, 76 insertions(+), 21 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -238,6 +245,22 @@ index 99c4c8814..442483110 100644
  /* This value is set by cpp_relocated at runtime */
  const char *gcc_exec_prefix;
  
+diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
+index 93f7f88ac..4ae8b5dd3 100644
+--- a/gcc/cppdefault.h
++++ b/gcc/cppdefault.h
+@@ -69,4 +69,11 @@ extern const char *gcc_exec_prefix;
+ /* Return true if the toolchain is relocated.  */
+ bool cpp_relocated (void);
+ 
++/* GUIX factory methods */
++char * get_cpp_GCC_INCLUDE_DIR (void);
++size_t get_cpp_GCC_INCLUDE_DIR_len (void);
++char * get_cpp_PREFIX (void);
++size_t get_cpp_PREFIX_len (void);
++char * get_cpp_EXEC_PREFIX (void);
++
+ #endif /* ! GCC_CPPDEFAULT_H */
 diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
 index 5f78378de..db2dc2958 100644
 --- a/gcc/gcc-ar.c
