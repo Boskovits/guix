@@ -276,7 +276,12 @@
                  (setenv "GUIX_GCC_STANDARD_EXEC_PREFIX" (string-append out "/lib/gcc"))
                  (setenv "GUIX_GCC_STANDARD_LIBEXEC_PREFIX" (string-append out "/libexec/gcc"))
                  (setenv "GUIX_GCC_STANDARD_BINDIR_PREFIX" (string-append out "/bin"))
-                 (setenv "GUIX_GCC_cpp_GCC_INCLUDE_DIR" (string-append out "lib/gcc/x86_64-unknown-linux-gnu/4.7.4/include")));fixme, architecture specific
+                 (setenv "GUIX_GCC_GPLUSPLUS_INCLUDE_DIR" (string-append out "/include/g++"))
+                 (setenv "GUIX_GCC_GPLUSPLUS_BACKWARD_INCLUDE_DIR" (string-append out "/include/c++/backward"))
+                 (setenv "GUIX_GCC_GPLUSPLUS_TOOL_INCLUDE_DIR" (string-append out "/include/c++/x86_64-unknown-linux-gnu"));fixme, architecture specific
+                 (setenv "GUIX_GCC_GCC_INCLUDE_DIR" (string-append out "/lib/gcc/x86_64-unknown-linux-gnu/4.7.4/include"))
+                 (setenv "GUIX_GCC_FIXED_INCLUDE_DIR" (string-append out "/lib/gcc/x86_64-unknown-linux-gnu/4.7.4/include-fixed"))
+                 (setenv "GUX_GCC_TOOL_INCLUDE_DIR" (string-append out "/lib/gcc/x86_64-unknown-linux-gnu/4.7.4/../../../../x86_64-unknown-linux-gnu/include")))
                (setenv "BUILD_PATH_PREFIX_MAP"
                        (string-append "gcc" "-" ,version "=" (getcwd)))
                (format (current-error-port)
