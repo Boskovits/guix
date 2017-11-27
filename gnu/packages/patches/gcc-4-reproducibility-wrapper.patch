@@ -1,10 +1,16 @@
-From ab2f7a442e7e56f72cbab42b1b1fca2b466dd95e Mon Sep 17 00:00:00 2001
+From b3165e202176644b8df52fd1e44dc89567095194 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Mon, 27 Nov 2017 15:26:31 +0100
+Date: Mon, 27 Nov 2017 19:03:39 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit b1dd391453197207146ffb673bc908de549b4a32
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Mon Nov 27 19:01:17 2017 +0100
+
+    Remove constness of struct member wrapper has to assign.
 
 commit ddfbf78c3c8a21c88ec31674a3d92624938dc24d
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -174,12 +180,12 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/c-family/c-opts.c |  4 +--
  gcc/config/darwin-c.c |  4 +--
  gcc/cppdefault.c      | 84 ++++++++++++++++++++++++++++++++++++++++++++++-----
- gcc/cppdefault.h      | 10 +++++-
+ gcc/cppdefault.h      | 12 ++++++--
  gcc/gcc-ar.c          |  7 +++--
  gcc/gcc.c             | 10 ++++--
  gcc/incpath.c         | 14 ++++-----
  gcc/prefix.c          | 23 ++++++++++----
- 8 files changed, 126 insertions(+), 30 deletions(-)
+ 8 files changed, 127 insertions(+), 31 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -358,9 +364,18 @@ index 99c4c8814..52bac71fe 100644
  const char *gcc_exec_prefix;
  
 diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
-index 93f7f88ac..ad01ea934 100644
+index 93f7f88ac..57236dd65 100644
 --- a/gcc/cppdefault.h
 +++ b/gcc/cppdefault.h
+@@ -34,7 +34,7 @@
+ 
+ struct default_include
+ {
+-  const char *const fname;	/* The name of the directory.  */
++  const char * fname;	/* The name of the directory.  */
+   const char *const component;	/* The component containing the directory
+ 				   (see update_path in prefix.c) */
+   const char cplusplus;		/* Only look here if we're compiling C++.  */
 @@ -50,7 +50,7 @@ struct default_include
  				     -imultiarch, when set to 2.  */
  };
