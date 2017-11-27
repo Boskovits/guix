@@ -1,10 +1,16 @@
-From df51d977a52fd12b282450f2baa7b1187bb2d6e2 Mon Sep 17 00:00:00 2001
+From 116b8980ca544254467c1424d95726a154c65cb6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Sat, 25 Nov 2017 22:11:33 +0100
+Date: Mon, 27 Nov 2017 14:04:02 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit 82ff8d98a078aa8b4086e0926b16b346525b1942
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Mon Nov 27 13:58:06 2017 +0100
+
+    Remove absolute path references from cpp_default_include.
 
 commit d498ffb1adbe041b4d2b695bad5a04e5bdf27f70
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -159,15 +165,15 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 
     Prepare source code for the wrapper.
 ---
- gcc/c-family/c-opts.c |  4 ++--
- gcc/config/darwin-c.c |  4 ++--
- gcc/cppdefault.c      | 30 ++++++++++++++++++++++++++++++
- gcc/cppdefault.h      |  7 +++++++
- gcc/gcc-ar.c          |  7 +++++--
- gcc/gcc.c             | 10 +++++++---
- gcc/incpath.c         | 12 ++++++------
- gcc/prefix.c          | 23 +++++++++++++++++------
- 8 files changed, 76 insertions(+), 21 deletions(-)
+ gcc/c-family/c-opts.c |   4 +-
+ gcc/config/darwin-c.c |   4 +-
+ gcc/cppdefault.c      | 102 +++++++++++++++++++++++++++++++++++++++++++-------
+ gcc/cppdefault.h      |  10 ++++-
+ gcc/gcc-ar.c          |   7 +++-
+ gcc/gcc.c             |  10 +++--
+ gcc/incpath.c         |  14 +++----
+ gcc/prefix.c          |  23 +++++++++---
+ 8 files changed, 138 insertions(+), 36 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -200,17 +206,140 @@ index 211d141a6..3a425ba7f 100644
  	  str = concat (iprefix, fname + len, NULL);
            /* FIXME: wrap the headers for C++awareness.  */
 diff --git a/gcc/cppdefault.c b/gcc/cppdefault.c
-index 99c4c8814..442483110 100644
+index 99c4c8814..af3994367 100644
 --- a/gcc/cppdefault.c
 +++ b/gcc/cppdefault.c
-@@ -106,11 +106,41 @@ const char cpp_GCC_INCLUDE_DIR[] = "";
+@@ -37,41 +37,41 @@
+ # undef CROSS_INCLUDE_DIR
+ #endif
+ 
+-const struct default_include cpp_include_defaults[]
++struct default_include cpp_include_defaults[]
+ #ifdef INCLUDE_DEFAULTS
+ = INCLUDE_DEFAULTS;
+ #else
+ = {
+ #ifdef GPLUSPLUS_INCLUDE_DIR
+     /* Pick up GNU C++ generic include files.  */
+-    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 },
+ #endif
+ #ifdef GPLUSPLUS_TOOL_INCLUDE_DIR
+     /* Pick up GNU C++ target-dependent include files.  */
+-    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 1 },
+ #endif
+ #ifdef GPLUSPLUS_BACKWARD_INCLUDE_DIR
+     /* Pick up GNU C++ backward and deprecated include files.  */
+-    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 },
+ #endif
+ #ifdef GCC_INCLUDE_DIR
+     /* This is the dir for gcc's private headers.  */
+-    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 },
++    { 0, "GCC", 0, 0, 0, 0 },
+ #endif
+ #ifdef LOCAL_INCLUDE_DIR
+     /* /usr/local/include comes before the fixincluded header files.  */
+-    { LOCAL_INCLUDE_DIR, 0, 0, 1, 1, 2 },
+-    { LOCAL_INCLUDE_DIR, 0, 0, 1, 1, 0 },
++    { 0, 0, 0, 1, 1, 2 },
++    { 0, 0, 0, 1, 1, 0 },
+ #endif
+ #ifdef PREFIX_INCLUDE_DIR
+-    { PREFIX_INCLUDE_DIR, 0, 0, 1, 0, 0 },
++    { 0, 0, 0, 1, 0, 0 },
+ #endif
+ #ifdef FIXED_INCLUDE_DIR
+     /* This is the dir for fixincludes.  */
+-    { FIXED_INCLUDE_DIR, "GCC", 0, 0, 0,
++    { 0, "GCC", 0, 0, 0,
+       /* A multilib suffix needs adding if different multilibs use
+ 	 different headers.  */
+ #ifdef SYSROOT_HEADERS_SUFFIX_SPEC
+@@ -83,21 +83,67 @@ const struct default_include cpp_include_defaults[]
+ #endif
+ #ifdef CROSS_INCLUDE_DIR
+     /* One place the target system's headers might be.  */
+-    { CROSS_INCLUDE_DIR, "GCC", 0, 0, 0, 0 },
++    { 0, "GCC", 0, 0, 0, 0 },
+ #endif
+ #ifdef TOOL_INCLUDE_DIR
+     /* Another place the target system's headers might be.  */
+-    { TOOL_INCLUDE_DIR, "BINUTILS", 0, 1, 0, 0 },
++    { 0, "BINUTILS", 0, 1, 0, 0 },
+ #endif
+ #ifdef NATIVE_SYSTEM_HEADER_DIR
+     /* /usr/include comes dead last.  */
+-    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 2 },
+-    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 },
++    { 0, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 2 },
++    { 0, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 },
+ #endif
+     { 0, 0, 0, 0, 0, 0 }
+   };
+ #endif /* no INCLUDE_DEFAULTS */
+ 
++struct default_include *
++get_cpp_include_defaults (void)
++{
++  struct default_include *p=cpp_include_defaults;
++  #ifdef GPLUSPLUS_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GPLUSPLUS_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GPLUSPLUS_TOOL_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GPLUSPLUS_TOOL_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GPLUSPLUS_BACKWARD_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_CPLUSPLUS_BACKWARD_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GCC_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GCC_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef LOCAL_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_LOCAL_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef PREFIX_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_PREFIX_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef FIXED_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_FIXED_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef CROSS_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_CROSS_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef TOOL_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_TOOL_INCLUDE_DIR");
++    p++;
++  #ifdef NATIVE_SYSTEM_HEADER_DIR
++    p->fname=getenv("GUIX_GCC_NATIVE_SYSTEM_HEADER_DIR");
++    p++;
++  #endif
++  return cpp_include_defaults;
++}
++
+ #ifdef GCC_INCLUDE_DIR
+ const char cpp_GCC_INCLUDE_DIR[] = GCC_INCLUDE_DIR;
+ const size_t cpp_GCC_INCLUDE_DIR_len = sizeof GCC_INCLUDE_DIR - 8;
+@@ -106,11 +152,41 @@ const char cpp_GCC_INCLUDE_DIR[] = "";
  const size_t cpp_GCC_INCLUDE_DIR_len = 0;
  #endif
  
 +char *
 +get_cpp_GCC_INCLUDE_DIR (void)
 +{
-+  return getenv("GUIX_GCC_cpp_GCC_INCLUDE_DIR");
++  return getenv("GUIX_GCC_GCC_INCLUDE_DIR");
 +}
 +
 +size_t
@@ -246,14 +375,24 @@ index 99c4c8814..442483110 100644
  const char *gcc_exec_prefix;
  
 diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
-index 93f7f88ac..4ae8b5dd3 100644
+index 93f7f88ac..ad01ea934 100644
 --- a/gcc/cppdefault.h
 +++ b/gcc/cppdefault.h
-@@ -69,4 +69,11 @@ extern const char *gcc_exec_prefix;
+@@ -50,7 +50,7 @@ struct default_include
+ 				     -imultiarch, when set to 2.  */
+ };
+ 
+-extern const struct default_include cpp_include_defaults[];
++extern struct default_include cpp_include_defaults[];
+ extern const char cpp_GCC_INCLUDE_DIR[];
+ extern const size_t cpp_GCC_INCLUDE_DIR_len;
+ 
+@@ -69,4 +69,12 @@ extern const char *gcc_exec_prefix;
  /* Return true if the toolchain is relocated.  */
  bool cpp_relocated (void);
  
 +/* GUIX factory methods */
++struct default_include * get_cpp_include_defaults (void);
 +char * get_cpp_GCC_INCLUDE_DIR (void);
 +size_t get_cpp_GCC_INCLUDE_DIR_len (void);
 +char * get_cpp_PREFIX (void);
@@ -315,7 +454,7 @@ index 939dcc873..21b465c70 100644
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
 diff --git a/gcc/incpath.c b/gcc/incpath.c
-index efcd2c75e..ef076a3e4 100644
+index efcd2c75e..9f7606a0f 100644
 --- a/gcc/incpath.c
 +++ b/gcc/incpath.c
 @@ -133,7 +133,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
@@ -336,6 +475,15 @@ index efcd2c75e..ef076a3e4 100644
  		{
  		  char *str = concat (iprefix, p->fname + len, NULL);
  		  if (p->multilib == 1 && imultilib)
+@@ -164,7 +164,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 	}
+     }
+ 
+-  for (p = cpp_include_defaults; p->fname; p++)
++  for (p = get_cpp_include_defaults(); p->fname; p++)
+     {
+       if (!p->cplusplus || cxx_stdinc)
+ 	{
 @@ -182,7 +182,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
  	      free (sysroot_no_trailing_dir_separator);
  	    }
