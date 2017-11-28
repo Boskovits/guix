@@ -1,10 +1,16 @@
-From 3cd2241063fa0fd7016fe476488864bcd183f542 Mon Sep 17 00:00:00 2001
+From 7be9952cc539c66c09341e7cb2451b76ab2e364a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Tue, 28 Nov 2017 11:23:58 +0100
+Date: Tue, 28 Nov 2017 12:26:42 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit 574b1a42dbe6395c5434efc08512940c417b9c9d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 12:03:44 2017 +0100
+
+    Remove missed reference from incpath.c.
 
 commit fb59e2f2d16572d99745314ed47f0f239d857ba4
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -201,9 +207,9 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/cppdefault.h      |  22 +++++++----
  gcc/gcc-ar.c          |   7 +++-
  gcc/gcc.c             |  10 +++--
- gcc/incpath.c         |  14 +++----
+ gcc/incpath.c         |  16 ++++----
  gcc/prefix.c          |  23 +++++++++---
- 8 files changed, 144 insertions(+), 40 deletions(-)
+ 8 files changed, 145 insertions(+), 41 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -498,10 +504,10 @@ index 939dcc873..21b465c70 100644
    while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
      --p;
 diff --git a/gcc/incpath.c b/gcc/incpath.c
-index efcd2c75e..9f7606a0f 100644
+index efcd2c75e..9e52d87d7 100644
 --- a/gcc/incpath.c
 +++ b/gcc/incpath.c
-@@ -133,7 +133,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+@@ -133,12 +133,12 @@ add_standard_paths (const char *sysroot, const char *iprefix,
    int relocated = cpp_relocated();
    size_t len;
  
@@ -510,6 +516,12 @@ index efcd2c75e..9f7606a0f 100644
      {
        /* Look for directories that start with the standard prefix.
  	 "Translate" them, i.e. replace /usr/local/lib/gcc... with
+ 	 IPREFIX and search them first.  */
+-      for (p = cpp_include_defaults; p->fname; p++)
++      for (p = get_cpp_include_defaults(); p->fname; p++)
+ 	{
+ 	  if (!p->cplusplus || cxx_stdinc)
+ 	    {
 @@ -147,7 +147,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
  		 now.  */
  	      if (sysroot && p->add_sysroot)
