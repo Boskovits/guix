@@ -290,6 +290,12 @@
            (add-before 'configure 'set-cflags
              (lambda _ (setenv "CFLAGS" "-g0 -O2")))))))))
 
+(define-public repro-gcc-wrapped-nodebug-4.7
+  (package
+    (inherit repro-gcc-wrapped-4.7)
+    (name "repro-gcc-wrapped-nodebug")
+    (outputs '("out"))))
+
 (define-public repro-gcc-debuggable-4.7
   (package
     (inherit repro-gcc-4.7)
@@ -343,6 +349,11 @@
   (package
     (inherit repro-gcc-wrapped-4.7)
     (name "repr2-gcc-wrapped")))
+
+(define-public repr2-gcc-wrapped-nodebug-4.7
+  (package
+    (inherit repro-gcc-wrapped-nodebug-4.7)
+    (name "repr2-gcc-wrapped-nodebug")))
 
 (define-public repro-gcc-7
   (package
@@ -449,8 +460,8 @@ both gcc's are bit-for-bit identical and fails if they differ.")
     (name "gcc-wrapped-ddc")
     (version "4.7.4")
     (source #f)
-    (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-4.7)
-                     ("gcc" ,repro-gcc-wrapped-4.7)
+    (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-nodebug-4.7)
+                     ("gcc" ,repro-gcc-wrapped-nodebug-4.7)
 
                      ("diffoscope" ,diffoscope)
                      ("acl" ,acl)       ; For diffoscope
