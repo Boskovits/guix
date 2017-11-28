@@ -1,10 +1,16 @@
-From 96128500513f8bcc898a2a68991ade61556d0ae3 Mon Sep 17 00:00:00 2001
+From 3cd2241063fa0fd7016fe476488864bcd183f542 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Tue, 28 Nov 2017 10:34:47 +0100
+Date: Tue, 28 Nov 2017 11:23:58 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit fb59e2f2d16572d99745314ed47f0f239d857ba4
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 11:23:09 2017 +0100
+
+    Restore extern reference to gcc_exec_prefix.
 
 commit 0bb46f8260ca0d4d331deef97111b4e6c97539a6
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -192,12 +198,12 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/c-family/c-opts.c |   4 +-
  gcc/config/darwin-c.c |   4 +-
  gcc/cppdefault.c      | 100 ++++++++++++++++++++++++++++++++++++++++++++------
- gcc/cppdefault.h      |  24 ++++++++----
+ gcc/cppdefault.h      |  22 +++++++----
  gcc/gcc-ar.c          |   7 +++-
  gcc/gcc.c             |  10 +++--
  gcc/incpath.c         |  14 +++----
  gcc/prefix.c          |  23 +++++++++---
- 8 files changed, 145 insertions(+), 41 deletions(-)
+ 8 files changed, 144 insertions(+), 40 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -388,7 +394,7 @@ index 99c4c8814..036b44d06 100644
  /* This value is set by cpp_relocated at runtime */
  const char *gcc_exec_prefix;
 diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
-index 93f7f88ac..c5586c44e 100644
+index 93f7f88ac..3256641b7 100644
 --- a/gcc/cppdefault.h
 +++ b/gcc/cppdefault.h
 @@ -34,7 +34,7 @@
@@ -400,7 +406,7 @@ index 93f7f88ac..c5586c44e 100644
    const char *const component;	/* The component containing the directory
  				   (see update_path in prefix.c) */
    const char cplusplus;		/* Only look here if we're compiling C++.  */
-@@ -50,23 +50,31 @@ struct default_include
+@@ -50,18 +50,18 @@ struct default_include
  				     -imultiarch, when set to 2.  */
  };
  
@@ -424,9 +430,8 @@ index 93f7f88ac..c5586c44e 100644
 +/*extern const char cpp_EXEC_PREFIX[];*/
  /* The run-time execution prefix.  This is typically the lib/gcc
     subdirectory of the actual installation.  */
--extern const char *gcc_exec_prefix;
-+/*extern const char *gcc_exec_prefix;*/
- 
+ extern const char *gcc_exec_prefix;
+@@ -69,4 +69,12 @@ extern const char *gcc_exec_prefix;
  /* Return true if the toolchain is relocated.  */
  bool cpp_relocated (void);
  
