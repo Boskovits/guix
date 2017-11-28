@@ -1,10 +1,22 @@
-From b3165e202176644b8df52fd1e44dc89567095194 Mon Sep 17 00:00:00 2001
+From 96128500513f8bcc898a2a68991ade61556d0ae3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Mon, 27 Nov 2017 19:03:39 +0100
+Date: Tue, 28 Nov 2017 10:34:47 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit 0bb46f8260ca0d4d331deef97111b4e6c97539a6
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 10:33:37 2017 +0100
+
+    Remove all externs.
+
+commit 4a41f6e6a3412edb70064b70af8c547360bbb58d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 10:30:14 2017 +0100
+
+    Remove unneeded extern objects.
 
 commit b1dd391453197207146ffb673bc908de549b4a32
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -177,15 +189,15 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 
     Prepare source code for the wrapper.
 ---
- gcc/c-family/c-opts.c |  4 +--
- gcc/config/darwin-c.c |  4 +--
- gcc/cppdefault.c      | 84 ++++++++++++++++++++++++++++++++++++++++++++++-----
- gcc/cppdefault.h      | 12 ++++++--
- gcc/gcc-ar.c          |  7 +++--
- gcc/gcc.c             | 10 ++++--
- gcc/incpath.c         | 14 ++++-----
- gcc/prefix.c          | 23 ++++++++++----
- 8 files changed, 127 insertions(+), 31 deletions(-)
+ gcc/c-family/c-opts.c |   4 +-
+ gcc/config/darwin-c.c |   4 +-
+ gcc/cppdefault.c      | 100 ++++++++++++++++++++++++++++++++++++++++++++------
+ gcc/cppdefault.h      |  24 ++++++++----
+ gcc/gcc-ar.c          |   7 +++-
+ gcc/gcc.c             |  10 +++--
+ gcc/incpath.c         |  14 +++----
+ gcc/prefix.c          |  23 +++++++++---
+ 8 files changed, 145 insertions(+), 41 deletions(-)
 
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
@@ -218,7 +230,7 @@ index 211d141a6..3a425ba7f 100644
  	  str = concat (iprefix, fname + len, NULL);
            /* FIXME: wrap the headers for C++awareness.  */
 diff --git a/gcc/cppdefault.c b/gcc/cppdefault.c
-index 99c4c8814..52bac71fe 100644
+index 99c4c8814..036b44d06 100644
 --- a/gcc/cppdefault.c
 +++ b/gcc/cppdefault.c
 @@ -37,29 +37,29 @@
@@ -274,10 +286,11 @@ index 99c4c8814..52bac71fe 100644
  #endif
  #ifdef NATIVE_SYSTEM_HEADER_DIR
      /* /usr/include comes dead last.  */
-@@ -98,6 +98,46 @@ const struct default_include cpp_include_defaults[]
+@@ -98,18 +98,96 @@ const struct default_include cpp_include_defaults[]
    };
  #endif /* no INCLUDE_DEFAULTS */
  
+-#ifdef GCC_INCLUDE_DIR
 +struct default_include *
 +get_cpp_include_defaults (void)
 +{
@@ -318,30 +331,42 @@ index 99c4c8814..52bac71fe 100644
 +  return cpp_include_defaults;
 +}
 +
- #ifdef GCC_INCLUDE_DIR
++/*#ifdef GCC_INCLUDE_DIR
  const char cpp_GCC_INCLUDE_DIR[] = GCC_INCLUDE_DIR;
  const size_t cpp_GCC_INCLUDE_DIR_len = sizeof GCC_INCLUDE_DIR - 8;
-@@ -106,11 +146,41 @@ const char cpp_GCC_INCLUDE_DIR[] = "";
+ #else
+ const char cpp_GCC_INCLUDE_DIR[] = "";
  const size_t cpp_GCC_INCLUDE_DIR_len = 0;
- #endif
- 
+-#endif
++#endif*/
++
 +char *
 +get_cpp_GCC_INCLUDE_DIR (void)
 +{
-+  return getenv("GUIX_GCC_GCC_INCLUDE_DIR");
++  #ifdef GCC_INCLUDE_DIR
++    return getenv("GUIX_GCC_GCC_INCLUDE_DIR");
++  #else
++    return "";
++  #endif
 +}
 +
 +size_t
 +get_cpp_GCC_INCLUDE_DIR_len (void)
 +{
-+  return strlen(get_cpp_GCC_INCLUDE_DIR())-7;
++  #ifdef GCC_INCLUDE_DIR
++    return strlen(get_cpp_GCC_INCLUDE_DIR())-7;
++  #else
++    return 0;
++  #endif
 +}
-+
- /* The configured prefix.  */
- const char cpp_PREFIX[] = PREFIX;
- const size_t cpp_PREFIX_len = sizeof PREFIX - 1;
- const char cpp_EXEC_PREFIX[] = STANDARD_EXEC_PREFIX;
  
+ /* The configured prefix.  */
+-const char cpp_PREFIX[] = PREFIX;
++/*const char cpp_PREFIX[] = PREFIX;
+ const size_t cpp_PREFIX_len = sizeof PREFIX - 1;
+-const char cpp_EXEC_PREFIX[] = STANDARD_EXEC_PREFIX;
++const char cpp_EXEC_PREFIX[] = STANDARD_EXEC_PREFIX;*/
++
 +char *
 +get_cpp_PREFIX (void)
 +{
@@ -359,12 +384,11 @@ index 99c4c8814..52bac71fe 100644
 +{
 +  return getenv("GUIX_GCC_STANDARD_EXEC_PREFIX");
 +}
-+
+ 
  /* This value is set by cpp_relocated at runtime */
  const char *gcc_exec_prefix;
- 
 diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
-index 93f7f88ac..57236dd65 100644
+index 93f7f88ac..c5586c44e 100644
 --- a/gcc/cppdefault.h
 +++ b/gcc/cppdefault.h
 @@ -34,7 +34,7 @@
@@ -376,16 +400,33 @@ index 93f7f88ac..57236dd65 100644
    const char *const component;	/* The component containing the directory
  				   (see update_path in prefix.c) */
    const char cplusplus;		/* Only look here if we're compiling C++.  */
-@@ -50,7 +50,7 @@ struct default_include
+@@ -50,23 +50,31 @@ struct default_include
  				     -imultiarch, when set to 2.  */
  };
  
 -extern const struct default_include cpp_include_defaults[];
-+extern struct default_include cpp_include_defaults[];
- extern const char cpp_GCC_INCLUDE_DIR[];
- extern const size_t cpp_GCC_INCLUDE_DIR_len;
+-extern const char cpp_GCC_INCLUDE_DIR[];
+-extern const size_t cpp_GCC_INCLUDE_DIR_len;
++/*extern struct default_include cpp_include_defaults[];*/
++/*extern const char cpp_GCC_INCLUDE_DIR[];
++  extern const size_t cpp_GCC_INCLUDE_DIR_len;*/
  
-@@ -69,4 +69,12 @@ extern const char *gcc_exec_prefix;
+ /* The configure-time prefix, i.e., the value supplied as the argument
+    to --prefix=.  */
+-extern const char cpp_PREFIX[];
++/*extern const char cpp_PREFIX[];*/
+ /* The length of the configure-time prefix.  */
+-extern const size_t cpp_PREFIX_len;
++/*extern const size_t cpp_PREFIX_len;*/
+ /* The configure-time execution prefix.  This is typically the lib/gcc
+    subdirectory of cpp_PREFIX.  */
+-extern const char cpp_EXEC_PREFIX[];
++/*extern const char cpp_EXEC_PREFIX[];*/
+ /* The run-time execution prefix.  This is typically the lib/gcc
+    subdirectory of the actual installation.  */
+-extern const char *gcc_exec_prefix;
++/*extern const char *gcc_exec_prefix;*/
+ 
  /* Return true if the toolchain is relocated.  */
  bool cpp_relocated (void);
  
