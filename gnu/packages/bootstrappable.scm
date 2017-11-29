@@ -560,7 +560,7 @@ both gcc's are bit-for-bit identical and fails if they differ.")
            ;; diffoscope.presenters.formats: Console is unable to print Unicode characters. Set e.g. PYTHONIOENCODING=utf-8
            (setenv "PYTHONIOENCODING" "utf-8")
            ;; for starters, only check the gcc binary
-           (zero? (system* "diffoscope" gcc clang-gcc))
+           (zero? (system* "diffoscope" (string-append gcc "/libexec/gcc/x86_64-unknown-linux-gnu/4.7.4/cc1") (string-append clang-gcc "/libexec/gcc/x86_64-unknown-linux-gnu/4.7.4/cc1")))
            ;;(zero? (system* "diffoscope" gcc clang-gcc))
            ))))
     (synopsis "test gcc+clang DDC property for gcc-4.7.4")
