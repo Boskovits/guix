@@ -355,6 +355,11 @@
     (inherit repro-gcc-wrapped-nodebug-4.7)
     (name "repr2-gcc-wrapped-nodebug")))
 
+(define-public repr2-gcc-wrapped-debuggable-nostrip-4.7
+  (package
+    (inherit repro-gcc-wrapped-debuggable-nostrip-4.7)
+    (name "repr2-gcc-wrapped-debuggable-nostrip")))
+
 (define-public repro-gcc-7
   (package
     (inherit gcc-4.7-$ORIGIN)
@@ -462,6 +467,61 @@ both gcc's are bit-for-bit identical and fails if they differ.")
     (source #f)
     (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-nodebug-4.7)
                      ("gcc" ,repro-gcc-wrapped-nodebug-4.7)
+
+                     ("diffoscope" ,diffoscope)
+                     ("acl" ,acl)       ; For diffoscope
+                     ("binutils" ,binutils)
+                     ("coreutils" ,coreutils)
+                     ("diffutils" ,diffutils)
+                     ("xxd" ,xxd)))
+    (build-system trivial-build-system)
+    (arguments
+     `(#:modules ((guix build utils))
+       #:builder
+       (begin
+         (use-modules (guix build utils))
+         (let* ((diffoscope (assoc-ref %build-inputs "diffoscope"))
+                (acl (assoc-ref %build-inputs "acl"))
+                (binutils (assoc-ref %build-inputs "binutils"))
+                (coreutils (assoc-ref %build-inputs "coreutils"))
+                (diffutils (assoc-ref %build-inputs "diffutils"))
+                (xxd (assoc-ref %build-inputs "xxd"))
+                (gcc (assoc-ref %build-inputs "gcc"))
+                (gcc/bin/gcc (string-append gcc "/bin/gcc"))
+                (clang-gcc (assoc-ref %build-inputs "clang-gcc"))
+                (clang-gcc/bin/gcc (string-append clang-gcc "/bin/gcc")))
+           ;; diffoscope.exc.RequiredToolNotFound: cmp
+           ;; diffoscope.comparators.directory: 'stat' not found! Is PATH wrong?
+           ;; FileNotFoundError: [Errno 2] No such file or directory: 'readelf'
+           ;; diffoscope.comparators.directory: Unable to find 'getfacl'
+           (setenv "PATH" (string-append diffoscope "/bin:"
+
+                                         acl "/bin:"
+                                         binutils "/bin:"
+                                         coreutils "/bin:"
+                                         diffutils "/bin:"
+                                         xxd "/bin:"))
+           ;; ?? xxd not available in path. Falling back to Python hexlify.
+           ;; diffoscope.presenters.formats: Console is unable to print Unicode characters. Set e.g. PYTHONIOENCODING=utf-8
+           (setenv "PYTHONIOENCODING" "utf-8")
+           ;; for starters, only check the gcc binary
+           (zero? (system* "diffoscope" gcc clang-gcc))
+           ;;(zero? (system* "diffoscope" gcc clang-gcc))
+           ))))
+    (synopsis "test gcc+clang DDC property for gcc-4.7.4")
+    (description "gcc-dcc is a meta-package that depends on repro-gcc-wrapped-4.7.4
+and on repr2-gcc-wrapped-4.7.4.  The builder checks if
+both gcc's are bit-for-bit identical and fails if they differ.")
+    (home-page "http://bootstrappable.org")
+    (license gpl3+)))
+
+(define-public gcc-wrapped-debuugable-ddc-gcc+clang
+  (package
+    (name "gcc-wrapped-debuggable-ddc")
+    (version "4.7.4")
+    (source #f)
+    (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-debuggable-nostrip-4.7)
+                     ("gcc" ,repro-gcc-wrapped-debuggable-nostrip-4.7)
 
                      ("diffoscope" ,diffoscope)
                      ("acl" ,acl)       ; For diffoscope
