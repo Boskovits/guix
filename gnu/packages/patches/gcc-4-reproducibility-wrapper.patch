@@ -1,10 +1,16 @@
-From 7be9952cc539c66c09341e7cb2451b76ab2e364a Mon Sep 17 00:00:00 2001
+From 2e48f2f5b9f940d9851ac027d0471715e8c756c6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
-Date: Tue, 28 Nov 2017 12:26:42 +0100
+Date: Wed, 29 Nov 2017 19:50:32 +0100
 Subject: [PATCH] Squashed commit of the following:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+
+commit d70df8ee5c05a22682eab5081dae60ace8135c64
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 29 19:47:35 2017 +0100
+
+    Remove options from checksum.
 
 commit 574b1a42dbe6395c5434efc08512940c417b9c9d
 Author: Gábor Boskovits <boskovits@gmail.com>
@@ -201,6 +207,7 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
 
     Prepare source code for the wrapper.
 ---
+ gcc/Makefile.in       |   2 +-
  gcc/c-family/c-opts.c |   4 +-
  gcc/config/darwin-c.c |   4 +-
  gcc/cppdefault.c      | 100 ++++++++++++++++++++++++++++++++++++++++++++------
@@ -209,8 +216,21 @@ Date:   Tue Nov 21 02:45:20 2017 +0100
  gcc/gcc.c             |  10 +++--
  gcc/incpath.c         |  16 ++++----
  gcc/prefix.c          |  23 +++++++++---
- 8 files changed, 145 insertions(+), 41 deletions(-)
+ 9 files changed, 146 insertions(+), 42 deletions(-)
 
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index f3cc49fdb..a01fd7071 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -1810,7 +1810,7 @@ checksum-options:
+ cc1-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	$(C_OBJS) $(BACKEND) $(LIBDEPS) 
+ 	build/genchecksum$(build_exeext) $(C_OBJS) $(BACKEND) $(LIBDEPS) \
+-                     checksum-options > cc1-checksum.c.tmp && 		 \
++                      > cc1-checksum.c.tmp && 		 \
+ 	$(srcdir)/../move-if-change cc1-checksum.c.tmp cc1-checksum.c
+ 
+ cc1-checksum.o : cc1-checksum.c $(CONFIG_H) $(SYSTEM_H)
 diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
 index f2a797178..2fff93790 100644
 --- a/gcc/c-family/c-opts.c
