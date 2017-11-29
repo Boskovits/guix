@@ -515,7 +515,7 @@ both gcc's are bit-for-bit identical and fails if they differ.")
     (home-page "http://bootstrappable.org")
     (license gpl3+)))
 
-(define-public gcc-wrapped-debuugable-ddc-gcc+clang
+(define-public gcc-wrapped-debuggable-ddc-gcc+clang
   (package
     (name "gcc-wrapped-debuggable-ddc")
     (version "4.7.4")
