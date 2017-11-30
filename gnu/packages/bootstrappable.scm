@@ -388,6 +388,21 @@
     (inherit repro-gcc-7)
     (name "repr2-gcc")))
 
+(define-public clang-gcc-4.7
+  (package
+    (inherit repro-gcc-wrapped-nodebug-4.7)
+    (name "clang-gcc")
+    (native-inputs `(("clang" ,clang)
+                     ,@(alist-delete "gcc" (package-native-inputs gcc-4.7))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments repro-gcc-wrapped-nodebug-4.7)
+       ((#:phases original-phases
+         (add-before 'configure 'setenvcc
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((clang (assoc-ref inputs "clang")))
+               (setenv "CC" (string-append clang "/bin/clang"))
+               (setenv "CXX" (string-append clang "bin/clang++")))))))))))
+
 (define-public clang-gcc-7
   (package
     (inherit repro-gcc-7)
@@ -465,7 +480,7 @@ both gcc's are bit-for-bit identical and fails if they differ.")
     (name "gcc-wrapped-ddc")
     (version "4.7.4")
     (source #f)
-    (native-inputs `(("clang-gcc" ,repr2-gcc-wrapped-nodebug-4.7)
+    (native-inputs `(("clang-gcc" ,clang-gcc-4.7)
                      ("gcc" ,repro-gcc-wrapped-nodebug-4.7)
 
                      ("diffoscope" ,diffoscope)
