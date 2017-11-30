@@ -397,11 +397,12 @@
     (arguments
      (substitute-keyword-arguments (package-arguments repro-gcc-wrapped-nodebug-4.7)
        ((#:phases original-phases
-         (add-before 'configure 'setenvcc
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((clang (assoc-ref inputs "clang")))
-               (setenv "CC" (string-append clang "/bin/clang"))
-               (setenv "CXX" (string-append clang "bin/clang++")))))))))))
+        `(modify-phases ,original-phases
+           (add-before 'configure 'setenvcc
+             (lambda* (#:key inputs #:allow-other-keys)
+               (let ((clang (assoc-ref inputs "clang")))
+                 (setenv "CC" (string-append clang "/bin/clang"))
+                 (setenv "CXX" (string-append clang "bin/clang++"))))))))))))
 
 (define-public clang-gcc-7
   (package
