@@ -402,7 +402,7 @@
              (lambda* (#:key inputs #:allow-other-keys)
                (let ((clang (assoc-ref inputs "clang")))
                  (setenv "CC" (string-append clang "/bin/clang"))
-                 (setenv "CXX" (string-append clang "bin/clang++")))))))))))
+                 (setenv "CXX" (string-append clang "/bin/clang++")))))))))))
 
 (define-public clang-gcc-7
   (package
