@@ -713,6 +713,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/guile-present-coding.patch		\
   %D%/packages/patches/guile-relocatable.patch			\
   %D%/packages/patches/guile-rsvg-pkgconfig.patch		\
+  %D%/packages/patches/gtk2-fix-failing-test.patch		\
   %D%/packages/patches/gtk2-respect-GUIX_GTK2_PATH.patch	\
   %D%/packages/patches/gtk2-respect-GUIX_GTK2_IM_MODULE_FILE.patch \
   %D%/packages/patches/gtk2-theme-paths.patch			\
