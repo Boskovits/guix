@@ -1741,7 +1741,7 @@ IcedTea build harness.")
 
 ;; The 1.9.x series is the last that can be built with GCJ.  The 1.10.x series
 ;; requires Java 8.
-(define-public ant
+(define-public ant/java7
   (package (inherit ant/java8)
     (version "1.9.9")
     (source (origin
@@ -1753,6 +1753,8 @@ IcedTea build harness.")
                 "1k28mka0m3isy9yr8gz84kz1f3f879rwaxrd44vdn9xbfwvwk86n"))))
     (native-inputs
      `(("jdk" ,icedtea-7 "jdk")))))
+
+(define-public ant ant/java7)
 
 (define-public ant-apache-bcel
   (package
