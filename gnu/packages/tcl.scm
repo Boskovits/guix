@@ -38,35 +38,32 @@
 (define-public tcl
   (package
     (name "tcl")
-    (version "8.6.6")
+    (version "8.6.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/tcl/Tcl/"
                                   version "/tcl" version "-src.tar.gz"))
               (sha256
                (base32
-                "01zypqhy57wvh1ikk28bg733sk5kf4q568pq9v6fvcz4h6bl0rd2"))
-              (patches (search-patches "tcl-mkindex-deterministic.patch"))))
+                "19bb09l55alz4jb38961ikd5116q80s51bjvzqy44ckkwf28ysvw"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:phases (alist-cons-before
-                 'configure 'pre-configure
-                 (lambda _
-                   (chdir "unix"))
-                 (alist-cons-after
-                  'install 'install-private-headers
-                  (lambda* (#:key outputs #:allow-other-keys)
-                    ;; Private headers are needed by Expect.
-                    (and (zero? (system* "make"
-                                         "install-private-headers"))
-                         (let ((bin (string-append (assoc-ref outputs "out")
-                                                   "/bin")))
-                           ;; Create a tclsh -> tclsh8.6 symlink.
-                           ;; Programs such as Ghostscript rely on it.
-                           (with-directory-excursion bin
-                             (symlink (car (find-files "." "tclsh"))
-                                      "tclsh")))))
-                  %standard-phases))
+     '(#:phases (modify-phases %standard-phases
+                  (add-before 'configure 'pre-configure
+                    (lambda _ (chdir "unix") #t))
+                 (add-after 'install 'install-private-headers
+                   (lambda* (#:key outputs #:allow-other-keys)
+                     ;; Private headers are needed by Expect.
+                     (and (zero? (system* "make"
+                                          "install-private-headers"))
+                          (let ((bin (string-append (assoc-ref outputs "out")
+                                                    "/bin")))
+                            ;; Create a tclsh -> tclsh8.6 symlink.
+                            ;; Programs such as Ghostscript rely on it.
+                            (with-directory-excursion bin
+                              (symlink (car (find-files "." "tclsh"))
+                                       "tclsh"))
+                            #t)))))
 
        ;; By default, man pages are put in PREFIX/man, but we want them in
        ;; PREFIX/share/man.  The 'validate-documentation-location' phase is
@@ -137,14 +134,14 @@ X11 GUIs.")
 (define-public tk
   (package
     (name "tk")
-    (version "8.6.6")
+    (version "8.6.7")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://sourceforge/tcl/Tcl/"
                                  version "/tk" version "-src.tar.gz"))
              (sha256
               (base32
-               "17diivcfcwdhp4v5zi6j9nkxncccjqkivhp363c4wx5lf4d3fb6n"))
+               "1aipcf6qmbgi15av8yrpp2hx6vdwr684r6739p8cgdzrajiy4786"))
              (patches (search-patches "tk-find-library.patch"))))
     (build-system gnu-build-system)
     (arguments
