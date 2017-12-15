@@ -2696,8 +2696,6 @@ archives (jar).")
                              "-C" "output/build/tmp" "."))))
          (replace 'install
            (install-jars "dist")))))
-    (native-inputs
-     `(("java-junit" ,java-junit)))
     (home-page "http://asm.ow2.org/")
     (synopsis "Very small and fast Java bytecode manipulation framework")
     (description "ASM is an all purpose Java bytecode manipulation and
