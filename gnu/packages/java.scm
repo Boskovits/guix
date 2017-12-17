@@ -6055,7 +6055,9 @@ it manages project dependencies, gives diffs jars, and much more.")
     (name "java-aqute-bndlib-bootstrap")
     (inputs
      `(("slf4j-bootstrap" ,java-slf4j-api-bootstrap)
-       ,@(delete `("slf4j" ,java-slf4j-api) (package-inputs java-aqute-bndlib))))))
+       ("java-aqute-libg-bootstrap" ,java-aqute-libg-bootstrap)
+       ,@(delete `("slf4j" ,java-slf4j-api)
+                 (delete `("java-aqute-libg" ,java-aqute-libg) (package-inputs java-aqute-bndlib)))))))
 
 (define-public java-ops4j-pax-tinybundles
   (package
