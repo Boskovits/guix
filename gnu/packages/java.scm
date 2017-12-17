@@ -6021,7 +6021,7 @@ it manages project dependencies, gives diffs jars, and much more.")
 (define-public java-aqute-libg-bootstrap
   (package
     (inherit java-aqute-libg)
-    (name "java-acute-libg-bootstrap")
+    (name "java-aqute-libg-bootstrap")
     (inputs
      `(("slf4j-bootstrap" ,java-slf4j-api-bootstrap)
        ,@(delete `("slf4j" ,java-slf4j-api) (package-inputs java-aqute-libg))))))
