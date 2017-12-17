@@ -2667,15 +2667,17 @@ archives (jar).")
 (define-public java-asm
   (package
     (name "java-asm")
-    (version "5.2")
+    (version "6.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://download.forge.ow2.org/asm/"
                                   "asm-" version ".tar.gz"))
               (sha256
                (base32
-                "0kxvmv5275rnjl7jv0442k3wjnq03ngkb7sghs78avf45pzm4qgr"))))
+                "115l5pqblirdkmzi32dxx7gbcm4jy0s14y5wircr6h8jdr9aix00"))))
     (build-system ant-build-system)
+    (inputs
+     `(("java-aqute-bndlib", java-aqute-bndlib)))
     (arguments
      `(#:build-target "compile"
        ;; The tests require an old version of Janino, which no longer compiles
@@ -2683,7 +2685,8 @@ archives (jar).")
        #:tests? #f
        ;; We don't need these extra ant tasks, but the build system asks us to
        ;; provide a path anyway.
-       #:make-flags (list (string-append "-Dobjectweb.ant.tasks.path=foo"))
+       #:make-flags (list (string-append "-Dobjectweb.ant.tasks.path=foo")
+                          (string-append "-Dbiz.aQute.bnd.path=" (assoc-ref %inputs "java-aqute-bndlib")))
        #:phases
        (modify-phases %standard-phases
          (add-before 'install 'build-jars
