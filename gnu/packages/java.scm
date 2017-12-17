@@ -2027,7 +2027,9 @@ debugging, etc.")
                                   "servletapi-" version ".tar.gz"))
               (sha256
                (base32
-                "0y9489pk4as9q6x300sk3ycc0psqfxcd4b0xvbmf3rhgli8q1kx3"))))
+                "0y9489pk4as9q6x300sk3ycc0psqfxcd4b0xvbmf3rhgli8q1kx3"))
+              (patches
+               (search-patches "java-classpathx-servletapi-fix-java8.patch"))))
     (build-system ant-build-system)
     (arguments
      `(#:tests? #f ; there is no test target

@@ -1,0 +1,27 @@
+From e5ee0507bc049d8cd99fe84cb78ad79d8267b499 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
+Date: Sun, 17 Dec 2017 09:59:15 +0100
+Subject: [PATCH] Rename
+ javax.servlet.jsp.el.ImplicitObjectELResolver::ScopeMap::remove to
+ removeReturningObject.
+
+---
+ source/javax/servlet/jsp/el/ImplicitObjectELResolver.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/source/javax/servlet/jsp/el/ImplicitObjectELResolver.java b/source/javax/servlet/jsp/el/ImplicitObjectELResolver.java
+index 9b2e7bd..e112c13 100644
+--- a/source/javax/servlet/jsp/el/ImplicitObjectELResolver.java
++++ b/source/javax/servlet/jsp/el/ImplicitObjectELResolver.java
+@@ -604,7 +604,7 @@ public class ImplicitObjectELResolver
+             return ret;
+         }
+ 
+-        public Object remove(Object key, Object value)
++        public Object removeReturningObject(Object key, Object value)
+         {
+             Object ret = _get((String) key);
+             _del((String) key);
+-- 
+2.15.1
+
