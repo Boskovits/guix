@@ -6041,6 +6041,14 @@ it manages project dependencies, gives diffs jars, and much more.")
        ("promise" ,java-osgi-util-promise)
        ("osgi" ,java-osgi-core)))))
 
+(define-public java-aqute-bndlib-bootstrap
+  (package
+    (inherit java-aqute-bndlib)
+    (name "java-aqute-bndlib-bootstrap")
+    (inputs
+     `(("slf4j-bootstrap" ,java-slf4j-api-bootstrap)
+       ,@(delete `("slf4j" ,java-slf4j-api) (package-inputs java-aqute-bndlib))))))
+
 (define-public java-ops4j-pax-tinybundles
   (package
     (name "java-ops4j-pax-tinybundles")
