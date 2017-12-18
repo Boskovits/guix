@@ -2679,7 +2679,8 @@ archives (jar).")
                 "115l5pqblirdkmzi32dxx7gbcm4jy0s14y5wircr6h8jdr9aix00"))))
     (build-system ant-build-system)
     (inputs
-     `(("java-aqute-bndlib", java-aqute-bndlib)))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib)
+       ("java-aqute-libg" ,java-aqute-libg)))
     (arguments
      `(#:build-target "compile"
        ;; The tests require an old version of Janino, which no longer compiles
@@ -2688,7 +2689,7 @@ archives (jar).")
        ;; We don't need these extra ant tasks, but the build system asks us to
        ;; provide a path anyway.
        #:make-flags (list (string-append "-Dobjectweb.ant.tasks.path=foo")
-                          (string-append "-Dbiz.aQute.bnd.path=" (assoc-ref %inputs "java-aqute-bndlib")))
+                          (string-append "-Dbiz.aQute.bnd.path=" (assoc-ref %build-inputs "java-aqute-bndlib")))
        #:phases
        (modify-phases %standard-phases
          (add-before 'install 'build-jars
