@@ -6011,6 +6011,8 @@ it manages project dependencies, gives diffs jars, and much more.")
     (arguments
      `(#:jar-name "java-aqute-libg.jar"
        #:source-dir "aQute.libg/src"
+       #:make-flags (list (string-append "-Dant.build.javac.source=" "1.7")
+                          (string-append "-Dant.build.javac.target=" "1.7"))
        #:tests? #f)); FIXME: tests are in "aQute.libg/test", not in a java directory
     (inputs
      `(("slf4j" ,java-slf4j-api)
