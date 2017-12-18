@@ -2020,28 +2020,26 @@ debugging, etc.")
 (define-public java-classpathx-servletapi
   (package
     (name "java-classpathx-servletapi")
-    (version "3.0")
+    (version "3.0-r1244")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://gnu/classpathx/servletapi/"
-                                  "servletapi-" version ".tar.gz"))
+              (method svn-fetch)
+              (uri (svn-reference
+                    (url "svn://svn.savannah.gnu.org/classpathx/trunk")
+                    (revision 1244)))
               (sha256
                (base32
-                "0y9489pk4as9q6x300sk3ycc0psqfxcd4b0xvbmf3rhgli8q1kx3"))))
+                "07ihcwhm5awdr1wj28lqvcxhd6z72w427zbyxrqh42lgga74wsh3"))))
     (build-system ant-build-system)
     (arguments
      `(#:tests? #f ; there is no test target
        #:build-target "compile"
-       ;; NOTE: This package does not build with Java 8 because of a type
-       ;; mismatch in
-       ;; "source/javax/servlet/jsp/el/ImplicitObjectELResolver.java".  It
-       ;; defines the return value of ScopeMap's "remove" method to be of type
-       ;; "Object", whereas Map's "remove" method returns boolean.
        #:make-flags
-       (list "-Dbuild.compiler=javac1.7"
+       (list "-Dbuild.compiler=javac1.8"
              (string-append "-Ddist=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'chdir
+           (lambda _ (chdir "servletapi") #t))
          (replace 'install
            (lambda* (#:key make-flags #:allow-other-keys)
              (zero? (apply system* `("ant" "dist" ,@make-flags))))))))
