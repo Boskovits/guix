@@ -1,4 +1,4 @@
-;;; GNU Guix --- Functional package management for GNU
+n;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Roel Janssen <roel@gnu.org>
@@ -2216,7 +2216,15 @@ documentation tools.")
                     "code.google.com/jarjar/jarjar-src-" version ".zip"))
               (sha256
                (base32
-                "1v8irhni9cndcw1l1wxqgry013s2kpj0qqn57lj2ji28xjq8ndjl"))))
+                "1v8irhni9cndcw1l1wxqgry013s2kpj0qqn57lj2ji28xjq8ndjl"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete bundled thirds-party jar archives. We cannot delete maven-plugin, we don't have that yet
+                  (delete-file "lib/asm-4.0.jar")
+                  (delete-file "lib/asm-commons-4.0.jar")
+                  (delete-file "lib/junit-4.8.1.jar")
+                  #t))))
     (build-system ant-build-system)
     (arguments
      `(;; Tests require junit, which ultimately depends on this package.
@@ -2224,6 +2232,18 @@ documentation tools.")
        #:build-target "jar"
        #:phases
        (modify-phases %standard-phases
+         (add-before 'build 'do-not-use-bundled-asm
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "build.xml"
+               (("<path id=\"path.build\">")
+                (string-append "<path id=\"path.build\"><fileset dir=\"" (assoc-ref inputs "java-asm-bootstrap") "/share/java\" includes=\"**/*.jar\"/>")))
+             (substitute* "build.xml"
+               (("<zipfileset src=\"lib/asm-4.0.jar\"/>") ""))
+             (substitute* "build.xml"
+               (("lib/asm-commons-4.0.jar")
+                (string-append (assoc-ref inputs "java-asm-bootstrap")
+                               "/share/java/asm-6.0.jar")))
+             #t))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((target (string-append (assoc-ref outputs "out")
@@ -2231,6 +2251,8 @@ documentation tools.")
                (install-file (string-append "dist/jarjar-" ,version ".jar")
                              target))
              #t)))))
+    (inputs
+     `(("java-asm-bootstrap" ,java-asm-bootstrap)))
     (native-inputs
      `(("unzip" ,unzip)))
     (home-page "https://code.google.com/archive/p/jarjar/")
