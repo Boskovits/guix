@@ -2243,6 +2243,12 @@ documentation tools.")
                (("lib/asm-commons-4.0.jar")
                 (string-append (assoc-ref inputs "java-asm-bootstrap")
                                "/share/java/asm-6.0.jar")))
+             (substitute* "build.xml"
+               (("<include name=\"org/objectweb/asm/commons/Remap\\*\\.class\"/>")
+                (string-append "<include name=\"org/objectweb/asm/commons/Remap*.class\"/>"
+                               "<include name=\"org/objectweb/asm/*.class\"/>"
+                               "<include name=\"org/objectweb/asm/signature/*.class\"/>"
+                               "<include name=\"org/objectweb/asm/commons/SignatureRemapper.class\"/>")))
              #t))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
