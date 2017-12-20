@@ -2707,11 +2707,9 @@ archives (jar).")
        ("java-aqute-libg" ,java-aqute-libg)))
     (arguments
      `(#:build-target "compile"
-       ;; The tests require an old version of Janino, which no longer compiles
-       ;; with the JDK7.
-       #:tests? #f
-       ;; We don't need these extra ant tasks, but the build system asks us to
-       ;; provide a path anyway.
+       ;; We don't need extra ant tasks, but the build system asks us to
+       ;; provide a path anyway. We need to specify bnd path, but it is
+       ;; pulled in from classpath.
        #:make-flags (list (string-append "-Dobjectweb.ant.tasks.path=foo")
                           (string-append "-Dbiz.aQute.bnd.path=" (assoc-ref %build-inputs "java-aqute-bndlib")))
        #:phases
@@ -2739,11 +2737,16 @@ complex transformations and code analysis tools.")
   (package
     (inherit java-asm)
     (name "java-asm-bootstrap")
+    (arguments
+     (substitute-keyword-arguments (package-arguments java-asm)
+       ((#:tests? _) #f)))
     (inputs
      `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
        ("java-aqute-libg" ,java-aqute-libg-bootstrap)
        ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib)
-                 (delete `("java-aqute-libg" ,java-aqute-libg) (package-inputs java-asm)))))))
+                 (delete `("java-aqute-libg" ,java-aqute-libg) (package-inputs java-asm)))))
+    (native-inputs
+     `())))
 
 (define-public java-cglib
   (package
