@@ -2690,9 +2690,9 @@ archives (jar).")
      `(("archiver" ,java-plexus-archiver)
        ("hamcrest" ,java-hamcrest-core)))))
 
-(define-public java-asm
+(define-public java-asm-bootstrap
   (package
-    (name "java-asm")
+    (name "java-asm-bootstrap")
     (version "6.0")
     (source (origin
               (method url-fetch)
@@ -2703,10 +2703,11 @@ archives (jar).")
                 "115l5pqblirdkmzi32dxx7gbcm4jy0s14y5wircr6h8jdr9aix00"))))
     (build-system ant-build-system)
     (inputs
-     `(("java-aqute-bndlib" ,java-aqute-bndlib)
-       ("java-aqute-libg" ,java-aqute-libg)))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
+       ("java-aqute-libg" ,java-aqute-libg-bootstrap)))
     (arguments
      `(#:build-target "compile"
+       #:tests? #f
        ;; We don't need extra ant tasks, but the build system asks us to
        ;; provide a path anyway. We need to specify bnd path, but it is
        ;; pulled in from classpath.
@@ -2733,20 +2734,18 @@ transformations and analysis algorithms allow to easily assemble custom
 complex transformations and code analysis tools.")
     (license license:bsd-3)))
 
-(define-public java-asm-bootstrap
+(define-public java-asm
   (package
-    (inherit java-asm)
-    (name "java-asm-bootstrap")
+    (inherit java-asm-bootstrap)
+    (name "java-asm")
     (arguments
-     (substitute-keyword-arguments (package-arguments java-asm)
-       ((#:tests? _) #f)))
+     (substitute-keyword-arguments (package-arguments java-asm-bootstrap)
+       ((#:tests? _) #t)))
     (inputs
-     `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
-       ("java-aqute-libg" ,java-aqute-libg-bootstrap)
-       ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib)
-                 (delete `("java-aqute-libg" ,java-aqute-libg) (package-inputs java-asm)))))
-    (native-inputs
-     `())))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib)
+       ("java-aqute-libg" ,java-aqute-libg)
+       ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
+                 (delete `("java-aqute-libg" ,java-aqute-libg-bootstrap) (package-inputs java-asm-bootstrap)))))))
 
 (define-public java-cglib
   (package
