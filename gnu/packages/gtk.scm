@@ -15,6 +15,7 @@
 ;;; Copyright © 2016 Patrick Hetu <patrick.hetu@auf.org>
 ;;; Coypright © 2016 ng0 <ng0@we.make.ritual.n0.is>
 ;;; Coypright © 2017 Roel Janssen <roel@gnu.org>
+;;; Coypright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -171,7 +172,7 @@ affine transformation (scale, rotation, shear, etc.).")
 (define-public harfbuzz
   (package
    (name "harfbuzz")
-   (version "1.7.2")
+   (version "1.7.3")
    (source (origin
              (method url-fetch)
              (uri (string-append "https://www.freedesktop.org/software/"
@@ -179,7 +180,7 @@ affine transformation (scale, rotation, shear, etc.).")
                                  version ".tar.bz2"))
              (sha256
               (base32
-               "1jwhqwv2m317ilblcabsyvk288ycny20qn13rh6pza616mg5i457"))))
+               "1zh5n3q3mb6y6kr5m7zz1ags9z1vjwai57d6warx8qhzfrwn8lyd"))))
    (build-system gnu-build-system)
    (outputs '("out"
               "bin")) ; 160K, only hb-view depend on cairo
@@ -380,7 +381,7 @@ printing and other features typical of a source code editor.")
 (define-public gtksourceview
  (package
    (name "gtksourceview")
-   (version "3.24.4")
+   (version "3.24.6")
    (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnome/sources/" name "/"
@@ -388,7 +389,7 @@ printing and other features typical of a source code editor.")
                                  name "-" version ".tar.xz"))
              (sha256
               (base32
-               "14x738xrz9q8qz13xd7dys748ryxyq2srbqyaa9r7n47h2av2zr0"))))
+               "1261fwjpwn3qizmvjns9z3k3a264j3ql5anyvmisfwywpkzbv9ks"))))
    (build-system gnu-build-system)
    (arguments
     '(#:phases
@@ -655,7 +656,7 @@ application suites.")
    (name "gtk+")
    ;; NOTE: When updating the version of 'gtk+', the hash of 'mate-themes' in
    ;;       mate.scm will also need to be updated.
-   (version "3.22.24")
+   (version "3.22.26")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://gnome/sources/" name "/"
@@ -663,7 +664,7 @@ application suites.")
                                 name "-" version ".tar.xz"))
             (sha256
              (base32
-              "0asr6gccw1vv02i29ivwr74fpxlmdxhr0wigybsvi2ljzi66xcfb"))
+              "0rxrsh6bcp13hihxxs8f0m9xwniby4lmfi7y5mp9fhg5439z1vk1"))
             (patches (search-patches "gtk3-respect-GUIX_GTK3_PATH.patch"
                                      "gtk3-respect-GUIX_GTK3_IM_MODULE_FILE.patch"))))
    (outputs '("out" "bin" "doc"))

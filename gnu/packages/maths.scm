@@ -335,7 +335,7 @@ the OCaml language.")
 (define-public glpk
   (package
     (name "glpk")
-    (version "4.63")
+    (version "4.64")
     (source
      (origin
       (method url-fetch)
@@ -343,7 +343,7 @@ the OCaml language.")
                           version ".tar.gz"))
       (sha256
        (base32
-        "1xp7nclmp8inp20968bvvfcwmz3mz03sbm0v3yjz8aqwlpqjfkci"))))
+        "096cqgjc7vkq6wd8znhcxjbs1s2rym3qf753fqxrrq531vs6g4jk"))))
     (build-system gnu-build-system)
     (inputs
      `(("gmp" ,gmp)))
@@ -463,12 +463,6 @@ large scale eigenvalue problems.")
               ("python" ,python-2)))
     (arguments
      `(#:configure-flags (list
-                          ;; Install to PREFIX/lib (the default is
-                          ;; PREFIX/lib64).
-                          (string-append "-DCMAKE_INSTALL_LIBDIR="
-                                         (assoc-ref %outputs "out")
-                                         "/lib")
-
                           "-DBUILD_SHARED_LIBS:BOOL=YES"
                           "-DLAPACKE=ON"
 
@@ -1230,7 +1224,7 @@ interfaces.")
 (define-public ceres
   (package
     (name "ceres-solver")
-    (version "1.11.0")
+    (version "1.13.0")
     (home-page "http://ceres-solver.org/")
     (source (origin
               (method url-fetch)
@@ -1238,7 +1232,7 @@ interfaces.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0i7qkbf8g6pd8arxzldppga26ckv93y8zldsfz6wbd4n6b1nqrjd"))))
+                "1kbxgab3q1vgyq7hjqasr1lji4b2sgn7ss351amklkb3jyhr1x0x"))))
     (build-system cmake-build-system)
     (arguments
      ;; TODO: Build HTML user documentation and install separately.
@@ -1962,8 +1956,7 @@ void mc64ad_ (int *a, int *b, int *c, int *d, int *e, double *f, int *g,
     (arguments
      `(#:configure-flags '("-Denable_blaslib:BOOL=NO" ;do not use internal cblas
                            "-DTPL_BLAS_LIBRARIES=openblas"
-                           "-DBUILD_SHARED_LIBS:BOOL=YES"
-                           "-DCMAKE_INSTALL_LIBDIR=lib")))
+                           "-DBUILD_SHARED_LIBS:BOOL=YES")))
     (home-page "http://crd-legacy.lbl.gov/~xiaoye/SuperLU/")
     (synopsis "Supernodal direct solver for sparse linear systems")
     (description
@@ -3571,11 +3564,7 @@ as equations, scalars, vectors, and matrices.")
              "-DINSTALL_PYTHON_BINDINGS=true"
              (string-append "-DCMAKE_INSTALL_PYTHON_PKG_DIR="
                             %output
-                            "/lib/python2.7/site-packages")
-             (string-append "-DCMAKE_INSTALL_LIBDIR="
-                            %output
-                            "/lib"))
-
+                            "/lib/python2.7/site-packages"))
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'bootstrap

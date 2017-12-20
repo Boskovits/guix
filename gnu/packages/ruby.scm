@@ -50,7 +50,7 @@
 (define-public ruby
   (package
     (name "ruby")
-    (version "2.4.2")
+    (version "2.4.3")
     (source
      (origin
        (method url-fetch)
@@ -59,7 +59,7 @@
                            "/ruby-" version ".tar.xz"))
        (sha256
         (base32
-         "0dgp4ypk3smrsbh2c249n5pl6nqhpd2igq9484dbsh81sf08k2kl"))
+         "0l9bv67dgsphk42lmiskhrnh47hbyj6rfg2rcjx22xivpx07srr3"))
        (modules '((guix build utils)))
        (snippet `(begin
                    ;; Remove bundled libffi
@@ -106,7 +106,7 @@ a focus on simplicity and productivity.")
 (define-public ruby-2.3
   (package
     (inherit ruby)
-    (version "2.3.5")
+    (version "2.3.6")
     (source
      (origin
        (method url-fetch)
@@ -115,7 +115,7 @@ a focus on simplicity and productivity.")
                            "/ruby-" version ".tar.xz"))
        (sha256
         (base32
-         "1npzcnq5kh0f9y88w5gj4v6ln8csr91361k3r43dmhlhn6mpsfkx"))
+         "0mlz0mk7yyxia37k8fdv8m8a72h61nfbns28430h796l4an6kng0"))
        (modules '((guix build utils)))
        (snippet `(begin
                    ;; Remove bundled libffi
@@ -124,7 +124,7 @@ a focus on simplicity and productivity.")
 
 (define-public ruby-2.2
   (package (inherit ruby)
-    (version "2.2.8")
+    (version "2.2.9")
     (source
      (origin
        (method url-fetch)
@@ -133,7 +133,7 @@ a focus on simplicity and productivity.")
                            "/ruby-" version ".tar.xz"))
        (sha256
         (base32
-         "1c31slidv2bdnnir3qfmdjs193b5s2ycb9pnf1lc55kk0cazrsip"))))))
+         "0p18xykx8dm5mmlx5n5243z67lj4vbvwr70bnc5x12am22ql8fri"))))))
 
 (define-public ruby-2.1
   (package (inherit ruby)

@@ -134,6 +134,7 @@
   #:use-module (gnu packages gnuzilla)
   #:use-module (gnu packages icu4c)
   #:use-module (gnu packages networking)
+  #:use-module (gnu packages vulkan)
   #:use-module (gnu packages web)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system haskell)
@@ -353,6 +354,47 @@ be paired with a compatible game engine (such as @code{prboom-plus}) to be
 played.  Freedoom complements the Doom engine with free levels, artwork, sound
 effects and music to make a completely free game.")
    (license license:bsd-3)))
+
+(define-public knights
+  (package
+    (name "knights")
+    (version "025")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://www.knightsgame.org.uk/files/knights_"
+                                  version "_src.tar.gz"))
+              (sha256
+               (base32
+                "18vp2ygvn0s0jz8rm585jqf6hjqkam1ximq81k0r9hpmfj7wb88f"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:make-flags
+       (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:phases
+       (modify-phases %standard-phases
+         ;; No configure script.
+         (delete 'configure))
+       #:tests? #f)) ;; No check target.
+    (inputs
+     `(("boost" ,boost)
+       ("sdl-union" ,(sdl-union (list sdl sdl-image sdl-mixer)))
+       ("freetype" ,freetype)
+       ("fontconfig" ,fontconfig)
+       ("curl" ,curl)))
+    (home-page "http://www.knightsgame.org.uk/")
+    (synopsis "Multiplayer dungeon game involving knights and quests")
+    (description "Knights is a multiplayer game involving several knights who
+must run around a dungeon and complete various quests.  Each game revolves
+around a quest – for example, you might have to find some items and carry them
+back to your starting point.  This may sound easy, but as there are only
+enough items in the dungeon for one player to win, you may end up having to
+kill your opponents to get their stuff!  Other quests involve escaping from
+the dungeon, fighting a duel to the death against the enemy knights, or
+destroying an ancient book using a special wand.")
+    ;; This package includes modified sources of lua (X11), enet (Expat), and
+    ;; guichan (BSD-3).  The "Coercri" library is released under the Boost
+    ;; license.  The whole package is released under GPLv3+.
+    (license license:gpl3+)))
 
 (define-public gnubg
   (package
@@ -1443,9 +1485,13 @@ either by Infocom or created using the Inform compiler.")
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
-           (lambda* (#:key outputs #:allow-other-keys)
+           (lambda* (#:key inputs outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                    (etc (string-append out "/etc")))
+                    (etc (string-append out "/etc"))
+                    (vulkan (assoc-ref inputs "vulkan-icd-loader")))
+               ;; Hard-code the path to libvulkan.so.
+               (substitute* "gfx/common/vulkan_common.c"
+                 (("libvulkan.so") (string-append vulkan "/lib/libvulkan.so")))
                (substitute* "qb/qb.libs.sh"
                  (("/bin/true") (which "true")))
                ;; The configure script does not yet accept the extra arguments
@@ -1468,6 +1514,7 @@ either by Infocom or created using the Inform compiler.")
        ("python" ,python)
        ("sdl" ,sdl2)
        ("udev" ,eudev)
+       ("vulkan-icd-loader" ,vulkan-icd-loader)
        ("wayland", wayland)
        ("zlib" ,zlib)))
     (native-inputs
@@ -3235,13 +3282,7 @@ Super Game Boy, BS-X Satellaview, and Sufami Turbo.")
      `(#:tests? #f                      ;no "test" target
        #:configure-flags
        (list "-DUSE_LZMA=OFF"           ;do not use bundled LZMA
-             "-DUSE_LIBZIP=OFF"         ;use "zlib" instead
-             ;; Validate RUNPATH phase fails ("error: depends on
-             ;; 'libmgba.so.0.6', which cannot be found in RUNPATH") without
-             ;; the following S-exp.
-             (string-append "-DCMAKE_INSTALL_LIBDIR="
-                            (assoc-ref %outputs "out")
-                            "/lib"))))
+             "-DUSE_LIBZIP=OFF")))      ;use "zlib" instead
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("ffmpeg" ,ffmpeg)
               ("imagemagick" ,imagemagick)

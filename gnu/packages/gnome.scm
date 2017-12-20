@@ -1179,7 +1179,7 @@ dealing with different structured file formats.")
 (define-public librsvg
   (package
     (name "librsvg")
-    (version "2.40.19")
+    (version "2.40.20")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -1187,7 +1187,7 @@ dealing with different structured file formats.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1xy12qi29xqf3i61awf9qmm5ysw6v5qgxqwvi5fny0q9hs5lsav1"))))
+                "0ay9himvw1l1swcf3h1312d2iqzfl65kpbfgiyfykgvq7cydvx6g"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -4061,7 +4061,7 @@ work and the interface is well tested.")
 (define-public eolie
   (package
     (name "eolie")
-    (version "0.9.13")
+    (version "0.9.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/gnumdk/eolie/"
@@ -4069,7 +4069,7 @@ work and the interface is well tested.")
                                   "/eolie-" version ".tar.xz"))
               (sha256
                (base32
-                "1khpc6x40y5gm0a3p5fxiva9p1djijxmsh74xinigddnyqbjqw69"))))
+                "0glydxp1xh85gfidk1l9miqn6qxdbvvk5s3iy0pjlv8nrs3263jd"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      `(#:phases
@@ -6638,7 +6638,7 @@ basically a text box in which notes can be written.")
        (sha256
         (base32
          "0c1q9w5vql0vvg6g0knxfnv4ap19fg5cdrwndi1cj9lsym92c78j"))))
-    (build-system gnu-build-system)
+    (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("desktop-file-utils" ,desktop-file-utils)
        ("glib:bin" ,glib "bin") ; for glib-compile-resources.

@@ -542,11 +542,7 @@ and a QP solver.")
                   #t))))
     (build-system cmake-build-system)
     (arguments
-     ;; Recent releases defaults to "lib64" on 64bit.
-     `(#:configure-flags (list (string-append "-DCMAKE_INSTALL_LIBDIR="
-                                              (assoc-ref %outputs "out")
-                                              "/lib"))
-       #:phases
+     `(#:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'disable-asserts
            (lambda _
@@ -621,7 +617,9 @@ computing environments.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "18n8775kyfwbvcjjjzda9c5sqy4737c0hrmj6qj1ps2jmlqzair9"))))
+         "18n8775kyfwbvcjjjzda9c5sqy4737c0hrmj6qj1ps2jmlqzair9"))
+       (patches (search-patches
+                "python-scikit-learn-fix-test-non-determinism.patch"))))
     (build-system python-build-system)
     (arguments
      `(#:phases

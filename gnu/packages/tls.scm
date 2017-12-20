@@ -246,7 +246,7 @@ required structures.")
 (define-public openssl
   (package
    (name "openssl")
-   (version "1.0.2m")
+   (version "1.0.2n")
    (source (origin
              (method url-fetch)
              (uri (list (string-append "https://www.openssl.org/source/openssl-"
@@ -258,7 +258,7 @@ required structures.")
                                        "/" name "-" version ".tar.gz")))
              (sha256
               (base32
-               "03vvlfnxx4lhxc83ikfdl6jqph4h52y7lb7li03va6dkqrgg2vwc"))
+               "1zm82pyq5a9jm10q6iv7d3dih3xwjds4x30fqph3k317byvsn2rp"))
              (snippet
               '(begin
                  ;; Remove ELF files.  'substitute*' can't read them.
@@ -681,7 +681,7 @@ OpenSSL libraries).")
 (define-public perl-crypt-openssl-bignum
  (package
   (name "perl-crypt-openssl-bignum")
-  (version "0.08")
+  (version "0.09")
   (source
     (origin
       (method url-fetch)
@@ -691,7 +691,7 @@ OpenSSL libraries).")
              ".tar.gz"))
       (sha256
         (base32
-          "0gamn4dff1bz77nswacy1dlpn9fkwahzw7yvvik4nbwwy2s63hc8"))))
+          "1p22znbajq91lbk2k3yg12ig7hy5b4vy8igxwqkmbm4nhgxp4ki3"))))
   (build-system perl-build-system)
   (inputs `(("openssl" ,openssl)))
   (arguments perl-crypt-arguments)

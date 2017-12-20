@@ -8,6 +8,7 @@
 ;;; Copyright © 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -41,6 +42,7 @@
   #:use-module (gnu packages llvm)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages tls)
   #:use-module (gnu packages video)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml)
@@ -157,6 +159,8 @@ the X-Consortium license.")
     (inputs `(("libx11" ,libx11)
               ("mesa" ,mesa)
               ("glu" ,glu)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
     (home-page "http://ftgl.sourceforge.net")
     (synopsis "Font rendering library for OpenGL applications")
     (description
@@ -217,7 +221,7 @@ also known as DXTn or DXTC) for Mesa.")
 (define-public mesa
   (package
     (name "mesa")
-    (version "17.2.6")
+    (version "17.2.7")
     (source
       (origin
         (method url-fetch)
@@ -229,7 +233,7 @@ also known as DXTn or DXTC) for Mesa.")
                                   version "/mesa-" version ".tar.xz")))
         (sha256
          (base32
-          "1pihiymglf3bf6w2vphac65v64hv71wgrj38mckbwc03c8j55n3a"))
+          "0s3slgjxnx482yw0knn4a6alsy2cq28rah6hnjbmf12mvyldxksh"))
         (patches
          (search-patches "mesa-wayland-egl-symbols-check-mips.patch"
                          "mesa-skip-disk-cache-test.patch"))))
@@ -293,6 +297,13 @@ also known as DXTn or DXTC) for Mesa.")
          ;; Without floating point texture support, drivers such as Nouveau
          ;; are stuck at OpenGL 2.1 instead of OpenGL 3.0+.
          "--enable-texture-float"
+
+         ;; Enable Vulkan on x86-64.
+         ,@(match (%current-system)
+             ("x86_64-linux"
+              '("--with-vulkan-drivers=intel,radeon"))
+             (_
+              '("")))
 
          ;; Also enable the tests.
          "--enable-gallium-tests"
@@ -380,11 +391,11 @@ also known as DXTn or DXTC) for Mesa.")
                          (delete-duplicates inodes))
                #t))))))
     (home-page "https://mesa3d.org/")
-    (synopsis "OpenGL implementation")
-    (description "Mesa is a free implementation of the OpenGL specification -
-a system for rendering interactive 3D graphics.  A variety of device drivers
-allows Mesa to be used in many different environments ranging from software
-emulation to complete hardware acceleration for modern GPUs.")
+    (synopsis "OpenGL and Vulkan implementations")
+    (description "Mesa is a free implementation of the OpenGL and Vulkan
+specifications - systems for rendering interactive 3D graphics.  A variety of
+device drivers allows Mesa to be used in many different environments ranging
+from software emulation to complete hardware acceleration for modern GPUs.")
     (license license:x11)))
 
 (define-public mesa-headers
@@ -715,3 +726,34 @@ mixed vector/bitmap output.")
     (license (list license:lgpl2.0+
                    (license:fsf-free "http://www.geuz.org/gl2ps/COPYING.GL2PS"
                                      "GPL-incompatible copyleft license")))))
+
+(define-public virtualgl
+  (package
+    (name "virtualgl")
+    (version "2.5.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/VirtualGL/virtualgl/archive/"
+                           version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0rnid3hwrry9d5d4m7sygq00xxx976rgk00a3557m9r5kxbmy476"))))
+    (arguments
+     `(#:tests? #f ;; no tests are available
+       #:configure-flags (list "-DVGL_USESSL=1"))) ;; use OpenSSL
+    (build-system cmake-build-system)
+    (inputs `(("glu" ,glu)
+              ("libjpeg-turbo" ,libjpeg-turbo)
+              ("mesa" ,mesa)
+              ("openssl" ,openssl)))
+    (native-inputs `(("pkg-config", pkg-config)))
+    (home-page "https://www.virtualgl.org")
+    (synopsis "Redirects 3D commands from an OpenGL application onto a 3D
+graphics card")
+    (description "VirtualGL redirects the 3D rendering commands from OpenGL
+applications to 3D accelerator hardware in a dedicated server and displays the
+rendered output interactively to a thin client located elsewhere on the
+network.")
+    (license license:wxwindows3.1+)))
