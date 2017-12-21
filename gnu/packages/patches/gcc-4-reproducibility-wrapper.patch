@@ -1,0 +1,657 @@
+From 2e48f2f5b9f940d9851ac027d0471715e8c756c6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
+Date: Wed, 29 Nov 2017 19:50:32 +0100
+Subject: [PATCH] Squashed commit of the following:
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+commit d70df8ee5c05a22682eab5081dae60ace8135c64
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 29 19:47:35 2017 +0100
+
+    Remove options from checksum.
+
+commit 574b1a42dbe6395c5434efc08512940c417b9c9d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 12:03:44 2017 +0100
+
+    Remove missed reference from incpath.c.
+
+commit fb59e2f2d16572d99745314ed47f0f239d857ba4
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 11:23:09 2017 +0100
+
+    Restore extern reference to gcc_exec_prefix.
+
+commit 0bb46f8260ca0d4d331deef97111b4e6c97539a6
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 10:33:37 2017 +0100
+
+    Remove all externs.
+
+commit 4a41f6e6a3412edb70064b70af8c547360bbb58d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 28 10:30:14 2017 +0100
+
+    Remove unneeded extern objects.
+
+commit b1dd391453197207146ffb673bc908de549b4a32
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Mon Nov 27 19:01:17 2017 +0100
+
+    Remove constness of struct member wrapper has to assign.
+
+commit ddfbf78c3c8a21c88ec31674a3d92624938dc24d
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Mon Nov 27 15:25:03 2017 +0100
+
+    Remove unneeded environment variable references.
+
+commit 82ff8d98a078aa8b4086e0926b16b346525b1942
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Mon Nov 27 13:58:06 2017 +0100
+
+    Remove absolute path references from cpp_default_include.
+
+commit d498ffb1adbe041b4d2b695bad5a04e5bdf27f70
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Sat Nov 25 22:10:30 2017 +0100
+
+    Add factory method declarations to header.
+
+commit 303151085a01970db6a977cceee5163af39450a9
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Sat Nov 25 14:40:44 2017 +0100
+
+    Add shadow method references for cpp_PREFIX.
+
+commit f37a8629530f7276042e305e9f1d683423896953
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Sat Nov 25 14:32:38 2017 +0100
+
+    Add references to shadow methods.
+
+commit 2cc280c28895b7afa953f39abcd5bc6f40c2f496
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Sat Nov 25 14:21:22 2017 +0100
+
+    Add shadow methods to gcc/cppdefaults.c
+
+commit 8ad0c768d3617035cc8dbee53eef0d73f0f9f990
+Merge: b1d80031f 6054dc9a7
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:22:10 2017 +0100
+
+    Merge branch 'tmp_squash'
+
+commit 6054dc9a76ce61415e584f024cda3c3c0577797f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:12:37 2017 +0100
+
+    Change environment variable names to avoid name conflicts.
+
+commit eb6fc013a78f439ba09b5812077272c4d7c16c75
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Thu Nov 23 13:08:37 2017 +0100
+
+    Prepare cc1 for wrapper.
+
+commit 8646998bf1ced61c4fe212eae68a3fb43772d2b9
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 22 09:18:47 2017 +0100
+
+    Prepare gcc for wrapper.
+
+    Squashed commit of the following:
+
+    commit b1d80031fed7f094789fd83b02d089376bb4374f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Wed Nov 22 09:16:57 2017 +0100
+
+        Prepare gcc/prefix.c for wrapper, eliminate remaining PREFIX references.
+
+    commit e3749ab19f7a660f9f47abd1e0959c3773df937f
+    Merge: 685201b4d 4d2c62dc0
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 18:21:13 2017 +0100
+
+        Merge branch 'tmp_squash'
+
+    commit 4d2c62dc015407a14175a58d33b5c3a27e0a0755
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 18:19:47 2017 +0100
+
+        Prepare gcc/prefix.c for wrapper.
+
+    commit 17878706e414e6cccc9400cd324bed5c97a70c64
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 09:02:36 2017 +0100
+
+        Add wrapper support.
+
+        Squashed commit of the following:
+
+        commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+        Author: Gábor Boskovits <boskovits@gmail.com>
+        Date:   Tue Nov 21 02:58:37 2017 +0100
+
+            Prepare gcc-ar.c for the wrapper.
+
+        commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+        Author: Gábor Boskovits <boskovits@gmail.com>
+        Date:   Tue Nov 21 02:45:20 2017 +0100
+
+            Prepare source code for the wrapper.
+
+    commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:58:37 2017 +0100
+
+        Prepare gcc-ar.c for the wrapper.
+
+    commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:45:20 2017 +0100
+
+        Prepare source code for the wrapper.
+
+commit b1d80031fed7f094789fd83b02d089376bb4374f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Wed Nov 22 09:16:57 2017 +0100
+
+    Prepare gcc/prefix.c for wrapper, eliminate remaining PREFIX references.
+
+commit e3749ab19f7a660f9f47abd1e0959c3773df937f
+Merge: 685201b4d 4d2c62dc0
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 18:21:13 2017 +0100
+
+    Merge branch 'tmp_squash'
+
+commit 4d2c62dc015407a14175a58d33b5c3a27e0a0755
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 18:19:47 2017 +0100
+
+    Prepare gcc/prefix.c for wrapper.
+
+commit 17878706e414e6cccc9400cd324bed5c97a70c64
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 09:02:36 2017 +0100
+
+    Add wrapper support.
+
+    Squashed commit of the following:
+
+    commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:58:37 2017 +0100
+
+        Prepare gcc-ar.c for the wrapper.
+
+    commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+    Author: Gábor Boskovits <boskovits@gmail.com>
+    Date:   Tue Nov 21 02:45:20 2017 +0100
+
+        Prepare source code for the wrapper.
+
+commit 685201b4db65a6a32e1b0bb9964d405af99e4f48
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 02:58:37 2017 +0100
+
+    Prepare gcc-ar.c for the wrapper.
+
+commit 2dd79c5b79182c2aa500de7a469b21b48dc1995f
+Author: Gábor Boskovits <boskovits@gmail.com>
+Date:   Tue Nov 21 02:45:20 2017 +0100
+
+    Prepare source code for the wrapper.
+---
+ gcc/Makefile.in       |   2 +-
+ gcc/c-family/c-opts.c |   4 +-
+ gcc/config/darwin-c.c |   4 +-
+ gcc/cppdefault.c      | 100 ++++++++++++++++++++++++++++++++++++++++++++------
+ gcc/cppdefault.h      |  22 +++++++----
+ gcc/gcc-ar.c          |   7 +++-
+ gcc/gcc.c             |  10 +++--
+ gcc/incpath.c         |  16 ++++----
+ gcc/prefix.c          |  23 +++++++++---
+ 9 files changed, 146 insertions(+), 42 deletions(-)
+
+diff --git a/gcc/Makefile.in b/gcc/Makefile.in
+index f3cc49fdb..a01fd7071 100644
+--- a/gcc/Makefile.in
++++ b/gcc/Makefile.in
+@@ -1810,7 +1810,7 @@ checksum-options:
+ cc1-checksum.c : build/genchecksum$(build_exeext) checksum-options \
+ 	$(C_OBJS) $(BACKEND) $(LIBDEPS) 
+ 	build/genchecksum$(build_exeext) $(C_OBJS) $(BACKEND) $(LIBDEPS) \
+-                     checksum-options > cc1-checksum.c.tmp && 		 \
++                      > cc1-checksum.c.tmp && 		 \
+ 	$(srcdir)/../move-if-change cc1-checksum.c.tmp cc1-checksum.c
+ 
+ cc1-checksum.o : cc1-checksum.c $(CONFIG_H) $(SYSTEM_H)
+diff --git a/gcc/c-family/c-opts.c b/gcc/c-family/c-opts.c
+index f2a797178..2fff93790 100644
+--- a/gcc/c-family/c-opts.c
++++ b/gcc/c-family/c-opts.c
+@@ -1310,8 +1310,8 @@ add_prefixed_path (const char *suffix, size_t chain)
+   size_t prefix_len, suffix_len;
+ 
+   suffix_len = strlen (suffix);
+-  prefix     = iprefix ? iprefix : cpp_GCC_INCLUDE_DIR;
+-  prefix_len = iprefix ? strlen (iprefix) : cpp_GCC_INCLUDE_DIR_len;
++  prefix     = iprefix ? iprefix : get_cpp_GCC_INCLUDE_DIR();
++  prefix_len = iprefix ? strlen (iprefix) : get_cpp_GCC_INCLUDE_DIR_len();
+ 
+   path = (char *) xmalloc (prefix_len + suffix_len + 1);
+   memcpy (path, prefix, prefix_len);
+diff --git a/gcc/config/darwin-c.c b/gcc/config/darwin-c.c
+index 211d141a6..3a425ba7f 100644
+--- a/gcc/config/darwin-c.c
++++ b/gcc/config/darwin-c.c
+@@ -488,8 +488,8 @@ darwin_register_objc_includes (const char *sysroot, const char *iprefix,
+       /* See if our directory starts with the standard prefix.
+ 	 "Translate" them, i.e. replace /usr/local/lib/gcc... with
+ 	 IPREFIX and search them first.  */
+-      if (iprefix && (len = cpp_GCC_INCLUDE_DIR_len) != 0 && !sysroot
+-	  && !strncmp (fname, cpp_GCC_INCLUDE_DIR, len))
++      if (iprefix && (len = get_cpp_GCC_INCLUDE_DIR_len()) != 0 && !sysroot
++	  && !strncmp (fname, get_cpp_GCC_INCLUDE_DIR(), len))
+ 	{
+ 	  str = concat (iprefix, fname + len, NULL);
+           /* FIXME: wrap the headers for C++awareness.  */
+diff --git a/gcc/cppdefault.c b/gcc/cppdefault.c
+index 99c4c8814..036b44d06 100644
+--- a/gcc/cppdefault.c
++++ b/gcc/cppdefault.c
+@@ -37,29 +37,29 @@
+ # undef CROSS_INCLUDE_DIR
+ #endif
+ 
+-const struct default_include cpp_include_defaults[]
++struct default_include cpp_include_defaults[]
+ #ifdef INCLUDE_DEFAULTS
+ = INCLUDE_DEFAULTS;
+ #else
+ = {
+ #ifdef GPLUSPLUS_INCLUDE_DIR
+     /* Pick up GNU C++ generic include files.  */
+-    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 },
+ #endif
+ #ifdef GPLUSPLUS_TOOL_INCLUDE_DIR
+     /* Pick up GNU C++ target-dependent include files.  */
+-    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 1 },
+ #endif
+ #ifdef GPLUSPLUS_BACKWARD_INCLUDE_DIR
+     /* Pick up GNU C++ backward and deprecated include files.  */
+-    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1,
++    { 0, "G++", 1, 1,
+       GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 },
+ #endif
+ #ifdef GCC_INCLUDE_DIR
+     /* This is the dir for gcc's private headers.  */
+-    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 },
++    { 0, "GCC", 0, 0, 0, 0 },
+ #endif
+ #ifdef LOCAL_INCLUDE_DIR
+     /* /usr/local/include comes before the fixincluded header files.  */
+@@ -71,7 +71,7 @@ const struct default_include cpp_include_defaults[]
+ #endif
+ #ifdef FIXED_INCLUDE_DIR
+     /* This is the dir for fixincludes.  */
+-    { FIXED_INCLUDE_DIR, "GCC", 0, 0, 0,
++    { 0, "GCC", 0, 0, 0,
+       /* A multilib suffix needs adding if different multilibs use
+ 	 different headers.  */
+ #ifdef SYSROOT_HEADERS_SUFFIX_SPEC
+@@ -87,7 +87,7 @@ const struct default_include cpp_include_defaults[]
+ #endif
+ #ifdef TOOL_INCLUDE_DIR
+     /* Another place the target system's headers might be.  */
+-    { TOOL_INCLUDE_DIR, "BINUTILS", 0, 1, 0, 0 },
++    { 0, "BINUTILS", 0, 1, 0, 0 },
+ #endif
+ #ifdef NATIVE_SYSTEM_HEADER_DIR
+     /* /usr/include comes dead last.  */
+@@ -98,18 +98,96 @@ const struct default_include cpp_include_defaults[]
+   };
+ #endif /* no INCLUDE_DEFAULTS */
+ 
+-#ifdef GCC_INCLUDE_DIR
++struct default_include *
++get_cpp_include_defaults (void)
++{
++  struct default_include *p=cpp_include_defaults;
++  #ifdef GPLUSPLUS_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GPLUSPLUS_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GPLUSPLUS_TOOL_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GPLUSPLUS_TOOL_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GPLUSPLUS_BACKWARD_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_CPLUSPLUS_BACKWARD_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef GCC_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_GCC_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef LOCAL_INCLUDE_DIR
++    p++;
++    p++;
++  #endif
++  #ifdef PREFIX_INCLUDE_DIR
++    p++;
++  #endif
++  #ifdef FIXED_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_FIXED_INCLUDE_DIR");
++    p++;
++  #endif
++  #ifdef CROSS_INCLUDE_DIR
++    p++;
++  #endif
++  #ifdef TOOL_INCLUDE_DIR
++    p->fname=getenv("GUIX_GCC_TOOL_INCLUDE_DIR");
++  #endif
++  return cpp_include_defaults;
++}
++
++/*#ifdef GCC_INCLUDE_DIR
+ const char cpp_GCC_INCLUDE_DIR[] = GCC_INCLUDE_DIR;
+ const size_t cpp_GCC_INCLUDE_DIR_len = sizeof GCC_INCLUDE_DIR - 8;
+ #else
+ const char cpp_GCC_INCLUDE_DIR[] = "";
+ const size_t cpp_GCC_INCLUDE_DIR_len = 0;
+-#endif
++#endif*/
++
++char *
++get_cpp_GCC_INCLUDE_DIR (void)
++{
++  #ifdef GCC_INCLUDE_DIR
++    return getenv("GUIX_GCC_GCC_INCLUDE_DIR");
++  #else
++    return "";
++  #endif
++}
++
++size_t
++get_cpp_GCC_INCLUDE_DIR_len (void)
++{
++  #ifdef GCC_INCLUDE_DIR
++    return strlen(get_cpp_GCC_INCLUDE_DIR())-7;
++  #else
++    return 0;
++  #endif
++}
+ 
+ /* The configured prefix.  */
+-const char cpp_PREFIX[] = PREFIX;
++/*const char cpp_PREFIX[] = PREFIX;
+ const size_t cpp_PREFIX_len = sizeof PREFIX - 1;
+-const char cpp_EXEC_PREFIX[] = STANDARD_EXEC_PREFIX;
++const char cpp_EXEC_PREFIX[] = STANDARD_EXEC_PREFIX;*/
++
++char *
++get_cpp_PREFIX (void)
++{
++  return getenv("GUIX_GCC_PREFIX");
++}
++
++size_t
++get_cpp_PREFIX_len (void)
++{
++  return strlen(get_cpp_PREFIX());
++}
++
++char *
++get_cpp_EXEC_PREFIX (void)
++{
++  return getenv("GUIX_GCC_STANDARD_EXEC_PREFIX");
++}
+ 
+ /* This value is set by cpp_relocated at runtime */
+ const char *gcc_exec_prefix;
+diff --git a/gcc/cppdefault.h b/gcc/cppdefault.h
+index 93f7f88ac..3256641b7 100644
+--- a/gcc/cppdefault.h
++++ b/gcc/cppdefault.h
+@@ -34,7 +34,7 @@
+ 
+ struct default_include
+ {
+-  const char *const fname;	/* The name of the directory.  */
++  const char * fname;	/* The name of the directory.  */
+   const char *const component;	/* The component containing the directory
+ 				   (see update_path in prefix.c) */
+   const char cplusplus;		/* Only look here if we're compiling C++.  */
+@@ -50,18 +50,18 @@ struct default_include
+ 				     -imultiarch, when set to 2.  */
+ };
+ 
+-extern const struct default_include cpp_include_defaults[];
+-extern const char cpp_GCC_INCLUDE_DIR[];
+-extern const size_t cpp_GCC_INCLUDE_DIR_len;
++/*extern struct default_include cpp_include_defaults[];*/
++/*extern const char cpp_GCC_INCLUDE_DIR[];
++  extern const size_t cpp_GCC_INCLUDE_DIR_len;*/
+ 
+ /* The configure-time prefix, i.e., the value supplied as the argument
+    to --prefix=.  */
+-extern const char cpp_PREFIX[];
++/*extern const char cpp_PREFIX[];*/
+ /* The length of the configure-time prefix.  */
+-extern const size_t cpp_PREFIX_len;
++/*extern const size_t cpp_PREFIX_len;*/
+ /* The configure-time execution prefix.  This is typically the lib/gcc
+    subdirectory of cpp_PREFIX.  */
+-extern const char cpp_EXEC_PREFIX[];
++/*extern const char cpp_EXEC_PREFIX[];*/
+ /* The run-time execution prefix.  This is typically the lib/gcc
+    subdirectory of the actual installation.  */
+ extern const char *gcc_exec_prefix;
+@@ -69,4 +69,12 @@ extern const char *gcc_exec_prefix;
+ /* Return true if the toolchain is relocated.  */
+ bool cpp_relocated (void);
+ 
++/* GUIX factory methods */
++struct default_include * get_cpp_include_defaults (void);
++char * get_cpp_GCC_INCLUDE_DIR (void);
++size_t get_cpp_GCC_INCLUDE_DIR_len (void);
++char * get_cpp_PREFIX (void);
++size_t get_cpp_PREFIX_len (void);
++char * get_cpp_EXEC_PREFIX (void);
++
+ #endif /* ! GCC_CPPDEFAULT_H */
+diff --git a/gcc/gcc-ar.c b/gcc/gcc-ar.c
+index 5f78378de..db2dc2958 100644
+--- a/gcc/gcc-ar.c
++++ b/gcc/gcc-ar.c
+@@ -26,8 +26,8 @@ along with GCC; see the file COPYING3.  If not see
+ #error "Please set personality"
+ #endif
+ 
+-static const char standard_libexec_prefix[] = STANDARD_LIBEXEC_PREFIX;
+-static const char standard_bin_prefix[] = STANDARD_BINDIR_PREFIX;
++static const char *standard_libexec_prefix;
++static const char *standard_bin_prefix;
+ static const char *const target_machine = TARGET_MACHINE;
+ 
+ static const char dir_separator[] = { DIR_SEPARATOR, 0 };
+@@ -44,6 +44,9 @@ main(int ac, char **av)
+   bool is_ar = !strcmp (PERSONALITY, "ar");
+   int exit_code = FATAL_EXIT_CODE;
+ 
++  standard_libexec_prefix=getenv("GUIX_GCC_STANDARD_LIBEXEC_PREFIX");
++  standard_bin_prefix=getenv("GUIX_GCC_STANDARD_BINDIR_PREFIX");
++
+   exe_name = PERSONALITY;
+ #ifdef CROSS_DIRECTORY_STRUCTURE
+   exe_name = concat (target_machine, "-", exe_name, NULL);
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 939dcc873..21b465c70 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -1125,9 +1125,9 @@ static const char *gcc_libexec_prefix;
+    gcc_exec_prefix is set because, in that case, we know where the
+    compiler has been installed, and use paths relative to that
+    location instead.  */
+-static const char *const standard_exec_prefix = STANDARD_EXEC_PREFIX;
+-static const char *const standard_libexec_prefix = STANDARD_LIBEXEC_PREFIX;
+-static const char *const standard_bindir_prefix = STANDARD_BINDIR_PREFIX;
++static const char *standard_exec_prefix;
++static const char *standard_libexec_prefix;
++static const char *standard_bindir_prefix;
+ static const char *const standard_startfile_prefix = STANDARD_STARTFILE_PREFIX;
+ 
+ /* For native compilers, these are well-known paths containing
+@@ -6154,6 +6154,10 @@ main (int argc, char **argv)
+      on ?: in file-scope variable initializations.  */
+   asm_debug = ASM_DEBUG_SPEC;
+ 
++  standard_exec_prefix=getenv("GUIX_GCC_STANDARD_EXEC_PREFIX");
++  standard_libexec_prefix=getenv("GUIX_GCC_STANDARD_LIBEXEC_PREFIX");
++  standard_bindir_prefix=getenv("GUIX_GCC_STANDARD_BINDIR_PREFIX");
++
+   p = argv[0] + strlen (argv[0]);
+   while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))
+     --p;
+diff --git a/gcc/incpath.c b/gcc/incpath.c
+index efcd2c75e..9e52d87d7 100644
+--- a/gcc/incpath.c
++++ b/gcc/incpath.c
+@@ -133,12 +133,12 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+   int relocated = cpp_relocated();
+   size_t len;
+ 
+-  if (iprefix && (len = cpp_GCC_INCLUDE_DIR_len) != 0)
++  if (iprefix && (len = get_cpp_GCC_INCLUDE_DIR_len()) != 0)
+     {
+       /* Look for directories that start with the standard prefix.
+ 	 "Translate" them, i.e. replace /usr/local/lib/gcc... with
+ 	 IPREFIX and search them first.  */
+-      for (p = cpp_include_defaults; p->fname; p++)
++      for (p = get_cpp_include_defaults(); p->fname; p++)
+ 	{
+ 	  if (!p->cplusplus || cxx_stdinc)
+ 	    {
+@@ -147,7 +147,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 		 now.  */
+ 	      if (sysroot && p->add_sysroot)
+ 		continue;
+-	      if (!filename_ncmp (p->fname, cpp_GCC_INCLUDE_DIR, len))
++	      if (!filename_ncmp (p->fname, get_cpp_GCC_INCLUDE_DIR(), len))
+ 		{
+ 		  char *str = concat (iprefix, p->fname + len, NULL);
+ 		  if (p->multilib == 1 && imultilib)
+@@ -164,7 +164,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 	}
+     }
+ 
+-  for (p = cpp_include_defaults; p->fname; p++)
++  for (p = get_cpp_include_defaults(); p->fname; p++)
+     {
+       if (!p->cplusplus || cxx_stdinc)
+ 	{
+@@ -182,7 +182,7 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 	      free (sysroot_no_trailing_dir_separator);
+ 	    }
+ 	  else if (!p->add_sysroot && relocated
+-		   && !filename_ncmp (p->fname, cpp_PREFIX, cpp_PREFIX_len))
++		   && !filename_ncmp (p->fname, get_cpp_PREFIX(), get_cpp_PREFIX_len()))
+ 	    {
+  	      static const char *relocated_prefix;
+ 	      /* If this path starts with the configure-time prefix,
+@@ -198,11 +198,11 @@ add_standard_paths (const char *sysroot, const char *iprefix,
+ 		  dummy = concat (gcc_exec_prefix, "dummy", NULL);
+ 		  relocated_prefix
+ 		    = make_relative_prefix (dummy,
+-					    cpp_EXEC_PREFIX,
+-					    cpp_PREFIX);
++					    get_cpp_EXEC_PREFIX(),
++					    get_cpp_PREFIX());
+ 		}
+ 	      str = concat (relocated_prefix,
+-			    p->fname + cpp_PREFIX_len,
++			    p->fname + get_cpp_PREFIX_len(),
+ 			    NULL);
+ 	      str = update_path (str, p->component);
+ 	    }
+diff --git a/gcc/prefix.c b/gcc/prefix.c
+index c7003f8c6..9a20b3816 100644
+--- a/gcc/prefix.c
++++ b/gcc/prefix.c
+@@ -73,7 +73,7 @@ License along with GCC; see the file COPYING3.  If not see
+ #include "prefix.h"
+ #include "common/common-target.h"
+ 
+-static const char *std_prefix = PREFIX;
++static const char *std_prefix;
+ 
+ static const char *get_key_value (char *);
+ static char *translate_name (char *);
+@@ -85,6 +85,17 @@ static char *lookup_key (char *);
+ static HKEY reg_key = (HKEY) INVALID_HANDLE_VALUE;
+ #endif
+ 
++/* Return std_prefix, factory method. */
++
++static const char *
++get_std_prefix (void)
++{
++  if (std_prefix == 0)
++    std_prefix = getenv ("GUIX_GCC_PREFIX");
++
++  return std_prefix;
++}
++
+ /* Given KEY, as above, return its value.  */
+ 
+ static const char *
+@@ -101,7 +112,7 @@ get_key_value (char *key)
+     prefix = getenv (temp = concat (key, "_ROOT", NULL));
+ 
+   if (prefix == 0)
+-    prefix = std_prefix;
++    prefix = get_std_prefix();
+ 
+   free (temp);
+ 
+@@ -207,13 +218,13 @@ translate_name (char *name)
+ 	{
+ 	  prefix = get_key_value (key);
+ 	  if (prefix == 0)
+-	    prefix = std_prefix;
++	    prefix = get_std_prefix();
+ 	}
+       else
+ 	prefix = getenv (key);
+ 
+       if (prefix == 0)
+-	prefix = PREFIX;
++	prefix = getenv("PREFIX");
+ 
+       /* We used to strip trailing DIR_SEPARATORs here, but that can
+ 	 sometimes yield a result with no separator when one was coded
+@@ -248,9 +259,9 @@ char *
+ update_path (const char *path, const char *key)
+ {
+   char *result, *p;
+-  const int len = strlen (std_prefix);
++  const int len = strlen (get_std_prefix());
+ 
+-  if (! filename_ncmp (path, std_prefix, len)
++  if (! filename_ncmp (path, get_std_prefix(), len)
+       && (IS_DIR_SEPARATOR(path[len])
+           || path[len] == '\0')
+       && key != 0)
+-- 
+2.15.0
+

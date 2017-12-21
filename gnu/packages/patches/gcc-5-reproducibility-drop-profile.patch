@@ -1,0 +1,36 @@
+Courtesy "Bernhard M. Wiedemann" <bernhardout@lsmod.de>
+
+Removing -fprofile-generate, -fprofile-use makes gcc build bit-for-bit reproducible.
+
+diff -purN gcc-5.4.0.orig/Makefile.in gcc-5.4.0/Makefile.in
+--- gcc-5.4.0.orig/Makefile.in	1970-01-01 01:00:00.000000000 +0100
++++ gcc-5.4.0/Makefile.in	2017-11-03 15:34:56.415033525 +0100
+@@ -502,10 +502,10 @@ STAGE1_CONFIGURE_FLAGS = --disable-inter
+ 	  --disable-coverage --enable-languages="$(STAGE1_LANGUAGES)" \
+ 	  --disable-build-format-warnings
+ 
+-STAGEprofile_CFLAGS = $(STAGE2_CFLAGS) -fprofile-generate
++STAGEprofile_CFLAGS = $(STAGE2_CFLAGS)
+ STAGEprofile_TFLAGS = $(STAGE2_TFLAGS)
+ 
+-STAGEfeedback_CFLAGS = $(STAGE3_CFLAGS) -fprofile-use
++STAGEfeedback_CFLAGS = $(STAGE3_CFLAGS)
+ STAGEfeedback_TFLAGS = $(STAGE3_TFLAGS)
+ 
+ do-compare = @do_compare@
+diff -purN gcc-5.4.0.orig/Makefile.tpl gcc-5.4.0/Makefile.tpl
+--- gcc-5.4.0.orig/Makefile.tpl	1970-01-01 01:00:00.000000000 +0100
++++ gcc-5.4.0/Makefile.tpl	2017-11-03 15:34:27.146557384 +0100
+@@ -455,10 +455,10 @@ STAGE1_CONFIGURE_FLAGS = --disable-inter
+ 	  --disable-coverage --enable-languages="$(STAGE1_LANGUAGES)" \
+ 	  --disable-build-format-warnings
+ 
+-STAGEprofile_CFLAGS = $(STAGE2_CFLAGS) -fprofile-generate
++STAGEprofile_CFLAGS = $(STAGE2_CFLAGS)
+ STAGEprofile_TFLAGS = $(STAGE2_TFLAGS)
+ 
+-STAGEfeedback_CFLAGS = $(STAGE3_CFLAGS) -fprofile-use
++STAGEfeedback_CFLAGS = $(STAGE3_CFLAGS)
+ STAGEfeedback_TFLAGS = $(STAGE3_TFLAGS)
+ 
+ do-compare = @do_compare@

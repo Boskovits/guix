@@ -1,0 +1,780 @@
+From 1bfd15d4f07f7d76ec399b1a45bc16c404f1465a Mon Sep 17 00:00:00 2001
+From: Jan Nieuwenhuizen <janneke@gnu.org>
+Date: Mon, 6 Nov 2017 07:35:24 +0100
+Subject: [PATCH] backport build path prefix map. WIP
+
+---
+ gcc/c-family/c-common.c                            |  20 ++
+ gcc/c-family/c-common.h                            |   5 +
+ gcc/c-family/c-lex.c                               |   1 +
+ gcc/cp/cfns.gperf                                  |   2 +-
+ gcc/debug.h                                        |   1 +
+ gcc/final.c                                        |  54 +++--
+ gcc/opts-global.c                                  |   2 +
+ gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-1.c |  11 +
+ gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-2.c |  12 ++
+ .../gcc.dg/debug/dwarf2/build_path_prefix_map-1.c  |   9 +
+ .../gcc.dg/debug/dwarf2/build_path_prefix_map-2.c  |   8 +
+ include/prefix-map.h                               | 108 ++++++++++
+ libcpp/include/cpplib.h                            |   3 +
+ libcpp/init.c                                      |   3 +
+ libcpp/internal.h                                  |   5 +
+ libcpp/macro.c                                     |  16 ++
+ libiberty/Makefile.in                              |  14 +-
+ libiberty/prefix-map.c                             | 226 +++++++++++++++++++++
+ 18 files changed, 467 insertions(+), 33 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-1.c
+ create mode 100644 gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-2.c
+ create mode 100644 gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-1.c
+ create mode 100644 gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-2.c
+ create mode 100644 include/prefix-map.h
+ create mode 100644 libiberty/prefix-map.c
+
+diff --git a/gcc/c-family/c-common.c b/gcc/c-family/c-common.c
+index 82a2b8d6c..b4ca42b73 100644
+--- a/gcc/c-family/c-common.c
++++ b/gcc/c-family/c-common.c
+@@ -21,6 +21,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #include "config.h"
+ #include "system.h"
++#include "prefix-map.h"
+ #include "coretypes.h"
+ #include "tm.h"
+ #include "intl.h"
+@@ -10736,4 +10737,23 @@ build_userdef_literal (tree suffix_id, tree value, tree num_string)
+   return literal;
+ }
+ 
++/* Read BUILD_PATH_PREFIX_MAP from environment to have deterministic relative
++   paths to replace embedded absolute paths to get reproducible results.
++   Returns NULL if BUILD_PATH_PREFIX_MAP is badly formed.  */
++
++struct prefix_map **
++cb_get_build_path_prefix_map (cpp_reader *pfile ATTRIBUTE_UNUSED)
++{
++  struct prefix_map **map = XCNEW (struct prefix_map *);
++
++  const char *arg = getenv ("BUILD_PATH_PREFIX_MAP");
++  if (!arg || prefix_map_parse (map, arg))
++    return map;
++
++  free (map);
++  error_at (input_location, "environment variable BUILD_PATH_PREFIX_MAP is "
++	    "not well formed; see the GCC documentation for more details.");
++  return NULL;
++}
++
+ #include "gt-c-family-c-common.h"
+diff --git a/gcc/c-family/c-common.h b/gcc/c-family/c-common.h
+index 835b13bbc..7591bd6b0 100644
+--- a/gcc/c-family/c-common.h
++++ b/gcc/c-family/c-common.h
+@@ -1116,4 +1116,9 @@ struct GTY(()) tree_userdef_literal {
+ 
+ extern tree build_userdef_literal (tree suffix_id, tree value, tree num_string);
+ 
++/* Read BUILD_PATH_PREFIX_MAP from environment to have deterministic relative
++   paths to replace embedded absolute paths to get reproducible results.
++   Returns NULL if BUILD_PATH_PREFIX_MAP is badly formed.  */
++extern struct prefix_map **cb_get_build_path_prefix_map (cpp_reader *pfile);
++
+ #endif /* ! GCC_C_COMMON_H */
+diff --git a/gcc/c-family/c-lex.c b/gcc/c-family/c-lex.c
+index 7e2029ce0..8cef0f2a8 100644
+--- a/gcc/c-family/c-lex.c
++++ b/gcc/c-family/c-lex.c
+@@ -84,6 +84,7 @@ init_c_lex (void)
+   cb->def_pragma = cb_def_pragma;
+   cb->valid_pch = c_common_valid_pch;
+   cb->read_pch = c_common_read_pch;
++  cb->get_build_path_prefix_map = cb_get_build_path_prefix_map;
+ 
+   /* Set the debug callbacks if we can use them.  */
+   if ((debug_info_level == DINFO_LEVEL_VERBOSE
+diff --git a/gcc/cp/cfns.gperf b/gcc/cp/cfns.gperf
+index ba0c487a6..0f9a79ac7 100644
+--- a/gcc/cp/cfns.gperf
++++ b/gcc/cp/cfns.gperf
+@@ -26,7 +26,7 @@ __inline
+ __attribute__ ((__gnu_inline__))
+ #endif
+ #endif
+-const char * libc_name_p (const char *, unsigned int);
++inline const char * libc_name_p (const char *, unsigned int);
+ %}
+ %%
+ # The standard C library functions, for feeding to gperf; the result is used
+diff --git a/gcc/debug.h b/gcc/debug.h
+index 828ede230..1f9a69e56 100644
+--- a/gcc/debug.h
++++ b/gcc/debug.h
+@@ -187,6 +187,7 @@ extern void dwarf2out_switch_text_section (void);
+ 
+ const char *remap_debug_filename (const char *);
+ void add_debug_prefix_map (const char *);
++void add_debug_prefix_map_from_envvar ();
+ 
+ /* For -fdump-go-spec.  */
+ 
+diff --git a/gcc/final.c b/gcc/final.c
+index 718caf154..d72dec2e5 100644
+--- a/gcc/final.c
++++ b/gcc/final.c
+@@ -48,6 +48,7 @@ along with GCC; see the file COPYING3.  If not see
+ #include "config.h"
+ #include "system.h"
+ #include "coretypes.h"
++#include "prefix-map.h"
+ #include "tm.h"
+ 
+ #include "tree.h"
+@@ -1435,22 +1436,9 @@ asm_str_count (const char *templ)
+   return count;
+ }
+ 
+-/* ??? This is probably the wrong place for these.  */
+-/* Structure recording the mapping from source file and directory
+-   names at compile time to those to be embedded in debug
+-   information.  */
+-typedef struct debug_prefix_map
+-{
+-  const char *old_prefix;
+-  const char *new_prefix;
+-  size_t old_len;
+-  size_t new_len;
+-  struct debug_prefix_map *next;
+-} debug_prefix_map;
+-
+-/* Linked list of such structures.  */
+-debug_prefix_map *debug_prefix_maps;
+ 
++/* Linked list of `struct prefix_map'.  */
++static struct prefix_map *debug_prefix_maps = NULL;
+ 
+ /* Record a debug file prefix mapping.  ARG is the argument to
+    -fdebug-prefix-map and must be of the form OLD=NEW.  */
+@@ -1458,7 +1446,7 @@ debug_prefix_map *debug_prefix_maps;
+ void
+ add_debug_prefix_map (const char *arg)
+ {
+-  debug_prefix_map *map;
++  struct prefix_map *map;
+   const char *p;
+ 
+   p = strchr (arg, '=');
+@@ -1467,7 +1455,7 @@ add_debug_prefix_map (const char *arg)
+       error ("invalid argument %qs to -fdebug-prefix-map", arg);
+       return;
+     }
+-  map = XNEW (debug_prefix_map);
++  map = XNEW (struct prefix_map);
+   map->old_prefix = xstrndup (arg, p - arg);
+   map->old_len = p - arg;
+   p++;
+@@ -1477,28 +1465,32 @@ add_debug_prefix_map (const char *arg)
+   debug_prefix_maps = map;
+ }
+ 
++/* Add debug-prefix-maps from BUILD_PATH_PREFIX_MAP environment variable.  */
++
++void
++add_debug_prefix_map_from_envvar ()
++{
++  const char *arg = getenv ("BUILD_PATH_PREFIX_MAP");
++
++  if (!arg || prefix_map_parse (&debug_prefix_maps, arg))
++    return;
++
++  error ("environment variable BUILD_PATH_PREFIX_MAP is "
++	 "not well formed; see the GCC documentation for more details.");
++}
++
+ /* Perform user-specified mapping of debug filename prefixes.  Return
+    the new name corresponding to FILENAME.  */
+ 
+ const char *
+ remap_debug_filename (const char *filename)
+ {
+-  debug_prefix_map *map;
+-  char *s;
+-  const char *name;
+-  size_t name_len;
++  const char *name = prefix_map_remap_alloca (debug_prefix_maps, filename);
+ 
+-  for (map = debug_prefix_maps; map; map = map->next)
+-    if (filename_ncmp (filename, map->old_prefix, map->old_len) == 0)
+-      break;
+-  if (!map)
++  if (name == filename)
+     return filename;
+-  name = filename + map->old_len;
+-  name_len = strlen (name) + 1;
+-  s = (char *) alloca (name_len + map->new_len);
+-  memcpy (s, map->new_prefix, map->new_len);
+-  memcpy (s + map->new_len, name, name_len);
+-  return ggc_strdup (s);
++
++  return ggc_strdup (name);
+ }
+ 
+ /* Return true if DWARF2 debug info can be emitted for DECL.  */
+diff --git a/gcc/opts-global.c b/gcc/opts-global.c
+index b93d56fcd..f3c653bc1 100644
+--- a/gcc/opts-global.c
++++ b/gcc/opts-global.c
+@@ -322,6 +322,8 @@ handle_common_deferred_options (void)
+   if (flag_dump_all_passed)
+     enable_rtl_dump_file ();
+ 
++  add_debug_prefix_map_from_envvar ();
++
+   FOR_EACH_VEC_ELT (cl_deferred_option, vec, i, opt)
+     {
+       switch (opt->opt_index)
+diff --git a/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-1.c b/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-1.c
+new file mode 100644
+index 000000000..960503813
+--- /dev/null
++++ b/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-1.c
+@@ -0,0 +1,11 @@
++/* __FILE__ should strip BUILD_PATH_PREFIX_MAP if the latter is a prefix. */
++/* { dg-do run } */
++/* { dg-set-compiler-env-var BUILD_PATH_PREFIX_MAP "MACROTEST=$srcdir" } */
++
++int
++main ()
++{
++  if (__builtin_strcmp (__FILE__, "MACROTEST/gcc.dg/cpp/build_path_prefix_map-1.c") != 0)
++    __builtin_abort ();
++  return 0;
++}
+diff --git a/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-2.c b/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-2.c
+new file mode 100644
+index 000000000..4b0aacd5e
+--- /dev/null
++++ b/gcc/testsuite/gcc.dg/cpp/build_path_prefix_map-2.c
+@@ -0,0 +1,12 @@
++/* __FILE__ should not be relative if BUILD_PATH_PREFIX_MAP is not set, and gcc is
++   asked to compile an absolute filename as is the case with this test.  */
++/* { dg-do run } */
++/* { dg-set-compiler-env-var BUILD_PATH_PREFIX_MAP } */
++
++int
++main ()
++{
++  if (__builtin_strcmp (__FILE__, "./gcc.dg/cpp/build_path_prefix_map-2.c") == 0)
++    __builtin_abort ();
++  return 0;
++}
+diff --git a/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-1.c b/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-1.c
+new file mode 100644
+index 000000000..af2b0ed33
+--- /dev/null
++++ b/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-1.c
+@@ -0,0 +1,9 @@
++/* DW_AT_comp_dir should be relative if BUILD_PATH_PREFIX_MAP is a prefix of it.  */
++/* { dg-do compile } */
++/* { dg-options "-gdwarf -dA" } */
++/* { dg-set-compiler-env-var BUILD_PATH_PREFIX_MAP "DWARF2TEST=[file dirname [pwd]]" } */
++/* { dg-final { scan-assembler "DW_AT_comp_dir: \"DWARF2TEST/gcc" } } */
++
++void func (void)
++{
++}
+diff --git a/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-2.c b/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-2.c
+new file mode 100644
+index 000000000..4c66bf521
+--- /dev/null
++++ b/gcc/testsuite/gcc.dg/debug/dwarf2/build_path_prefix_map-2.c
+@@ -0,0 +1,8 @@
++/* DW_AT_comp_dir should be absolute if BUILD_PATH_PREFIX_MAP is not set.  */
++/* { dg-do compile } */
++/* { dg-options "-gdwarf -dA" } */
++/* { dg-final { scan-assembler "DW_AT_comp_dir: \"/" } } */
++
++void func (void)
++{
++}
+diff --git a/include/prefix-map.h b/include/prefix-map.h
+new file mode 100644
+index 000000000..f8edb547e
+--- /dev/null
++++ b/include/prefix-map.h
+@@ -0,0 +1,108 @@
++/* Declarations for manipulating filename prefixes.
++
++   Copyright (C) 2017 Free Software Foundation, Inc.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 2, or (at your option)
++   any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software Foundation,
++   Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
++
++#ifndef _PREFIX_MAP_H
++#define _PREFIX_MAP_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#ifdef HAVE_STDLIB_H
++#include <stdlib.h>
++#endif
++
++/* Linked-list of mappings from old prefixes to new prefixes.  */
++
++struct prefix_map
++{
++  const char *old_prefix;
++  const char *new_prefix;
++  size_t old_len;
++  size_t new_len;
++  struct prefix_map *next;
++};
++
++
++/* Find a mapping suitable for the given OLD_NAME in the linked list MAP.\
++
++   If a mapping is found, writes a pointer to the non-matching suffix part of
++   OLD_NAME in SUFFIX, and its length in SUF_LEN.
++
++   Returns NULL if there was no suitable mapping.  */
++struct prefix_map *
++prefix_map_find (struct prefix_map *map, const char *old_name,
++		 const char **suffix, size_t *suf_len);
++
++/* Prepend a prefix map before a given SUFFIX.
++
++   The remapped name is written to NEW_NAME and returned as a const pointer. No
++   allocations are performed; the caller must ensure it can hold at least
++   MAP->NEW_LEN + SUF_LEN + 1 characters.  */
++const char *
++prefix_map_prepend (struct prefix_map *map, char *new_name,
++		    const char *suffix, size_t suf_len);
++
++/* Remap a filename.
++
++   Returns OLD_NAME unchanged if there was no remapping, otherwise returns a
++   pointer to newly-allocated memory for the remapped filename.  The memory is
++   allocated by the given ALLOC function, which also determines who is
++   responsible for freeing it.  */
++#define prefix_map_remap_alloc_(map_head, old_name, alloc)		       \
++  __extension__								       \
++  ({									       \
++    const char *__suffix;						       \
++    size_t __suf_len;							       \
++    struct prefix_map *__map;						       \
++    (__map = prefix_map_find ((map_head), (old_name), &__suffix, &__suf_len))  \
++      ? prefix_map_prepend (__map,					       \
++			    (char *) alloc (__map->new_len + __suf_len + 1),   \
++			    __suffix, __suf_len)			       \
++      : (old_name);							       \
++  })
++
++/* Remap a filename.
++
++   Returns OLD_NAME unchanged if there was no remapping, otherwise returns a
++   stack-allocated pointer to the newly-remapped filename.  */
++#define prefix_map_remap_alloca(map_head, old_name) \
++  prefix_map_remap_alloc_ (map_head, old_name, alloca)
++
++
++/* Parse prefix-maps according to the BUILD_PATH_PREFIX_MAP standard.
++
++   The input string value is of the form
++
++     dst[0]=src[0]:dst[1]=src[1]...
++
++   Every dst[i] and src[i] has had "%", "=" and ":" characters replaced with
++   "%#", "%+", and "%." respectively; this function reverses this replacement.
++
++   Rightmost entries are stored at the head of the parsed structure.
++
++   Returns 0 on failure and 1 on success.  */
++int
++prefix_map_parse (struct prefix_map **map_head, const char *arg);
++
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _PREFIX_MAP_H */
+diff --git a/libcpp/include/cpplib.h b/libcpp/include/cpplib.h
+index bf59d0162..082770d04 100644
+--- a/libcpp/include/cpplib.h
++++ b/libcpp/include/cpplib.h
+@@ -541,6 +541,9 @@ struct cpp_callbacks
+ 
+   /* Callback that can change a user builtin into normal macro.  */
+   bool (*user_builtin_macro) (cpp_reader *, cpp_hashnode *);
++
++  /* Callback to parse BUILD_PATH_PREFIX_MAP from environment.  */
++  struct prefix_map **(*get_build_path_prefix_map) (cpp_reader *);
+ };
+ 
+ #ifdef VMS
+diff --git a/libcpp/init.c b/libcpp/init.c
+index 5fa82ca9c..270d42b95 100644
+--- a/libcpp/init.c
++++ b/libcpp/init.c
+@@ -231,6 +231,9 @@ cpp_create_reader (enum c_lang lang, hash_table *table,
+   /* Do not force token locations by default.  */
+   pfile->forced_token_location_p = NULL;
+ 
++  /* Initialize build_path_prefix_map to NULL (not yet set).  */
++  pfile->build_path_prefix_map = NULL;
++
+   /* The expression parser stack.  */
+   _cpp_expand_op_stack (pfile);
+ 
+diff --git a/libcpp/internal.h b/libcpp/internal.h
+index 5b3731bba..5b09bf1a4 100644
+--- a/libcpp/internal.h
++++ b/libcpp/internal.h
+@@ -485,6 +485,11 @@ struct cpp_reader
+   const unsigned char *date;
+   const unsigned char *time;
+ 
++  /* Externally set prefix-map to transform absolute paths, useful for
++     reproducibility.  It should be initialized to NULL (not yet set or
++     disabled) or to a `struct prefix_map` double pointer to enable it.  */
++  struct prefix_map **build_path_prefix_map;
++
+   /* EOF token, and a token forcing paste avoidance.  */
+   cpp_token avoid_paste;
+   cpp_token eof;
+diff --git a/libcpp/macro.c b/libcpp/macro.c
+index 54de3e3fc..6cdd1e5d3 100644
+--- a/libcpp/macro.c
++++ b/libcpp/macro.c
+@@ -28,6 +28,7 @@ along with this program; see the file COPYING3.  If not see
+ #include "system.h"
+ #include "cpplib.h"
+ #include "internal.h"
++#include "prefix-map.h"
+ 
+ typedef struct macro_arg macro_arg;
+ /* This structure represents the tokens of a macro argument.  These
+@@ -271,7 +272,17 @@ _cpp_builtin_macro_text (cpp_reader *pfile, cpp_hashnode *node)
+ 	unsigned int len;
+ 	const char *name;
+ 	uchar *buf;
++	struct prefix_map **map = pfile->build_path_prefix_map;
+ 	
++	/* Set a prefix-map for __FILE__ if BUILD_PATH_PREFIX_MAP is defined.  */
++	if (map == NULL && pfile->cb.get_build_path_prefix_map != NULL)
++	  {
++	    map = pfile->cb.get_build_path_prefix_map (pfile);
++	    if (map == NULL)
++	      abort ();
++	    pfile->build_path_prefix_map = map;
++	  }
++
+ 	if (node->value.builtin == BT_FILE)
+ 	  name = linemap_get_expansion_filename (pfile->line_table,
+ 						 pfile->line_table->highest_line);
+@@ -281,6 +292,11 @@ _cpp_builtin_macro_text (cpp_reader *pfile, cpp_hashnode *node)
+ 	    if (!name)
+ 	      abort ();
+ 	  }
++
++	/* Apply the prefix-map for deterministic path output.  */
++	if (map != NULL)
++	  name = prefix_map_remap_alloca (*map, name);
++
+ 	len = strlen (name);
+ 	buf = _cpp_unaligned_alloc (pfile, len * 2 + 3);
+ 	result = buf;
+diff --git a/libiberty/Makefile.in b/libiberty/Makefile.in
+index 5280bc158..bc098496a 100644
+--- a/libiberty/Makefile.in
++++ b/libiberty/Makefile.in
+@@ -143,6 +143,7 @@ CFILES = alloca.c argv.c asprintf.c atexit.c				\
+ 	 pex-common.c pex-djgpp.c pex-msdos.c pex-one.c			\
+ 	 pex-unix.c pex-win32.c						\
+          physmem.c putenv.c						\
++	prefix-map.c 							\
+ 	random.c regex.c rename.c rindex.c				\
+ 	safe-ctype.c setenv.c setproctitle.c sha1.c sigsetmask.c        \
+ 	 simple-object.c simple-object-coff.c simple-object-elf.c	\
+@@ -179,6 +180,7 @@ REQUIRED_OFILES =							\
+ 	./partition.$(objext) ./pexecute.$(objext) ./physmem.$(objext)	\
+ 	./pex-common.$(objext) ./pex-one.$(objext)			\
+ 	./@pexecute@.$(objext)						\
++	./prefix-map.$(objext)						\
+ 	./safe-ctype.$(objext)						\
+ 	./simple-object.$(objext) ./simple-object-coff.$(objext)	\
+ 	./simple-object-elf.$(objext) ./simple-object-mach-o.$(objext)	\
+@@ -887,7 +889,8 @@ $(CONFIGURED_OFILES): stamp-picdir
+ 	$(COMPILE.c) $(srcdir)/pex-one.c $(OUTPUT_OPTION)
+ 
+ ./pex-unix.$(objext): $(srcdir)/pex-unix.c config.h $(INCDIR)/ansidecl.h \
+-	$(INCDIR)/libiberty.h $(srcdir)/pex-common.h
++	$(INCDIR)/libiberty.h \
++	$(srcdir)/pex-common.h
+ 	if [ x"$(PICFLAG)" != x ]; then \
+ 	  $(COMPILE.c) $(PICFLAG) $(srcdir)/pex-unix.c -o pic/$@; \
+ 	else true; fi
+@@ -914,6 +917,15 @@ $(CONFIGURED_OFILES): stamp-picdir
+ 	else true; fi
+ 	$(COMPILE.c) $(srcdir)/physmem.c $(OUTPUT_OPTION)
+ 
++./prefix-map.$(objext): $(srcdir)/prefix-map.c config.h $(INCDIR)/prefix-map.h
++	if [ x"$(PICFLAG)" != x ]; then \
++	  $(COMPILE.c) $(PICFLAG) $(srcdir)/prefix-map.c -o pic/$@; \
++	else true; fi
++	if [ x"$(NOASANFLAG)" != x ]; then \
++	  $(COMPILE.c) $(PICFLAG) $(NOASANFLAG) $(srcdir)/prefix-map.c -o noasan/$@; \
++	else true; fi
++	$(COMPILE.c) $(srcdir)/prefix-map.c $(OUTPUT_OPTION)
++
+ ./putenv.$(objext): $(srcdir)/putenv.c config.h $(INCDIR)/ansidecl.h
+ 	if [ x"$(PICFLAG)" != x ]; then \
+ 	  $(COMPILE.c) $(PICFLAG) $(srcdir)/putenv.c -o pic/$@; \
+diff --git a/libiberty/prefix-map.c b/libiberty/prefix-map.c
+new file mode 100644
+index 000000000..ecb408856
+--- /dev/null
++++ b/libiberty/prefix-map.c
+@@ -0,0 +1,226 @@
++/* Definitions for manipulating filename prefixes.
++
++   Copyright (C) 2017 Free Software Foundation, Inc.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 2, or (at your option)
++   any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software Foundation,
++   Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#ifdef HAVE_STRING_H
++#include <string.h>
++#endif
++
++#ifdef HAVE_STDLIB_H
++#include <stdlib.h>
++#endif
++
++#include "filenames.h"
++#include "libiberty.h"
++#include "prefix-map.h"
++
++
++/* Add a new mapping.
++
++   The input strings are duplicated and a new prefix_map struct is allocated.
++   Ownership of the duplicates, as well as the new prefix_map, is the same as
++   the ownership of the old struct.
++
++   Returns 0 on failure and 1 on success.  */
++int
++prefix_map_push (struct prefix_map **map_head,
++		 const char *new_prefix, const char *old_prefix)
++{
++  struct prefix_map *map = XNEW (struct prefix_map);
++  if (!map)
++    goto rewind_0;
++
++  map->old_prefix = xstrdup (old_prefix);
++  if (!map->old_prefix)
++    goto rewind_1;
++  map->old_len = strlen (old_prefix);
++
++  map->new_prefix = xstrdup (new_prefix);
++  if (!map->new_prefix)
++    goto rewind_2;
++  map->new_len = strlen (new_prefix);
++
++  map->next = *map_head;
++  *map_head = map;
++  return 1;
++
++rewind_2:
++  free ((void *) map->old_prefix);
++rewind_1:
++  free (map);
++rewind_0:
++  return 0;
++}
++
++/* Rewind a prefix map.
++
++   Everything up to the given OLD_HEAD is freed.  */
++void
++prefix_map_pop_until (struct prefix_map **map_head, struct prefix_map *old_head)
++{
++  struct prefix_map *map;
++  struct prefix_map *next;
++
++  for (map = *map_head; map != old_head; map = next)
++    {
++      free ((void *) map->old_prefix);
++      free ((void *) map->new_prefix);
++      next = map->next;
++      free (map);
++    }
++
++  *map_head = map;
++}
++
++
++/* Find a mapping suitable for the given OLD_NAME in the linked list MAP.\
++
++   If a mapping is found, writes a pointer to the non-matching suffix part of
++   OLD_NAME in SUFFIX, and its length in SUF_LEN.
++
++   Returns NULL if there was no suitable mapping.  */
++struct prefix_map *
++prefix_map_find (struct prefix_map *map, const char *old_name,
++		 const char **suffix, size_t *suf_len)
++{
++  size_t len;
++
++  for (; map; map = map->next)
++    {
++      len = map->old_len;
++      /* Ignore trailing path separators at the end of old_prefix */
++      while (len > 0 && IS_DIR_SEPARATOR (map->old_prefix[len-1])) len--;
++      /* Check if old_name matches old_prefix at a path component boundary */
++      if (! filename_ncmp (old_name, map->old_prefix, len)
++	  && (IS_DIR_SEPARATOR (old_name[len])
++	      || old_name[len] == '\0'))
++	{
++	  *suf_len = strlen (*suffix = old_name + len);
++	  break;
++	}
++    }
++
++  return map;
++}
++
++/* Prepend a prefix map before a given SUFFIX.
++
++   The remapped name is written to NEW_NAME and returned as a const pointer. No
++   allocations are performed; the caller must ensure it can hold at least
++   MAP->NEW_LEN + SUF_LEN + 1 characters.  */
++const char *
++prefix_map_prepend (struct prefix_map *map, char *new_name,
++		    const char *suffix, size_t suf_len)
++{
++  memcpy (new_name, map->new_prefix, map->new_len);
++  memcpy (new_name + map->new_len, suffix, suf_len + 1);
++  return new_name;
++}
++
++
++/* Parse a single part of a single prefix-map pair.
++
++   Returns 0 on failure and 1 on success.  */
++int
++prefix_map_parse_unquote (char *src)
++{
++  char *dest;
++  for (dest = src; 0 != (*dest = *src); ++dest, ++src)
++    switch (*src)
++      {
++      case ':':
++      case '=':
++	return 0; // should have been escaped
++      case '%':
++	switch (*(src + 1))
++	  {
++	  case '.':
++	    *dest = ':';
++	    goto unquoted;
++	  case '+':
++	    *dest = '=';
++	  unquoted:
++	  case '#':
++	    ++src;
++	    break;
++	  default:
++	    return 0; // invalid
++	  }
++      }
++  return 1;
++}
++
++/* Parse a single prefix-map.
++
++   Returns 0 on failure and 1 on success.  */
++int
++prefix_map_parse1 (struct prefix_map **map_head, char *arg)
++{
++  char *p;
++  p = strchr (arg, '=');
++  if (!p)
++    return 0;
++  *p = '\0';
++  if (!prefix_map_parse_unquote (arg))
++    return 0;
++  p++;
++  if (!prefix_map_parse_unquote (p))
++    return 0;
++
++  return prefix_map_push (map_head, arg, p);
++}
++
++/* Parse a prefix-map according to the BUILD_PATH_PREFIX_MAP standard.
++
++   The input string value is of the form
++
++     dst[0]=src[0]:dst[1]=src[1]...
++
++   Every dst[i] and src[i] has had "%", "=" and ":" characters replaced with
++   "%#", "%+", and "%." respectively; this function reverses this replacement.
++
++   Rightmost entries are stored at the head of the parsed structure.
++
++   Returns 0 on failure and 1 on success.  */
++int
++prefix_map_parse (struct prefix_map **map_head, const char *arg)
++{
++  struct prefix_map *old_head = *map_head;
++
++  size_t len = strlen (arg);
++  char *copy = (char *) alloca (len + 1);
++  memcpy (copy, arg, len + 1);
++
++  const char *sep = ":";
++  char *end, *tok = strtok_r (copy, sep, &end);
++  while (tok != NULL)
++    {
++      if (!prefix_map_parse1 (map_head, tok))
++	{
++	  prefix_map_pop_until (map_head, old_head);
++	  return 0;
++	}
++
++      tok = strtok_r (NULL, sep, &end);
++    }
++
++  return 1;
++}
+-- 
+Jan Nieuwenhuizen <janneke@gnu.org> | GNU LilyPond http://lilypond.org
+Freelance IT http://JoyofSource.com | Avatar® http://AvatarAcademy.com
+
