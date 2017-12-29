@@ -238,7 +238,8 @@ differences.")
                                 version ".tar.xz"))
             (sha256
              (base32
-              "1mivg0fy3a6fcn535ln8nkgfj6vxh5hsxxs5h6692wxmsjyyh8fn"))))
+              "1mivg0fy3a6fcn535ln8nkgfj6vxh5hsxxs5h6692wxmsjyyh8fn"))
+            (patches (search-patches "diffutils-getopt.patch"))))
    (build-system gnu-build-system)
    (synopsis "Comparing and merging files")
    (description
@@ -338,7 +339,13 @@ used to apply commands with arbitrarily long arguments.")
                        (("/bin/sh") (which "sh")))
                      (substitute* (find-files "tests" "\\.sh$")
                        (("#!/bin/sh") (which "sh")))
-                     #t)))))
+                     #t)))
+
+      ;; Work around a cross-compilation bug whereby libcoreutils.a would
+      ;; provide '__mktime_internal', which conflicts with the one in libc.a.
+      ,@(if (%current-target-system)
+            `(#:configure-flags '("gl_cv_func_working_mktime=yes"))
+            '())))
    (synopsis "Core GNU utilities (file, text, shell)")
    (description
     "GNU Coreutils includes all of the basic command-line tools that are

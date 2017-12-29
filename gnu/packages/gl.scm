@@ -221,7 +221,7 @@ also known as DXTn or DXTC) for Mesa.")
 (define-public mesa
   (package
     (name "mesa")
-    (version "17.2.7")
+    (version "17.3.1")
     (source
       (origin
         (method url-fetch)
@@ -233,7 +233,7 @@ also known as DXTn or DXTC) for Mesa.")
                                   version "/mesa-" version ".tar.xz")))
         (sha256
          (base32
-          "0s3slgjxnx482yw0knn4a6alsy2cq28rah6hnjbmf12mvyldxksh"))
+          "1h94m2nkxa1y4n415d5idk2x2lkgbvjcikv6r2r6yn4ak7h0grls"))
         (patches
          (search-patches "mesa-wayland-egl-symbols-check-mips.patch"
                          "mesa-skip-disk-cache-test.patch"))))
@@ -264,12 +264,12 @@ also known as DXTn or DXTC) for Mesa.")
              `()))
         ("makedepend" ,makedepend)
         ("presentproto" ,presentproto)
-        ("s2tc" ,s2tc)
         ("wayland" ,wayland)
         ("wayland-protocols" ,wayland-protocols)))
     (native-inputs
       `(("pkg-config" ,pkg-config)
         ("python" ,python-2)
+        ("python2-mako" ,python2-mako)
         ("which" ,(@ (gnu packages base) which))))
     (arguments
      `(#:configure-flags
@@ -279,9 +279,9 @@ also known as DXTn or DXTC) for Mesa.")
               '("--with-gallium-drivers=freedreno,nouveau,r300,r600,swrast,vc4,virgl"))
              ("aarch64-linux"
               ;; TODO: Fix svga driver for aarch64 and armhf.
-              '("--with-gallium-drivers=freedreno,nouveau,r300,r600,swrast,vc4,virgl"))
+              '("--with-gallium-drivers=freedreno,nouveau,pl111,r300,r600,swrast,vc4,virgl"))
              (_
-              '("--with-gallium-drivers=i915,nouveau,r300,r600,svga,swrast,virgl")))
+              '("--with-gallium-drivers=i915,nouveau,r300,r600,radeonsi,svga,swrast,virgl")))
          ;; Enable various optional features.  TODO: opencl requires libclc,
          ;; omx requires libomxil-bellagio
          "--with-platforms=x11,drm,wayland,surfaceless"
@@ -299,6 +299,7 @@ also known as DXTn or DXTC) for Mesa.")
          "--enable-texture-float"
 
          ;; Enable Vulkan on x86-64.
+         ;; TODO: Fix building Mesa with Vulkan drivers enabled on i686-linux.
          ,@(match (%current-system)
              ("x86_64-linux"
               '("--with-vulkan-drivers=intel,radeon"))
