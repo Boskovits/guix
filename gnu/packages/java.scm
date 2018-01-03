@@ -2866,6 +2866,7 @@ constructor on object instantiation.")
        ("java-objenesis" ,java-objenesis)))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://easymock.org")
     (synopsis "Java library providing mock objects for unit tests")
