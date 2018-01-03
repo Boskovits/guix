@@ -6342,6 +6342,7 @@ not included are ones that require dependency to the Databind package.")
                                "build/test-classes"))))))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://github.com/FasterXML/jackson-core")
     (synopsis "")
