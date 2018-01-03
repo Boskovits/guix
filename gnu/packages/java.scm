@@ -2953,7 +2953,8 @@ The jMock library
        ("java-asm" ,java-asm)
        ("java-bsh" ,java-bsh)
        ("java-jmock" ,java-jmock)
-       ("java-jumit" ,java-junit)))))
+       ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))))
 
 (define-public java-jmock-legacy
   (package
