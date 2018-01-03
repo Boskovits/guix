@@ -3400,6 +3400,7 @@ included:
          (add-after 'install 'install-doc (install-javadoc "target/apidocs")))))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-commons-io" ,java-commons-io)
        ("java-hamcrest-all" ,java-hamcrest-all)
        ("java-easymock" ,java-easymock)))
