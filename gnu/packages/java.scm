@@ -4972,7 +4972,8 @@ tree walking, and translation.")
                         "eval.g" "group.g" "interface.g"))))))))
     (native-inputs
      `(("antlr" ,antlr2)
-       ("java-junit" ,java-junit)))
+       ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "http://www.stringtemplate.org")
     (synopsis "Template engine to generate formatted text output")
     (description "StringTemplate is a java template engine (with ports for C#,
