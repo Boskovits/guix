@@ -4854,6 +4854,7 @@ time.")
                        ,@(find-files "slf4j-api/src/test" ".*\\.java")))))))))
     (inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-slf4j-api" ,java-slf4j-api)))
     (home-page "https://www.slf4j.org/")
