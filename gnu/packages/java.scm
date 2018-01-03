@@ -3344,7 +3344,8 @@ time/FastDateFormatTest.java"
          (replace 'install (install-jars "target"))
          (add-after 'install 'install-doc (install-javadoc "target/apidocs")))))
     (native-inputs
-     `(("java-junit" ,java-junit)))
+     `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "http://commons.apache.org/lang/")
     (synopsis "Extension of the java.lang package")
     (description "The Commons Lang components contains a set of Java classes
