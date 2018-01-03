@@ -7263,6 +7263,7 @@ configuration and string construction.")
      `(("java-commons-logging-minimal" ,java-commons-logging-minimal)))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("javacc" ,javacc-4)))
     (home-page "https://commons.apache.org/proper/commons-jexl/")
