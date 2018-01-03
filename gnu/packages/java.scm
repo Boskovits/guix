@@ -2478,6 +2478,7 @@ more.")
        #:source-dir "src/main"))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://codehaus-plexus.github.io/plexus-interpolation/")
     (synopsis "Java components for interpolating ${} strings and the like")
