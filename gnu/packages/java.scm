@@ -5350,7 +5350,8 @@ import org.antlr.grammar.v2.ANTLRTreePrinter;"))
                 "dir=\"${test.home}\""))
              #t)))))
     (native-inputs
-     `(("java-junit" ,java-junit)))))
+     `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))))
 
 (define-public java-microemulator-cldc
   (package
