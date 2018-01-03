@@ -4650,6 +4650,7 @@ logging framework for Java.")))
      `(#:jar-name "commons-cli.jar"))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://commons.apache.org/cli/")
     (synopsis "Command line arguments and options parsing library")
