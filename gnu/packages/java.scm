@@ -7,7 +7,7 @@
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2016, 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright @ 2017, 2018 Gábor Boskovits <boskovits@gmail.com>
+;;; Copyright © 2017, 2018 Gábor Boskovits <boskovits@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
