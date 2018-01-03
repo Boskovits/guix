@@ -7032,6 +7032,7 @@ those in Perl and JavaScript.")
      `(("java-fest-util" ,java-fest-util)))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-fest-test" ,java-fest-test)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-mockito" ,java-mockito-1)
