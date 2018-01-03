@@ -3639,6 +3639,7 @@ it records all mock invocations, including methods arguments.")
        ("java-commons-lang3" ,java-commons-lang3)))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-mockito" ,java-mockito-1)))
     (home-page "https://hc.apache.org/httpcomponents-core-4.4.x/index.html")
     (synopsis "Low level HTTP transport components")
