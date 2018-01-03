@@ -3837,6 +3837,7 @@ programs.")
              #t)))))
     (inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-mockito" ,java-mockito-1)
        ("java-xz" ,java-xz)))
