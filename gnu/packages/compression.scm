@@ -1200,6 +1200,7 @@ install: libbitshuffle.so
        ("snappy" ,snappy)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)
        ("xerial-core" ,java-xerial-core)
        ("classworlds" ,java-plexus-classworlds)
