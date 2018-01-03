@@ -3133,6 +3133,7 @@ available in the Java programming language or Commons Lang.")
        ("java-commons-math3" ,java-commons-math3)))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://openjdk.java.net/projects/code-tools/jmh/")
     (synopsis "Benchmark harness for the JVM")
