@@ -7668,6 +7668,7 @@ application components to create, send, receive, and read messages.")
              #t)))))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://javaee.github.io/javamail/")
     (synopsis "Mail-related functionnalities in Java")
