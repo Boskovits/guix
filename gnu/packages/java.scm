@@ -2885,6 +2885,9 @@ mock objects in unit testing.")
                (base32
                 "0xmrlhq0fszldkbv281k9463mv496143vvmqwpxp62yzjvdkx9w0"))))
     (build-system ant-build-system)
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (arguments
      `(#:build-target "jars"
        #:test-target "run.tests"
@@ -2925,7 +2928,8 @@ The jMock library
      `(("java-hamcrest-all" ,java-hamcrest-all)
        ("java-asm" ,java-asm)
        ("java-bsh" ,java-bsh)
-       ("java-junit" ,java-junit)))
+       ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (native-inputs
      `(("cglib" ,java-cglib)))
     (arguments
