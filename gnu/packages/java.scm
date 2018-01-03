@@ -6973,6 +6973,7 @@ those in Perl and JavaScript.")
        #:source-dir "src/main/java"))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://github.com/alexruiz/fest-util")
     (synopsis "FEST common utilities")
