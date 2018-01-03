@@ -7466,6 +7466,7 @@ of Java @code{.class} files.")
              #t)))))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://github.com/xerial/xerial-java")
     (synopsis "Data management libraries for Java")
