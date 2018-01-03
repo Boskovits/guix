@@ -6928,6 +6928,9 @@ annotations.")
                (mkdir-p share)
                (copy-file "dist/bsh-2.0b6.jar" (string-append share "/bsh-2.0b6.jar"))
                #t))))))
+    (native-inputs
+     `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "http://beanshell.org/")
     (synopsis "Lightweight Scripting for Java")
     (description "BeanShell is a small, free, embeddable Java source
