@@ -3172,6 +3172,7 @@ targeting the JVM.")
            (install-jars "target")))))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)
        ("java-easymock" ,java-easymock)))
     (home-page "http://commons.apache.org/collections/")
