@@ -2450,7 +2450,8 @@ cli/shell/BourneShell.java"
                (delete-file "cli/CommandlineTest.java"))
              #t)))))
     (native-inputs
-     `(("java-junit" ,java-junit)))
+     `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "http://codehaus-plexus.github.io/plexus-utils/")
     (synopsis "Common utilities for the Plexus framework")
     (description "This package provides various Java utility classes for the
