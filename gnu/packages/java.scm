@@ -2980,7 +2980,8 @@ The jMock library
        ("java-jmock" ,java-jmock)
        ("java-asm" ,java-asm)
        ("java-bsh" ,java-bsh)
-       ("java-junit" ,java-junit)))
+       ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (native-inputs
      `(("java-jmock-junit4" ,java-jmock-junit4)))))
 
