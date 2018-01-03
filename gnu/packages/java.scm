@@ -3292,6 +3292,7 @@ setter and getter method.")
          (add-after 'install 'install-doc (install-javadoc "target/apidocs")))))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://commons.apache.org/io/")
     (synopsis "Common useful IO related classes")
