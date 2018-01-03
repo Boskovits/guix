@@ -4697,6 +4697,7 @@ This is a part of the Apache Commons Project.")
          (add-after 'install 'install-doc (install-javadoc "dist/docs/api")))))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://commons.apache.org/codec/")
     (synopsis "Common encoders and decoders such as Base64, Hex, Phonetic and URLs")
