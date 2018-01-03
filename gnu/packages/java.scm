@@ -6726,7 +6726,8 @@ the subsequent value resolution at any given level.")
     (inputs
      `(("java-asm" ,java-asm)))
     (native-inputs
-     `(("java-junit" ,java-junit)))
+     `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "https://github.com/nhatminhle/cofoja")
     (synopsis "Contracts for Java")
     (description "Contracts for Java, or Cofoja for short, is a contract
