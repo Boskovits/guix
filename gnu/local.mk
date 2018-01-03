@@ -119,6 +119,7 @@ GNU_SYSTEM_MODULES =				\
   %D%/packages/dejagnu.scm			\
   %D%/packages/dico.scm				\
   %D%/packages/dictionaries.scm			\
+  %D%/packages/digest.scm			\
   %D%/packages/direct-connect.scm		\
   %D%/packages/disk.scm				\
   %D%/packages/display-managers.scm		\
@@ -600,6 +601,7 @@ dist_patch_DATA =						\
   %D%/packages/patches/dfu-programmer-fix-libusb.patch		\
   %D%/packages/patches/diffutils-gets-undeclared.patch		\
   %D%/packages/patches/diffutils-getopt.patch			\
+  %D%/packages/patches/docbook-xsl-nonrecursive-string-subst.patch	\
   %D%/packages/patches/doc++-include-directives.patch		\
   %D%/packages/patches/doc++-segfault-fix.patch			\
   %D%/packages/patches/doxygen-test.patch			\
@@ -671,6 +673,11 @@ dist_patch_DATA =						\
   %D%/packages/patches/ghostscript-no-header-uuid.patch		\
   %D%/packages/patches/ghostscript-no-header-creationdate.patch \
   %D%/packages/patches/ghostscript-runpath.patch		\
+  %D%/packages/patches/gimp-CVE-2017-17784.patch		\
+  %D%/packages/patches/gimp-CVE-2017-17785.patch		\
+  %D%/packages/patches/gimp-CVE-2017-17786.patch		\
+  %D%/packages/patches/gimp-CVE-2017-17787.patch		\
+  %D%/packages/patches/gimp-CVE-2017-17789.patch		\
   %D%/packages/patches/glib-networking-ssl-cert-file.patch	\
   %D%/packages/patches/glib-respect-datadir.patch		\
   %D%/packages/patches/glib-tests-timer.patch			\
@@ -682,7 +689,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/glibc-CVE-2017-1000366-pt1.patch		\
   %D%/packages/patches/glibc-CVE-2017-1000366-pt2.patch		\
   %D%/packages/patches/glibc-CVE-2017-1000366-pt3.patch		\
-  %D%/packages/patches/glibc-CVE-2017-15670-15671.patch		\
   %D%/packages/patches/glibc-bootstrap-system.patch		\
   %D%/packages/patches/glibc-ldd-x86_64.patch			\
   %D%/packages/patches/glibc-locales.patch			\
@@ -738,7 +744,6 @@ dist_patch_DATA =						\
   %D%/packages/patches/heimdal-CVE-2017-11103.patch		\
   %D%/packages/patches/hmmer-remove-cpu-specificity.patch	\
   %D%/packages/patches/higan-remove-march-native-flag.patch	\
-  %D%/packages/patches/httpd-CVE-2017-9798.patch		\
   %D%/packages/patches/hubbub-sort-entities.patch		\
   %D%/packages/patches/hurd-fix-eth-multiplexer-dependency.patch        \
   %D%/packages/patches/hydra-disable-darcs-test.patch		\
