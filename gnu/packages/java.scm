@@ -6281,7 +6281,8 @@ the system under test at the same time.")
        #:source-dir "src/main/java"
        #:test-dir "src/test"))
     (native-inputs
-     `(("junit" ,java-junit)))
+     `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "https://github.com/FasterXML/jackson-annotations")
     (synopsis "General purpose annotations for the Jackson Data Processor")
     (description "This package contains general purpose annotations for the
