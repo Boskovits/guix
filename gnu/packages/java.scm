@@ -3742,6 +3742,7 @@ standards and recommendations.")
      `(("java-httpcomponents-httpclient" ,java-httpcomponents-httpclient)
        ("java-httpcomponents-httpcore" ,java-httpcomponents-httpcore)
        ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))))
 
 (define-public java-commons-net
