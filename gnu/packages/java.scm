@@ -3078,6 +3078,7 @@ overly clever.")
            (install-jars "target")))))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://commons.apache.org/math/")
     (synopsis "Apache Commons mathematics library")
