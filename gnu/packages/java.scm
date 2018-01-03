@@ -4744,6 +4744,7 @@ This is a part of the Apache Commons Project.")
     (arguments `(#:jar-name "javaewah.jar"))
     (inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "https://github.com/lemire/javaewah")
     (synopsis "Compressed alternative to the Java @code{BitSet} class")
