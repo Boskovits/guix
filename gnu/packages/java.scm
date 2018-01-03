@@ -2801,6 +2801,7 @@ to generate and transform Java byte code.")
        #:test-dir "main/src/test/"))
     (native-inputs
      `(("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("java-hamcrest-core" ,java-hamcrest-core)))
     (home-page "http://objenesis.org/")
     (synopsis "Bypass the constructor when creating an object")
