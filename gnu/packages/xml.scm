@@ -45,6 +45,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages web)
+  #:use-module (gnu packages java)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -1237,7 +1238,9 @@ SAX2 APIs.")
        (modify-phases %standard-phases
          (replace 'install (install-jars "jar")))))
     (native-inputs
-     `(("unzip" ,unzip)))
+     `(("unzip" ,unzip)
+       ("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "http://simple.sourceforge.net/")
     (synopsis "XML serialization framework for Java")
     (description "Simple is a high performance XML serialization and
