@@ -339,7 +339,7 @@ runtime.")
        ("java-usb4java" ,java-usb4java)
        ("java-jsch" ,java-jsch)
        ("java-slf4j-api" ,java-slf4j-api)
-       ("java-jgit" ,java-jgit-4.2)
+       ("java-jgit" ,java-jgit)
        ("axoloti-runtime" ,axoloti-runtime)))
     (native-inputs
      `(("ant" ,ant)
