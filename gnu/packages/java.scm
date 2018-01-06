@@ -5985,6 +5985,7 @@ package contains utilities and extensions related to monitoring.")))
        ("lang" ,java-ops4j-base-lang)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (description "OPS4J stands for Open Participation Software for Java.  This
 package contains utilities and extensions related to handling streams and files.")))
