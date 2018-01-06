@@ -6527,6 +6527,7 @@ configuration.")
        ("java-snakeyaml" ,java-snakeyaml)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)
        ("java-ops4j-pax-exam-core-spi" ,java-ops4j-pax-exam-core-spi)
        ("java-ops4j-pax-exam-core-junit" ,java-ops4j-pax-exam-core-junit)
