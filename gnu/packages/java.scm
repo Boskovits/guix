@@ -7781,6 +7781,7 @@ protocol-independent framework to build mail and messaging applications.")
        ("java-lz4" ,java-lz4)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-all)
        ("objenesis" ,java-objenesis)
        ("asm" ,java-asm)
