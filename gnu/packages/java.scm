@@ -6151,7 +6151,7 @@ it manages project dependencies, gives diffs jars, and much more.")
        #:source-dir "src/main/java"
        #:test-exclude
        ;; Abstract base classes for other tests
-       (list "**/BndTest.java" "**/CoreTest.java")
+       (list "**/Bnd*Test.java" "**/CoreTest.java")
        #:phases
        (modify-phases %standard-phases
          (add-before 'check 'fix-version
