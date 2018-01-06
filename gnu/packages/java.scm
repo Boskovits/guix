@@ -6209,6 +6209,7 @@ to create those artifacts.")
        ("java-osgi-core" ,java-osgi-core)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (build-system ant-build-system)
     (home-page "https://ops4j1.jira.com/wiki/spaces/PAXEXAM4/overview")
