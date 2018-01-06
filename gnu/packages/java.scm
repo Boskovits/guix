@@ -7873,7 +7873,8 @@ outputting XML data from Java code.")
        ("log4j-core" ,java-log4j-core)
        ("logging" ,java-commons-logging-minimal)))
     (native-inputs
-     `(("junit" ,java-junit)))
+     `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "https://geronimo.apache.org/maven/xbean/3.6/xbean-reflect/")
     (synopsis "Dependency injection helper")
     (description "Xbean-reflect provides very flexible ways to create objects
