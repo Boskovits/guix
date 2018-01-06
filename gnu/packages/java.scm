@@ -7519,6 +7519,7 @@ streams, etc.")
      `(("java-objenesis" ,java-objenesis)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("cglib" ,java-cglib)
        ("asm" ,java-asm)
        ("hamcrest" ,java-hamcrest-core)
