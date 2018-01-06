@@ -6046,6 +6046,7 @@ package contains utilities for storing and retrieving data from an
        #:test-dir "ops4j-base-spi/src/test"))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (description "OPS4J stands for Open Participation Software for Java.  This
 package contains utilities for obtaining services via the Java SE 6
