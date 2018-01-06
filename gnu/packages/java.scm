@@ -2691,6 +2691,7 @@ archives (jar).")
        ("xbean" ,java-geronimo-xbean-reflect)
        ("utils" ,java-plexus-utils)
        ("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("guava" ,java-guava)))
     (native-inputs
      `(("archiver" ,java-plexus-archiver)
