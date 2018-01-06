@@ -2642,6 +2642,7 @@ reusing it in maven.")
        ("java-jsr305" ,java-jsr305)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("classworld" ,java-plexus-classworlds)
        ("xbean" ,java-geronimo-xbean-reflect)
        ("xz" ,java-tukaani-xz)
