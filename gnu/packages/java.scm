@@ -6270,6 +6270,7 @@ the system under test at the same time.")
     (native-inputs
      `(("mockito" ,java-mockito-1)
        ("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)
        ("cglib" ,java-cglib)
        ("objenesis" ,java-objenesis)
