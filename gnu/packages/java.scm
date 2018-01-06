@@ -2587,6 +2587,7 @@ implementation.")
        ("java-jsr305" ,java-jsr305)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)
        ("guava" ,java-guava)
        ("classworlds" ,java-plexus-classworlds)
