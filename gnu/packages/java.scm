@@ -6594,7 +6594,8 @@ interface and high-performance Typed Access API.")
     (inputs
      `(("stax2" ,java-stax2-api)))
     (native-inputs
-     `(("junit" ,java-junit)))
+     `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (home-page "https://github.com/FasterXML/woodstox")
     (synopsis "Stax XML API implementation")
     (description "Woodstox is a stax XML API implementation.")
