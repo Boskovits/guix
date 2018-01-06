@@ -7605,7 +7605,8 @@ done to the IDE or continuous integration servers which simplifies adoption.")
        ("hamcrest" ,java-hamcrest-core)
        ("objenesis" ,java-objenesis)
        ("asm" ,java-asm)
-       ("junit" ,java-junit)))))
+       ("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))))
 
 (define-public java-powermock-api-easymock
   (package
