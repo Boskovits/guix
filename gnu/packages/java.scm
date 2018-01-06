@@ -6644,6 +6644,7 @@ interface and high-performance Typed Access API.")
        ("woodstox" ,java-woodstox-core)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://github.com/FasterXML/jackson-dataformat-xml")
     (synopsis "Read and write XML")
