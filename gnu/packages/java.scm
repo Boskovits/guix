@@ -6170,6 +6170,7 @@ it manages project dependencies, gives diffs jars, and much more.")
        ("bndlib" ,java-aqute-bndlib)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)
        ("log4j" ,java-log4j-api)
        ("bndannotation" ,java-aqute-bnd-annotation)
