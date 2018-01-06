@@ -7706,7 +7706,7 @@ protocol-independent framework to build mail and messaging applications.")
 (define-public java-jeromq
   (package
     (name "java-jeromq")
-    (version "0.4.2")
+    (version "0.4.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/zeromq/jeromq/archive/v"
@@ -7714,7 +7714,7 @@ protocol-independent framework to build mail and messaging applications.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "17wx8dlyqmbw77xf6d6wxnhiyky6181zpf1a48jqzz9hidz0j841"))))
+                "0mmsz5dcr786z9pnvp3nvjchkfh0z82agv0lk4r084x3l06h55pm"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "java-jeromq.jar"
