@@ -7215,6 +7215,7 @@ Cryptography library.")
              #t)))))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-core)))
     (home-page "https://github.com/mvel/mvel")
     (synopsis "MVFLEX Expression Language")
