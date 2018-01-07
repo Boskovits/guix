@@ -5661,6 +5661,7 @@ technologies.")
              #t)))))
     (inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-all)))
     (home-page "https://www.eclipse.org/jetty/")
     (synopsis "Helper classes for jetty tests")
