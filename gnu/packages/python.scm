@@ -1704,7 +1704,10 @@ files.")
          "02qkfpykbq35id8glfgwc38yc430427yd05z1wc5cnld8zgicmgi"))))
     (build-system python-build-system)
     (arguments
-     `(#:phases
+     `(;; The tests are fragile, depending on a specific version of pytest:
+       ;; <https://github.com/pallets/click/issues/823>
+       #:tests? #f
+       #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'fix-paths
            (lambda* (#:key inputs #:allow-other-keys)
@@ -1713,10 +1716,7 @@ files.")
                (substitute* "click/_unicodefun.py"
                  (("'locale'")
                   (string-append "'" glibc "/bin/locale'"))))
-             #t))
-         (replace 'check
-           (lambda _
-             (zero? (system* "make" "test")))))))
+             #t)))))
     (native-inputs
      `(("python-pytest" ,python-pytest)))
     (home-page "http://click.pocoo.org")
@@ -2660,7 +2660,7 @@ between language specification and implementation aspects.")
 (define-public python-numpy
   (package
     (name "python-numpy")
-    (version "1.12.0")
+    (version "1.13.3")
     (source
      (origin
        (method url-fetch)
@@ -2669,7 +2669,7 @@ between language specification and implementation aspects.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "025d4j4aakcp8w5i5diqh812cbbjgac7jszx1j56ivrbi1i8vv7d"))))
+         "1f25rbn6n4ia87spy18iwc76g36d9mimyl27p2lfaalgx897pf8x"))))
     (build-system python-build-system)
     (inputs
      `(("openblas" ,openblas)
@@ -2735,26 +2735,6 @@ capabilities.")
 
 (define-public python2-numpy
   (package-with-python2 python-numpy))
-
-(define-public python-numpy-next
-  (package (inherit python-numpy)
-    (name "python-numpy-next")
-    (version "1.13.1")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "numpy" version ".zip"))
-       (sha256
-        (base32
-         "1fsgkhh1vdkhmlz8vmdgxnj9n9yaanckxxzz9s0b4p08fqvjic69"))))
-    (native-inputs
-     `(("unzip" ,unzip)
-       ("python-cython" ,python-cython)
-       ("python-nose" ,python-nose)
-       ("gfortran" ,gfortran)))))
-
-(define-public python2-numpy-next
-  (package-with-python2 python-numpy-next))
 
 ;; NOTE: NumPy 1.8 is packaged only for Python 2 because it is of
 ;; interest only for legacy code going back to NumPy's predecessor
@@ -7186,6 +7166,10 @@ Python at your fingertips, in Lisp form.")
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2
+       ;; The test suite fails with Python > 2.7.13:
+       ;;     import test.support
+       ;; ImportError: No module named support
+       #:tests? #f
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-/bin/sh
@@ -7193,15 +7177,7 @@ Python at your fingertips, in Lisp form.")
              (substitute* '("subprocess32.py"
                             "test_subprocess32.py")
                (("/bin/sh") (which "sh")))
-             #t))
-         (delete 'check)
-         (add-after 'install 'check
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             ;; For some reason this package fails to import
-             ;; _posixsubprocess.so when PYTHONPATH is set to the build
-             ;; directory. Running tests after install is easier.
-             (add-installed-pythonpath inputs outputs)
-             (zero? (system* "python" "test_subprocess32.py")))))))
+             #t)))))
     (home-page "https://github.com/google/python-subprocess32")
     (synopsis "Backport of the subprocess module from Python 3.2")
     (description
@@ -12251,3 +12227,72 @@ such as figshare or Zenodo.")
 
 (define-public python2-semver
   (package-with-python2 python-semver))
+
+(define-public python2-pyro
+  (package
+    (name "python2-pyro")
+    (version "3.16")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "Pyro" version))
+       (file-name (string-append "Pyro-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0y75wzdqbjy565rpxaxscav4j8xg060sa90lnmb7aypgaf251v8v"))))
+    (build-system python-build-system)
+    (arguments
+     ;; Pyro is not compatible with Python 3
+     `(#:python ,python-2
+       ;; Pyro has no test cases for automatic execution
+       #:tests? #f))
+    (home-page "http://pythonhosted.org/Pyro/")
+    (synopsis "Distributed object manager for Python")
+    (description "Pyro is a Distributed Object Technology system
+written in Python that is designed to be easy to use.  It resembles
+Java's Remote Method Invocation (RMI).  It has less similarity to CORBA,
+which is a system and language independent Distributed Object Technology
+and has much more to offer than Pyro or RMI.  Pyro 3.x is no
+longer maintained.  New projects should use Pyro4 instead, which
+is the new Pyro version that is actively developed.")
+    (license license:expat)))
+
+(define-public python2-scientific
+  (package
+    (name "python2-scientific")
+    (version "2.9.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://bitbucket.org/khinsen/"
+                           "scientificpython/downloads/ScientificPython-"
+                           version ".tar.gz"))
+       (file-name (string-append "ScientificPython-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0fc69zhlsn9d2jvbzyjl9ah53vj598h84nkq230c83ahfvgzx5y3"))))
+    (build-system python-build-system)
+    (inputs
+     `(("netcdf" ,netcdf)))
+    (propagated-inputs
+     `(("python-numpy" ,python2-numpy-1.8)
+       ("python-pyro", python2-pyro)))
+    (arguments
+     ;; ScientificPython is not compatible with Python 3
+     `(#:python ,python-2
+       #:tests? #f ; No test suite
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'build
+           (lambda* (#:key inputs #:allow-other-keys)
+             (zero? (system* "python" "setup.py" "build"
+                             (string-append "--netcdf_prefix="
+                                            (assoc-ref inputs "netcdf")))))))))
+    (home-page "https://bitbucket.org/khinsen/scientificpython")
+    (synopsis "Python modules for scientific computing")
+    (description "ScientificPython is a collection of Python modules that are
+useful for scientific computing.  Most modules are rather general (Geometry,
+physical units, automatic derivatives, ...) whereas others are more
+domain-specific (e.g. netCDF and PDB support).  The library is currently
+not actively maintained and works only with Python 2 and NumPy < 1.9.")
+    (license license:cecill-c)))
