@@ -15,7 +15,7 @@
 # Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 # Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 # Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
-# Copyright © 2017 Gábor Boskovits <boskovits@gmail.com>
+# Copyright © 2017, 2018 Gábor Boskovits <boskovits@gmail.com>
 #
 # This file is part of GNU Guix.
 #
