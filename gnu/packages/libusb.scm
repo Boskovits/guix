@@ -138,7 +138,9 @@ version of libusb to run with newer libusb.")
       (inputs
        `(("libusb" ,libusb)))
       (native-inputs
-       `(("jdk" ,icedtea "jdk")))
+       `(("jdk" ,icedtea "jdk")
+         ("junit" ,junit)
+         ("ant-junit" ,ant-junit)))
       (home-page "https://github.com/usb4java/libusb4java/")
       (synopsis "JNI bindings to libusb")
       (description
