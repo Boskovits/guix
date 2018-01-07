@@ -3222,18 +3222,19 @@ are many features, including:
                (base32
                 "055r51a5lfc3z7rkxnxmnn1npvkvda7636hjpm4qk7cnfzz98387"))))
     (arguments
-      (substitute-keyword-arguments (package-arguments java-commons-collections4)
-        ((#:phases phases)
-          `(modify-phases ,phases
-            ;; The manifest is required by the build procedure
-            (add-before 'build 'add-manifest
-              (lambda _
-                (mkdir-p "build/conf")
-                (call-with-output-file "build/conf/MANIFEST.MF"
-                  (lambda (file)
-                    (format file "Manifest-Version: 1.0\n")))))
-            (replace 'install
-              (install-jars "build"))))))))
+     `(#:jdk ,icedtea-7
+       #:ant ,ant/java7
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'add-manifest
+           (lambda _
+             (mkdir-p "build/conf")
+             (call-with-output-file "build/conf/MANIFEST.MF"
+               (lambda (file)
+                 (format file "Manifest-Version: 1.0\n")))))
+         (replace 'install
+           (install-jars "build")))))))
 
 (define java-commons-collections-test-classes
   (package
