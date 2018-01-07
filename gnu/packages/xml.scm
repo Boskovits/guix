@@ -1234,6 +1234,7 @@ SAX2 APIs.")
     (arguments
      `(#:build-target "build"
        #:test-target "test"
+       #:tests? #f
        #:phases
        (modify-phases %standard-phases
          (replace 'install (install-jars "jar")))))
