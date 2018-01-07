@@ -5723,6 +5723,7 @@ Web Server.")
        ("servlet" ,java-tomcat)))
     (native-inputs
      `(("junit" ,java-junit)
+       ("ant-junit" ,ant-junit)
        ("hamcrest" ,java-hamcrest-all)
        ("perf-helper" ,java-eclipse-jetty-perf-helper)
        ("test-helper" ,java-eclipse-jetty-test-helper)))
