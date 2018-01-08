@@ -1,3 +1,11 @@
+Based on the upstream fix for the java8 compilation issue.
+Simplified patch.
+Upstream version of patch does not work with this source tree.
+
+The issue is that in java8 it is an error to pass null to
+removeAll. Results in null pointer exception. java7
+behaviour was to return the list unmodified.
+
 From 43867d50c05d1c06ab7220eb974a8874ae10c308 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
 Date: Fri, 5 Jan 2018 19:08:24 +0100
