@@ -2749,6 +2749,7 @@ complex transformations and code analysis tools.")
     (arguments
      (substitute-keyword-arguments (package-arguments java-asm)
        ((#:tests? _) #f)))
+    (native-inputs `())
     (inputs
      `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
        ("java-aqute-libg" ,java-aqute-libg-bootstrap)
