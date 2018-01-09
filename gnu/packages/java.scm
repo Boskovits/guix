@@ -2697,9 +2697,9 @@ archives (jar).")
      `(("archiver" ,java-plexus-archiver)
        ("hamcrest" ,java-hamcrest-core)))))
 
-(define-public java-asm-bootstrap
+(define-public java-asm
   (package
-    (name "java-asm-bootstrap")
+    (name "java-asm")
     (version "6.0")
     (source (origin
               (method url-fetch)
@@ -2710,16 +2710,17 @@ archives (jar).")
                 "115l5pqblirdkmzi32dxx7gbcm4jy0s14y5wircr6h8jdr9aix00"))))
     (build-system ant-build-system)
     (inputs
-     `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
-       ("java-aqute-libg" ,java-aqute-libg-bootstrap)))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib)
+       ("java-aqute-libg" ,java-aqute-libg)))
     (arguments
      `(#:build-target "compile"
        #:tests? #f
-       ;; We don't need extra ant tasks, but the build system asks us to
-       ;; provide a path anyway. We need to specify bnd path, but it is
-       ;; pulled in from classpath.
+       ;; We don't need these extra ant tasks, but the build system asks us to
+       ;; provide a path anyway.
+       ;; We need to specify bnd path, but it is pulled in from classpath.
        #:make-flags (list (string-append "-Dobjectweb.ant.tasks.path=foo")
-                          (string-append "-Dbiz.aQute.bnd.path=" (assoc-ref %build-inputs "java-aqute-bndlib")))
+                          (string-append "-Dbiz.aQute.bnd.path="
+                                         (assoc-ref %build-inputs "java-aqute-bndlib")))
        #:phases
        (modify-phases %standard-phases
          (add-before 'install 'build-jars
@@ -2741,18 +2742,19 @@ transformations and analysis algorithms allow to easily assemble custom
 complex transformations and code analysis tools.")
     (license license:bsd-3)))
 
-(define-public java-asm
+(define-public java-asm-bootstrap
   (package
-    (inherit java-asm-bootstrap)
-    (name "java-asm")
+    (inherit java-asm)
+    (name "java-asm-bootstrap")
     (arguments
-     (substitute-keyword-arguments (package-arguments java-asm-bootstrap)
-       ((#:tests? _) #f)));fixme do something, so that we can run tests (we need make-flags)
+     (substitute-keyword-arguments (package-arguments java-asm)
+       ((#:tests? _) #f)))
     (inputs
-     `(("java-aqute-bndlib" ,java-aqute-bndlib)
-       ("java-aqute-libg" ,java-aqute-libg)
-       ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
-                 (delete `("java-aqute-libg" ,java-aqute-libg-bootstrap) (package-inputs java-asm-bootstrap)))))))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
+       ("java-aqute-libg" ,java-aqute-libg-bootstrap)
+       ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib)
+                 (delete `("java-aqute-libg" ,java-aqute-libg)
+                         (package-inputs java-asm)))))))
 
 (define-public java-cglib
   (package
