@@ -2,12 +2,12 @@
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2014, 2015, 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2012 Nikita Karetnikov <nikita@karetnikov.org>
-;;; Copyright © 2014, 2015, 2016, 2017 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 Raymond Nicholson <rain1@openmailbox.org>
 ;;; Copyright © 2016 Mathieu Lirzin <mthl@gnu.org>
@@ -15,7 +15,7 @@
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2016 Carlos Sánchez de La Lama <csanchezdll@gmail.com>
 ;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
@@ -283,6 +283,14 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
        ("bc" ,bc)
        ("openssl" ,openssl)
        ("kmod" ,kmod)
+       ;; On x86, build with GCC-7 for full retpoline support.
+       ;; FIXME: Remove this when our default compiler has retpoline support.
+       ,@(match (system->linux-architecture
+                 (or (%current-target-system) (%current-system)))
+           ((or "x86_64" "i386")
+            `(("gcc" ,gcc-7)))
+           (_
+            '()))
        ,@(match (and configuration-file
                      (configuration-file
                       (system->linux-architecture
@@ -370,8 +378,8 @@ It has been modified to remove all non-free binary blobs.")
 (define %intel-compatible-systems '("x86_64-linux" "i686-linux"))
 (define %linux-compatible-systems '("x86_64-linux" "i686-linux" "armhf-linux"))
 
-(define %linux-libre-version "4.14.8")
-(define %linux-libre-hash "0y8nggpdgfqfx6dy5k39vj552k5mxamwjn6mldwrhs2aqpsrbwr3")
+(define %linux-libre-version "4.14.15")
+(define %linux-libre-hash "0s94d51bym3zipxf40xjzq943b7b2x4ba1gp3j7l5npj5nr2xiy8")
 
 ;; linux-libre configuration for armhf-linux is derived from Debian armmp.  It
 ;; supports qemu "virt" machine and possibly a large number of ARM boards.
@@ -384,20 +392,20 @@ It has been modified to remove all non-free binary blobs.")
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.9
-  (make-linux-libre "4.9.71"
-                    "0z4m77zbndlqy43bgl1xhklpjilbvrhbfbcppc55z3f61qwjf0mc"
+  (make-linux-libre "4.9.78"
+                    "12j7nxz92krq2ax7rii4pr6y1pr37n7ml692kqifpzpbzqm5yb9k"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.4
-  (make-linux-libre "4.4.107"
-                    "0pfzv15c1qj7a77n8cdmsi77yhlbzv35y7qa03j0b96ajwjsclsp"
+  (make-linux-libre "4.4.113"
+                    "17l5gw99ph312k0x4d3f08zlsp1ljr6c1mp0xvqp1257gnz84bgb"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.1
-  (make-linux-libre "4.1.48"
-                    "13ii6ixcm46hzk1ns6n4hrrv4dyc0n3wvj2qhmxi178akdcgbn8a"
+  (make-linux-libre "4.1.49"
+                    "0dklmqj6ayjlkz97b811zdvpgb3yppahinji9l9jmkz4ssi7a1gs"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
@@ -672,7 +680,7 @@ slabtop, and skill.")
 (define-public usbutils
   (package
     (name "usbutils")
-    (version "008")
+    (version "009")
     (source
      (origin
       (method url-fetch)
@@ -680,7 +688,7 @@ slabtop, and skill.")
                           "usbutils-" version ".tar.xz"))
       (sha256
        (base32
-        "132clk14j4nm8crln2jymdbbc2vhzar2j2hnxyh05m79pbq1lx24"))))
+        "0q3iavmak2bs9xw486w4xfbjl0hbzii93ssgpr95mxmm9kjz1gwb"))))
     (build-system gnu-build-system)
     (inputs
      `(("libusb" ,libusb)
@@ -915,7 +923,7 @@ trace of all the system calls made by a another process/program.")
     (arguments
      ;; Compilation uses -Werror by default, but it fails.
      '(#:configure-flags '("--disable-werror")))
-    (home-page "http://www.ltrace.org/")
+    (home-page "https://www.ltrace.org/")
     (synopsis "Library call tracer for Linux")
     (description
      "ltrace intercepts and records dynamic library calls which are called by
@@ -1527,7 +1535,7 @@ transparently through a bridge.")
                (mkdir-p dest)
                (zero? (system* "tar" "xf" (assoc-ref inputs "libnl3-doc")
                                "--strip-components=1" "-C" dest))))))))
-    (home-page "http://www.infradead.org/~tgr/libnl/")
+    (home-page "https://www.infradead.org/~tgr/libnl/")
     (synopsis "NetLink protocol library suite")
     (description
      "The libnl suite is a collection of libraries providing APIs to netlink
@@ -1543,7 +1551,7 @@ configuration and monitoring interfaces.")
 (define-public iw
   (package
     (name "iw")
-    (version "4.9")
+    (version "4.14")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1551,7 +1559,7 @@ configuration and monitoring interfaces.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "1klpvv98bnx1zm6aqalnri2vd7w80scmdaxr2qnblb6mz82whk1j"))))
+                "12ddd6vh6vs97135bnlyr0szv7hvpbnmfh48584frzab0z0725ph"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("libnl" ,libnl)))
@@ -2427,6 +2435,28 @@ you to access information from temperature, voltage, and fan speed sensors.
 It works with most newer systems.")
     (license license:gpl2+)))
 
+(define-public iucode-tool
+  (package
+    (name "iucode-tool")
+    (version "2.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://gitlab.com/iucode-tool/releases"
+                                  "/raw/latest/iucode-tool_" version ".tar.xz"))
+              (sha256
+               (base32
+                "0w99k1aq1xw148ffk1xykqf60rdbphb1jknw98jcmadq4pwxl44q"))))
+    (build-system gnu-build-system)
+    (home-page "https://gitlab.com/iucode-tool/iucode-tool/wikis/home")
+    (synopsis "Manipulate Intel microcode bundles")
+    (description
+     "@command{iucode_tool} is a utility to work with microcode packages for
+Intel processors.  It can convert between formats, extract specific versions,
+create a firmware image suitable for the Linux kernel, and more.")
+    ;; cpuid.h is available for i686, x86_64, and ia64.
+    (supported-systems '("i686-linux" "x86_64-linux"))
+    (license license:gpl2+)))
+
 (define-public i2c-tools
   (package
     (name "i2c-tools")
@@ -2564,7 +2594,7 @@ particular the 'perf' command.")
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f)) ; no tests
-    (home-page "http://ghedo.github.io/pflask/")
+    (home-page "https://ghedo.github.io/pflask/")
     (synopsis "Simple tool for creating Linux namespace containers")
     (description "pflask is a simple tool for creating Linux namespace
 containers.  It can be used for running a command or even booting an OS inside
@@ -2576,14 +2606,14 @@ thanks to the use of namespaces.")
 (define-public hdparm
   (package
     (name "hdparm")
-    (version "9.52")
+    (version "9.53")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/" name "/" name "/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1djgxhfadd865dcrl6dp7dvjxpaisy7mk17mbdbglwg24ga9qhn3"))))
+                "1rb5086gp4l1h1fn2nk10ziqxjxigsd0c1zczahwc5k9vy8zawr6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags (let ((out (assoc-ref %outputs "out")))
@@ -2605,8 +2635,8 @@ performance benchmarking tool.
 
 @command{hdparm} provides a command line interface to various Linux kernel
 interfaces provided by the SATA/ATA/SAS @code{libata} subsystem, and the older
-IDE driver subsystem.  Many external USB drive enclosures with @dfn{SCSI-ATA
-Command Translation} (SAT) are also supported.")
+IDE driver subsystem.  Many external USB drive enclosures with SCSI-ATA Command
+Translation (@dfn{SAT}) are also supported.")
     (license (license:non-copyleft "file://LICENSE.TXT"))))
 
 (define-public rfkill
@@ -2642,7 +2672,7 @@ WLAN, Bluetooth and mobile broadband.")
     (version "1.7")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://sourceforge/acpiclient/acpiclient/" 
+              (uri (string-append "mirror://sourceforge/acpiclient/acpiclient/"
                                   version "/" name "-" version ".tar.gz"))
               (sha256
                (base32
@@ -3174,7 +3204,7 @@ and copy/paste text in the console and in xterm.")
 (define-public btrfs-progs
   (package
     (name "btrfs-progs")
-    (version "4.14")
+    (version "4.14.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://kernel.org/linux/kernel/"
@@ -3182,7 +3212,7 @@ and copy/paste text in the console and in xterm.")
                                   "btrfs-progs-v" version ".tar.xz"))
               (sha256
                (base32
-                "1bwirg6hz6gyfj5r3xkj4lfwadvl9pxlccf916fsmdn27fy5q289"))))
+                "1palnddw3d50kyflwk1j4xapbc6jniid6j5i9dsr8l8a7nkv7ich"))))
     (build-system gnu-build-system)
     (outputs '("out"
                "static"))      ; static versions of the binaries in "out"
@@ -3683,7 +3713,7 @@ the default @code{nsswitch} and the experimental @code{umich_ldap}.")
                (("^DOCBOOKTOMAN.*$")
                 "DOCBOOKTOMAN = true\n"))
              #t)))))
-    (home-page "http://www.kernel.org/pub/linux/utils/kernel/module-init-tools/")
+    (home-page "https://www.kernel.org/pub/linux/utils/kernel/module-init-tools/")
     (synopsis "Tools for loading and managing Linux kernel modules")
     (description
      "Tools for loading and managing Linux kernel modules, such as `modprobe',
@@ -4135,7 +4165,7 @@ re-use code and to avoid re-inventing the wheel.")
 (define-public libnftnl
   (package
     (name "libnftnl")
-    (version "1.0.8")
+    (version "1.0.9")
     (source
       (origin
         (method url-fetch)
@@ -4143,7 +4173,7 @@ re-use code and to avoid re-inventing the wheel.")
                             "libnftnl-" version ".tar.bz2"))
         (sha256
          (base32
-          "0f10cfiyl4c0f8k3brxfrw28x7a6qvrakaslg4jgqncwxycxggg6"))))
+          "0d9nkdbdck8sg6msysqyv3m9kjr9sjif5amf26dfa0g3mqjdihgy"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -4160,7 +4190,7 @@ used by nftables.")
 (define-public nftables
   (package
     (name "nftables")
-    (version "0.8")
+    (version "0.8.1")
     (source
      (origin
        (method url-fetch)
@@ -4168,7 +4198,7 @@ used by nftables.")
                            "/files/nftables-" version ".tar.bz2"))
        (sha256
         (base32
-         "16iq9x0qxikdhp1nan500rk33ycqddl1k57876m4dfv3n7kqhnrz"))))
+         "1i1gfy8l7qyhc5vlrpp63s0n5kybmc9pi4dywiq8rmkhrrnddsla"))))
     (build-system gnu-build-system)
     (inputs `(("bison", bison)
               ("flex", flex)
@@ -4282,7 +4312,7 @@ userspace queueing component and the logging subsystem.")
      "PRoot is a user-space implementation of @code{chroot}, @code{mount --bind},
 and @code{binfmt_misc}.  This means that users don't need any privileges or
 setup to do things like using an arbitrary directory as the new root
-filesystem, making files accessible somewhere else in the file system
+file system, making files accessible somewhere else in the file system
 hierarchy, or executing programs built for another CPU architecture
 transparently through QEMU user-mode.  Also, developers can use PRoot as a
 generic process instrumentation engine thanks to its extension mechanism.
@@ -4369,10 +4399,10 @@ NexGen, Rise, and SiS CPUs.")
     (native-inputs
      `(("pkg-config" ,pkg-config)))
     (home-page "https://github.com/JasonFerrara/jmtpfs")
-    (synopsis "Use a FUSE filesystem to access data over MTP")
-    (description "jmtpfs uses FUSE (filesystem in userspace) to provide access
+    (synopsis "Use a FUSE file system to access data over MTP")
+    (description "jmtpfs uses FUSE (file system in userspace) to provide access
 to data over the Media Transfer Protocol (MTP).  Unprivileged users can mount
-the MTP device as a filesystem.")
+the MTP device as a file system.")
     (license license:gpl3)))
 
 (define-public procenv
@@ -4510,7 +4540,7 @@ interfaces in parallel environments.")
              (let ((out (assoc-ref outputs "out")))
                (mkdir-p (string-append out "/share/man/man1"))
                #t))))))
-    (home-page "http://bisqwit.iki.fi/source/snapscreenshot.html")
+    (home-page "https://bisqwit.iki.fi/source/snapscreenshot.html")
     (synopsis "Take screenshots of one or more Linux text consoles")
     (description
      "snapscreenshot saves a screenshot of one or more Linux text consoles as a

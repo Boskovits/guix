@@ -4,6 +4,7 @@
 ;;; Copyright © 2017 Muriithi Frederick Muriuki <fredmanglis@gmail.com>
 ;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -21,51 +22,55 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu packages package-management)
-  #:use-module (guix packages)
-  #:use-module (guix download)
-  #:use-module (guix git-download)
-  #:use-module (guix gexp)
-  #:use-module (guix utils)
-  #:use-module (guix build-system gnu)
-  #:use-module (guix build-system python)
-  #:use-module (guix build-system emacs)
-  #:use-module ((guix licenses) #:select (gpl2+ gpl3+ agpl3+ lgpl2.1+ asl2.0
-                                          bsd-3 silofl1.1))
   #:use-module (gnu packages)
-  #:use-module (gnu packages guile)
-  #:use-module (gnu packages file)
+  #:use-module (gnu packages acl)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages backup)
+  #:use-module (gnu packages bdw-gc)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
-  #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages cpio)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
-  #:use-module (gnu packages graphviz)
-  #:use-module (gnu packages pkg-config)
-  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages file)
   #:use-module (gnu packages gettext)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
+  #:use-module (gnu packages gnupg)
+  #:use-module (gnu packages gnuzilla)
+  #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages guile)
+  #:use-module (gnu packages linux)
   #:use-module (gnu packages lisp)
-  #:use-module (gnu packages texinfo)
+  #:use-module (gnu packages man)
   #:use-module (gnu packages nettle)
+  #:use-module (gnu packages patchutils)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
-  #:use-module (gnu packages curl)
-  #:use-module (gnu packages web)
-  #:use-module (gnu packages man)
-  #:use-module (gnu packages bdw-gc)
-  #:use-module (gnu packages patchutils)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages popt)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
-  #:use-module (gnu packages popt)
-  #:use-module (gnu packages gnuzilla)
-  #:use-module (gnu packages cpio)
+  #:use-module (gnu packages serialization)
+  #:use-module (gnu packages ssh)
+  #:use-module (gnu packages texinfo)
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
-  #:use-module (gnu packages ssh)
   #:use-module (gnu packages vim)
-  #:use-module (gnu packages serialization)
-  #:use-module (gnu packages acl)
-  #:use-module (srfi srfi-1)
-  #:use-module (ice-9 match))
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xml)
+  #:use-module (guix build-system emacs)
+  #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson)
+  #:use-module (guix build-system python)
+  #:use-module (guix download)
+  #:use-module (guix gexp)
+  #:use-module (guix git-download)
+  #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix packages)
+  #:use-module (guix utils)
+  #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1))
 
 (define (boot-guile-uri arch)
   "Return the URI for the bootstrap Guile tarball for ARCH."
@@ -86,8 +91,8 @@
   ;; Note: the 'update-guix-package.scm' script expects this definition to
   ;; start precisely like this.
   (let ((version "0.14.0")
-        (commit "02345c963e1e8a45afcdf5acb80fca4538244b36")
-        (revision 2))
+        (commit "33988f9b5876e4b44cabe1997a91eb604931c1ca")
+        (revision 7))
     (package
       (name "guix")
 
@@ -103,7 +108,7 @@
                       (commit commit)))
                 (sha256
                  (base32
-                  "0f33makasj14zf0zfv1w7k04bkcpdy5grx5b904vv5ygi5bak7nx"))
+                  "0sfr32yhkm87apgpp6mjr6r43sp4l0ih35q4pmhwzfnj2bimmzhk"))
                 (file-name (string-append "guix-" version "-checkout"))))
       (build-system gnu-build-system)
       (arguments
@@ -291,7 +296,7 @@ also a distribution thereof.  It includes a virtual machine image.  Besides
 the usual package management features, it also supports transactional
 upgrades and roll-backs, per-user profiles, and much more.  It is based on
 the Nix package manager.")
-      (license gpl3+)
+      (license license:gpl3+)
       (properties '((ftp-server . "alpha.gnu.org"))))))
 
 ;; Alias for backward compatibility.
@@ -395,7 +400,7 @@ Haskell—they are built by functions that don't have side-effects, and they
 never change after they have been built.  Nix stores packages in the Nix
 store, usually the directory /nix/store, where each package has its own unique
 sub-directory.")
-    (license lgpl2.1+)))
+    (license license:lgpl2.1+)))
 
 (define-public emacs-nix-mode
   (package
@@ -441,7 +446,7 @@ of data and makes them appear to be merged into the same directory.  It is
 typically used for managing software packages installed from source, by
 letting you install them apart in distinct directories and then create
 symlinks to the files in a common directory such as /usr/local.")
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public rpm
   (package
@@ -514,18 +519,18 @@ description.  There is also a library permitting developers to manage such
 transactions from C or Python.")
 
     ;; The whole is GPLv2+; librpm itself is dual-licensed LGPLv2+ | GPLv2+.
-    (license gpl2+)))
+    (license license:gpl2+)))
 
 (define-public diffoscope
   (package
     (name "diffoscope")
-    (version "88")
+    (version "90")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri name version))
               (sha256
                (base32
-                "1zp6nb37igssxg4bqsi3cw5klx4prhcx50mzg4463l50mssn8mp2"))))
+                "0hhg26vi0z2q4gwklwq4k16hibc4kq16jvyzp6zhr4kspi07wl6i"))))
     (build-system python-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -576,7 +581,7 @@ transactions from C or Python.")
 different.  It recursively unpacks archives of many kinds and transforms
 various binary formats into more human readable forms to compare them.  It can
 compare two tarballs, ISO images, or PDFs just as easily.")
-    (license gpl3+)))
+    (license license:gpl3+)))
 
 (define-public python-anaconda-client
   (package
@@ -628,7 +633,7 @@ compare two tarballs, ISO images, or PDFs just as easily.")
      "Anaconda Cloud command line client library provides an interface to
 Anaconda Cloud.  Anaconda Cloud is useful for sharing packages, notebooks and
 environments.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public python2-anaconda-client
   (package-with-python2 python-anaconda-client))
@@ -704,7 +709,7 @@ it easy to create independent environments even for C libraries.  Conda is
 written entirely in Python.
 
 This package provides Conda as a library.")
-    (license bsd-3)))
+    (license license:bsd-3)))
 
 (define-public python2-conda
   (let ((base (package-with-python2
@@ -802,4 +807,66 @@ on top of GNU Guix.")
     ;; The Scheme modules in guix/ and gnu/ are licensed GPL3+,
     ;; the web interface modules in gwl/ are licensed AGPL3+,
     ;; and the fonts included in this package are licensed OFL1.1.
-    (license (list gpl3+ agpl3+ silofl1.1))))
+    (license (list license:gpl3+ license:agpl3+ license:silofl1.1))))
+
+(define-public gcab
+  (package
+    (name "gcab")
+    (version "1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/" name "/"
+                                  version "/" name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1ji8j8pnxqaycbp9ydi2zq7gcr02c2vw4qnc198i6jwy9zkh2x19"))))
+    (build-system meson-build-system)
+    (native-inputs
+     `(("glib:bin" ,glib "bin")         ; for glib-mkenums
+       ("intltool" ,intltool)
+       ("pkg-config" ,pkg-config)
+       ("vala" ,vala)))
+    (inputs
+     `(("glib" ,glib)
+       ("zlib" ,zlib)))
+    (arguments
+     `(#:configure-flags
+       ;; XXX This ‘documentation’ is for developers, and fails informatively:
+       ;; Error in gtkdoc helper script: 'gtkdoc-mkhtml' failed with status 5
+       (list "-Ddocs=false"
+             "-Dintrospection=false")))
+    (home-page "https://wiki.gnome.org/msitools") ; no dedicated home page
+    (synopsis "Microsoft Cabinet file manipulation library")
+    (description
+     "The libgcab library provides GObject functions to read, write, and modify
+Microsoft cabinet (.@dfn{CAB}) files.")
+    (license (list license:gpl2+        ; tests/testsuite.at
+                   license:lgpl2.1+)))) ; the rest
+
+(define-public msitools
+  (package
+    (name "msitools")
+    (version "0.97")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://gnome/sources/" name "/"
+                                  version "/" name "-" version ".tar.xz"))
+              (sha256
+               (base32
+                "0pn6izlgwi4ngpk9jk2n38gcjjpk29nm15aad89bg9z3k9n2hnrs"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("gcab" ,gcab)
+       ("glib" ,glib)
+       ("libgsf" ,libgsf)
+       ("libxml2" ,libxml2)
+       ("uuid" ,util-linux)))
+    (home-page "https://wiki.gnome.org/msitools")
+    (synopsis "Windows Installer file manipulation tool")
+    (description
+     "msitools is a collection of command-line tools to inspect, extract, build,
+and sign Windows@tie{}Installer (.@dfn{MSI}) files.  It aims to be a solution
+for packaging and deployment of cross-compiled Windows applications.")
+    (license license:lgpl2.1+)))

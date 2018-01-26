@@ -14,6 +14,7 @@
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2891,8 +2892,8 @@ X server.")
 
 
 (define-public xf86-video-intel
-  (let ((commit "c89905754b929f0421db7ea6d60b8942ccdbd8af")
-        (revision "8"))
+  (let ((commit "af6d8e9e8f546e5cba60e3a62765c2dbd0328e83")
+        (revision "9"))
     (package
       (name "xf86-video-intel")
       (version (string-append "2.99.917-" revision "-"
@@ -2906,7 +2907,7 @@ X server.")
                (commit commit)))
          (sha256
           (base32
-           "1xiyxhlq88vvgjavhxdkk933b5q7vm4jn6db144a6sqzifwaj672"))
+           "0f6sbkgykvvdggy8z6y7blf7yharg9vmiixxy190643bjxlnpp2s"))
          (file-name (string-append name "-" version))))
       (build-system gnu-build-system)
       (inputs `(("mesa" ,mesa)
@@ -5086,7 +5087,7 @@ over Xlib, including:
 (define-public xorg-server
   (package
     (name "xorg-server")
-    (version "1.19.5")
+    (version "1.19.6")
     (source
       (origin
         (method url-fetch)
@@ -5095,7 +5096,7 @@ over Xlib, including:
               name "-" version ".tar.bz2"))
         (sha256
          (base32
-          "0iql4pgsgpyqcrd3256pv227cdadvz01ych61n0d41ixp67gmzqq"))
+          "15y13ihgkggmly5s07vzvpn35gzx1w0hrkbnlcvcy05h3lpm0cm7"))
         (patches
          (list
           ;; See:
@@ -5780,20 +5781,22 @@ to answer a question.  Xmessage can also exit after a specified time.")
 (define-public xterm
   (package
     (name "xterm")
-    (version "330")
+    (version "331")
     (source (origin
               (method url-fetch)
-              (uri (string-append "ftp://ftp.invisible-island.net/xterm/"
-                                  "xterm-" version ".tgz"))
+              (uri (list
+                    (string-append "http://invisible-mirror.net/archives/xterm/"
+                                   name "-" version ".tgz")
+                    (string-append "ftp://ftp.invisible-island.net/xterm/"
+                                   name "-" version ".tgz")))
               (sha256
                (base32
-                "1psnfmqd23v9gxj8a98nzrgvymrk0p1whwqi92gy15bbkzrgkvks"))))
+                "047gk58hvj64974sg259ss5gixj7pac6halmjfz4cc6r1yimds4s"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags '("--enable-wide-chars" "--enable-256-color"
-                           "--enable-load-vt-fonts" "--enable-i18n"
-                           "--enable-doublechars" "--enable-luit"
-                           "--enable-mini-luit")
+     '(#:configure-flags '("--enable-wide-chars" "--enable-load-vt-fonts"
+                           "--enable-i18n" "--enable-doublechars"
+                           "--enable-luit" "--enable-mini-luit")
        #:tests? #f))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -5810,7 +5813,7 @@ to answer a question.  Xmessage can also exit after a specified time.")
        ("libXt" ,libxt)
        ("xproto" ,xproto)
        ("libXaw" ,libxaw)))
-    (home-page "http://invisible-island.net/xterm/")
+    (home-page "https://invisible-island.net/xterm/")
     (synopsis "Terminal emulator for the X Window System")
     (description
      "The xterm program is a terminal emulator for the X Window System.  It
@@ -5952,7 +5955,7 @@ basic eye-candy effects.")
 (define-public xpra
   (package
     (name "xpra")
-    (version "2.2")
+    (version "2.2.3")
     (source
      (origin
        (method url-fetch)
@@ -5960,7 +5963,7 @@ basic eye-candy effects.")
                            version ".tar.xz"))
        (sha256
         (base32
-         "0gi0i5pbhfzr5j4mbngjxvrk6r4lvigw4w2104znplmmrf1mw6y2"))))
+         "03cq16cfffm5f62g1xc3makr03b5wjjfy6zlwag70pc3g0k6n6jh"))))
     (build-system python-build-system)
     (inputs `(("ffmpeg" ,ffmpeg)
               ("flac" ,flac)

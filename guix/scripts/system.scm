@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -44,6 +44,7 @@
   #:use-module (gnu system)
   #:use-module (gnu bootloader)
   #:use-module (gnu system file-systems)
+  #:use-module (gnu system mapped-devices)
   #:use-module (gnu system linux-container)
   #:use-module (gnu system uuid)
   #:use-module (gnu system vm)
@@ -330,7 +331,9 @@ bring the system down."
             (let ((to-load-names  (map shepherd-service-canonical-name to-load))
                   (to-start       (filter shepherd-service-auto-start? to-load)))
               (info (G_ "loading new services:~{ ~a~}...~%") to-load-names)
-              (mlet %store-monad ((files (mapm %store-monad shepherd-service-file
+              (mlet %store-monad ((files (mapm %store-monad
+                                               (compose lower-object
+                                                        shepherd-service-file)
                                                to-load)))
                 ;; Here we assume that FILES are exactly those that were computed
                 ;; as part of the derivation that built OS, which is normally the
@@ -621,6 +624,22 @@ any, are available.  Raise an error if they're not."
       ;; Better be safe than sorry.
       (exit 1))))
 
+(define (check-mapped-devices mapped-devices)
+  "Check that each of MAPPED-DEVICES is valid according to the 'check'
+procedure of its type."
+  (for-each (lambda (md)
+              (let ((check (mapped-device-kind-check
+                            (mapped-device-type md))))
+                ;; We expect CHECK to raise an exception with a detailed
+                ;; '&message' if something goes wrong, but handle the case
+                ;; where it just returns #f.
+                (unless (check md)
+                  (leave (G_ "~a: invalid '~a' mapped device~%")
+                         (location->string
+                          (source-properties->location
+                           (mapped-device-location md)))))))
+            mapped-devices))
+
 
 ;;;
 ;;; Action.
@@ -692,8 +711,8 @@ and TARGET arguments."
   "Perform ACTION for OS.  INSTALL-BOOTLOADER? specifies whether to install
 bootloader; BOOTLOADER-TAGET is the target for the bootloader; TARGET is the
 target root directory; IMAGE-SIZE is the size of the image to be built, for
-the 'vm-image' and 'disk-image' actions.  The root filesystem is created as a
-FILE-SYSTEM-TYPE filesystem.  FULL-BOOT? is used for the 'vm' action; it
+the 'vm-image' and 'disk-image' actions.  The root file system is created as a
+FILE-SYSTEM-TYPE file system.  FULL-BOOT? is used for the 'vm' action; it
 determines whether to boot directly to the kernel or to the bootloader.
 
 When DERIVATIONS-ONLY? is true, print the derivation file name(s) without
@@ -710,9 +729,10 @@ output when building a system derivation, such as a disk image."
   ;; Check whether the declared file systems exist.  This is better than
   ;; instantiating a broken configuration.  Assume that we can only check if
   ;; running as root.
-  (when (and (memq action '(init reconfigure))
-             (zero? (getuid)))
-    (check-file-system-availability (operating-system-file-systems os)))
+  (when (memq action '(init reconfigure))
+    (when (zero? (getuid))
+      (check-file-system-availability (operating-system-file-systems os)))
+    (check-mapped-devices (operating-system-mapped-devices os)))
 
   (mlet* %store-monad
       ((sys       (system-derivation-for-action os action

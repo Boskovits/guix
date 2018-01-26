@@ -1,8 +1,9 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2018 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2017 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -40,6 +41,7 @@
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gstreamer)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages openldap)
   #:use-module (gnu packages perl)
@@ -53,19 +55,21 @@
   #:use-module (gnu packages tls)
   #:use-module (gnu packages video)
   #:use-module (gnu packages xml)
-  #:use-module (gnu packages xorg))
+  #:use-module (gnu packages xorg)
+  #:use-module (ice-9 match))
 
 (define-public wine
   (package
     (name "wine")
-    (version "2.0.3")
+    (version "3.0")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://dl.winehq.org/wine/source/2.0"
+              (uri (string-append "https://dl.winehq.org/wine/source/"
+                                  (version-major+minor version)
                                   "/wine-" version ".tar.xz"))
               (sha256
                (base32
-                "0mmyc94r5drffir8zr8jx6iawhgfzjk96fj494aa18vhz1jcc4d8"))))
+                "1v7vq9iinkscbq6wg85fb0d2137660fg2nk5iabxkl2wr850asil"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)
                      ("gettext" ,gettext-minimal)
@@ -111,19 +115,24 @@
        ("v4l-utils" ,v4l-utils)
        ("zlib" ,zlib)))
     (arguments
-     `(;; Force a 32-bit build (under the assumption that this package is
-       ;; being used on an IA32-compatible architecture.)
-       #:system "i686-linux"
+     `(;; Force a 32-bit build targeting a similar architecture, i.e.:
+       ;; armhf for armhf/aarch64, i686 for i686/x86_64.
+       #:system ,@(match (%current-system)
+                    ((or "armhf-linux" "aarch64-linux")
+                     `("armhf-linux"))
+                    (_
+                     `("i686-linux")))
 
        ;; XXX: There's a test suite, but it's unclear whether it's supposed to
        ;; pass.
        #:tests? #f
 
        #:configure-flags
-       (list (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))
+       (list (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib/wine32"))
 
        #:make-flags
-       (list "SHELL=bash")
+       (list "SHELL=bash"
+             (string-append "libdir=" %output "/lib/wine32"))
 
        #:phases
        (modify-phases %standard-phases
@@ -139,7 +148,7 @@
                   (format #f "~a\"~a\"" defso (find-so soname))))
                #t))))))
     (home-page "https://www.winehq.org/")
-    (synopsis "Implementation of the Windows API")
+    (synopsis "Implementation of the Windows API (32-bit only)")
     (description
      "Wine (originally an acronym for \"Wine Is Not an Emulator\") is a
 compatibility layer capable of running Windows applications.  Instead of
@@ -147,39 +156,141 @@ simulating internal Windows logic like a virtual machine or emulator, Wine
 translates Windows API calls into POSIX calls on-the-fly, eliminating the
 performance and memory penalties of other methods and allowing you to cleanly
 integrate Windows applications into your desktop.")
-    (license license:lgpl2.1+)
-
-    ;; It really only supports IA32, but building on x86_64 will have the same
-    ;; effect as building on i686 anyway.
-    (supported-systems '("i686-linux" "x86_64-linux"))))
+    ;; Any platform should be able to build wine, but based on '#:system' these
+    ;; are thr ones we currently support.
+    (supported-systems '("i686-linux" "x86_64-linux" "armhf-linux"))
+    (license license:lgpl2.1+)))
 
 (define-public wine64
   (package
     (inherit wine)
     (name "wine64")
+    (inputs `(("wine" ,wine)
+              ,@(package-inputs wine)))
     (arguments
      `(#:make-flags
        (list "SHELL=bash"
-             (string-append "libdir=" %output "/lib"))
+             (string-append "libdir=" %output "/lib/wine64"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'copy-wine32-binaries
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((wine32 (assoc-ref %build-inputs "wine"))
+                    (out (assoc-ref %outputs "out")))
+               ;; Copy the 32-bit binaries needed for WoW64.
+               (copy-file (string-append wine32 "/bin/wine")
+                          (string-append out "/bin/wine"))
+               (copy-file (string-append wine32 "/bin/wine-preloader")
+                          (string-append out "/bin/wine-preloader"))
+               #t)))
+         (add-after 'compress-documentation 'copy-wine32-manpage
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((wine32 (assoc-ref %build-inputs "wine"))
+                    (out (assoc-ref %outputs "out")))
+               ;; Copy the missing man file for the wine binary from wine.
+               (copy-file (string-append wine32 "/share/man/man1/wine.1.gz")
+                          (string-append out "/share/man/man1/wine.1.gz"))
+               #t)))
+         (add-after 'configure 'patch-dlopen-paths
+           ;; Hardcode dlopened sonames to absolute paths.
+           (lambda _
+             (let* ((library-path (search-path-as-string->list
+                                   (getenv "LIBRARY_PATH")))
+                    (find-so (lambda (soname)
+                               (search-path library-path soname))))
+               (substitute* "include/config.h"
+                 (("(#define SONAME_.* )\"(.*)\"" _ defso soname)
+                  (format #f "~a\"~a\"" defso (find-so soname))))
+               #t))))
        #:configure-flags
        (list "--enable-win64"
-             (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib"))
-       ,@(strip-keyword-arguments '(#:configure-flags #:make-flags #:system)
+             (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib/wine64"))
+       ,@(strip-keyword-arguments '(#:configure-flags #:make-flags #:phases
+                                    #:system)
                                   (package-arguments wine))))
-    (synopsis "Implementation of the Windows API (64-bit version)")
+    (synopsis "Implementation of the Windows API (WoW64 version)")
     (supported-systems '("x86_64-linux" "aarch64-linux"))))
 
-;; TODO: This is wine development version, provided for historical reasons.
-;; We can remove it as soon as a new stable release is out.
-(define-public wine-next
-  (package (inherit wine)
-    (name "wine-next")
-    (version "2.11")
+(define-public wine-staging
+  (package
+    (inherit wine)
+    (name "wine-staging")
+    (version "2.21")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://dl.winehq.org/wine/source/2.x"
-                                  "/wine-" version ".tar.xz"))
+              (uri (string-append
+                    "https://github.com/wine-compholio/wine-patched/archive/"
+                    "staging-" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0g6cwjyqwc660w33453aklh3hpc0b8rrb88dryn23ah6wannvagg"))))))
+                "1pjaxj7h3q6y356np908fvsx0bf7yx5crqvgl4hza6gfssdmsr5r"))))
+    (inputs `(("gtk+", gtk+)
+              ("libva", libva)
+              ,@(package-inputs wine)))
+    (synopsis "Implementation of the Windows API (staging branch, 32-bit only)")
+    (description "Wine-Staging is the testing area of Wine.  It
+contains bug fixes and features, which have not been integrated into
+the development branch yet.  The idea of Wine-Staging is to provide
+experimental features faster to end users and to give developers the
+possibility to discuss and improve their patches before they are
+integrated into the main branch.")
+    (home-page "https://wine-staging.com")
+    ;; In addition to the regular Wine license (lgpl2.1+), Wine-Staging
+    ;; provides Liberation and WenQuanYi Micro Hei fonts.  Those use
+    ;; different licenses.  In particular, the latter is licensed under
+    ;; both GPL3+ and Apache 2 License.
+    (license
+     (list license:lgpl2.1+ license:silofl1.1 license:gpl3+ license:asl2.0))))
 
+(define-public wine64-staging
+  (package
+    (inherit wine-staging)
+    (name "wine64-staging")
+    (inputs `(("wine-staging" ,wine-staging)
+              ,@(package-inputs wine-staging)))
+    (arguments
+     `(#:make-flags
+       (list "SHELL=bash"
+             (string-append "libdir=" %output "/lib/wine64"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'copy-wine32-binaries
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((wine32 (assoc-ref %build-inputs "wine-staging"))
+                    (out (assoc-ref %outputs "out")))
+               ;; Copy the 32-bit binaries needed for WoW64.
+               (copy-file (string-append wine32 "/bin/wine")
+                          (string-append out "/bin/wine"))
+               (copy-file (string-append wine32 "/bin/wine-preloader")
+                          (string-append out "/bin/wine-preloader"))
+               #t)))
+         (add-after 'compress-documentation 'copy-wine32-manpage
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((wine32 (assoc-ref %build-inputs "wine-staging"))
+                    (out (assoc-ref %outputs "out")))
+               ;; Copy the missing man file for the wine binary from
+               ;; wine-staging.
+               (copy-file (string-append wine32 "/share/man/man1/wine.1.gz")
+                          (string-append out "/share/man/man1/wine.1.gz"))
+               #t)))
+         (add-after 'configure 'patch-dlopen-paths
+           ;; Hardcode dlopened sonames to absolute paths.
+           (lambda _
+             (let* ((library-path (search-path-as-string->list
+                                   (getenv "LIBRARY_PATH")))
+                    (find-so (lambda (soname)
+                               (search-path library-path soname))))
+               (substitute* "include/config.h"
+                 (("(#define SONAME_.* )\"(.*)\"" _ defso soname)
+                  (format #f "~a\"~a\"" defso (find-so soname))))
+               #t))))
+       #:configure-flags
+       (list "--enable-win64"
+             (string-append "LDFLAGS=-Wl,-rpath=" %output "/lib/wine64"))
+       ,@(strip-keyword-arguments '(#:configure-flags #:make-flags #:phases
+                                    #:system)
+                                  (package-arguments wine-staging))))
+    (synopsis "Implementation of the Windows API (staging branch, WoW64
+version)")
+    (supported-systems '("x86_64-linux" "aarch64-linux"))))

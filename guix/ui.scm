@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014 Cyril Roelandt <tipecaml@gmail.com>
@@ -195,7 +195,16 @@ messages."
   (catch #t
     (lambda ()
       ;; XXX: Force a recompilation to avoid ABI issues.
-      ;; (set! %fresh-auto-compile #t)
+      ;;
+      ;; In 2.2.3, the bogus answer to <https://bugs.gnu.org/29226> was to
+      ;; ignore all available .go, not just those from ~/.cache, which in turn
+      ;; meant that we had to rebuild *everything*.  Since this is too costly,
+      ;; we have to turn auto '%fresh-auto-compile' with that version, at the
+      ;; risk of getting ABI breakage in the user's config file.  See
+      ;; <https://bugs.gnu.org/29881>.
+      (unless (string=? (version) "2.2.3")
+        (set! %fresh-auto-compile #t))
+
       (set! %load-should-auto-compile #t)
 
       (save-module-excursion
@@ -387,7 +396,7 @@ exiting.  ARGS is the list of arguments received by the 'throw' handler."
   "Display version information for COMMAND and `(exit 0)'."
   (simple-format #t "~a (~a) ~a~%"
                  command %guix-package-name %guix-version)
-  (format #t "Copyright ~a 2017 ~a"
+  (format #t "Copyright ~a 2018 ~a"
           ;; TRANSLATORS: Translate "(C)" to the copyright symbol
           ;; (C-in-a-circle), if this symbol is available in the user's
           ;; locale.  Otherwise, do not translate "(C)"; leave it as-is.  */
@@ -622,6 +631,12 @@ directories:~{ ~a~}~%")
                      (G_ "~a: error: ~a~%")
                      (location->string (error-location c))
                      (gettext (condition-message c) %gettext-domain))
+             (exit 1))
+            ((and (message-condition? c) (fix-hint? c))
+             (format (current-error-port) "~a: error: ~a~%"
+                     (program-name)
+                     (gettext (condition-message c) %gettext-domain))
+             (display-hint (condition-fix-hint c))
              (exit 1))
             ((message-condition? c)
              ;; Normally '&message' error conditions have an i18n'd message.

@@ -2,6 +2,7 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Mark Meyer <mark@ofosos.org>
+;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -235,15 +236,16 @@ plugins, as well as code to create plugins, or complete applications.")
 (define-public krita
   (package
     (name "krita")
-    (version "3.3.2.1")
+    (version "3.3.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
                     "mirror://kde/stable/krita/"
-                    "3.3.2/" name "-" version ".tar.xz"))
+                    (version-prefix version 3)
+                    "/" name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0i3l27cfi1h486m74xf4ynk0pwx32xaqraa91a0g1bpj1jxf2mg5"))))
+                "0pc6hnakkqy81x5b5ncivaps6hqv43i50sjwgi3i3cz9j8rlxh5y"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f
@@ -259,7 +261,22 @@ plugins, as well as code to create plugins, or complete applications.")
                             (assoc-ref %build-inputs "libtiff"))
              (string-append "-DCMAKE_CXX_FLAGS=-I"
                             (assoc-ref %build-inputs "ilmbase")
-                            "/include/OpenEXR"))))
+                            "/include/OpenEXR"))
+       #:phases
+       (modify-phases %standard-phases
+         ;; Ensure that icons are found at runtime.
+         ;; This works around <https://bugs.gnu.org/22138>.
+         (add-after 'install 'wrap-executable
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out"))
+                   (qt '("qtbase" "qtsvg")))
+               (wrap-program (string-append out "/bin/krita")
+                 `("QT_PLUGIN_PATH" ":" prefix
+                   ,(map (lambda (label)
+                           (string-append (assoc-ref inputs label)
+                                          "/lib/qt5/plugins/"))
+                         qt)))
+               #t))))))
     (native-inputs
      `(("curl" ,curl)
        ("eigen" ,eigen)
@@ -349,7 +366,7 @@ used in KDE development tools Kompare and KDevelop.")
 (define-public libksysguard
   (package
     (name "libksysguard")
-    (version "5.11.2")
+    (version "5.11.4")
     (source
      (origin
        (method url-fetch)
@@ -357,7 +374,7 @@ used in KDE development tools Kompare and KDevelop.")
                            "/libksysguard-" version ".tar.xz"))
        (sha256
         (base32
-         "12d0r4rilydbqdgkm256khvkb9m0hya3p27xqvv3hg77wgxzdl3f"))))
+         "1ry4478fv7blp80zyhz0xr3qragsddrkzjzmxkdarh01f4p987aq"))))
     (native-inputs
      `(("extra-cmake-modules" ,extra-cmake-modules)
        ("pkg-config" ,pkg-config)))
@@ -399,7 +416,7 @@ used in KDE development tools Kompare and KDevelop.")
            (lambda _
              ;; TODO: Fix this failing test-case
              (zero? (system* "ctest" "-E" "processtest")))))))
-    (home-page "https://www.kde.org/info/plasma-5.11.2.php")
+    (home-page "https://www.kde.org/info/plasma-5.11.4.php")
     (synopsis "Network enabled task and system monitoring")
     (description "KSysGuard can obtain information on system load and
 manage running processes.  It obtains this information by interacting

@@ -7,7 +7,7 @@
 ;;; Copyright © 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Jochem Raat <jchmrt@riseup.net>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Coypright © 2016 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016 ng0 <ng0@infotropique.org>
 ;;; Copyright © 2016 Alex Sassmannshausen <alex@pompo.co>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
@@ -15,7 +15,7 @@
 ;;; Copyright © 2017 Raoul J.P. Bonnal <ilpuccio.febo@gmail.com>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;;
@@ -42,6 +42,7 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system perl)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages perl-check)
   #:use-module (gnu packages perl-web)
   #:use-module (gnu packages pkg-config))
@@ -259,26 +260,6 @@ variable ANY_MOOSE to be Moose or Mouse.")
     (synopsis "Configuration files and command line parsing")
     (description "AppConfig is a bundle of Perl5 modules for reading
 configuration files and parsing command line arguments.")
-    (license (package-license perl))))
-
-(define-public perl-archive-zip
-  (package
-    (name "perl-archive-zip")
-    (version "1.30")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (string-append
-             "mirror://cpan/authors/id/A/AD/ADAMK/Archive-Zip-"
-             version ".tar.gz"))
-       (sha256
-        (base32
-         "0633zah5z9njiqnvy3vh42fjymncmil1jdfb7d18w8xpfzzp5d7q"))))
-    (build-system perl-build-system)
-    (synopsis "Perl API to zip files")
-    (description "The Archive::Zip module allows a Perl program to create,
-manipulate, read, and write Zip archive files.")
-    (home-page "http://search.cpan.org/~phred/Archive-Zip-1.37/lib/Archive/Zip.pm")
     (license (package-license perl))))
 
 (define-public perl-array-utils
@@ -4423,7 +4404,7 @@ intersections, unions, unique elements, complements and many more.")
 (define-public perl-list-moreutils
   (package
     (name "perl-list-moreutils")
-    (version "0.426")
+    (version "0.428")
     (source
      (origin
        (method url-fetch)
@@ -4431,7 +4412,7 @@ intersections, unions, unique elements, complements and many more.")
                            "List-MoreUtils-" version ".tar.gz"))
        (sha256
         (base32
-         "1dj77b42cp5ziq9y38fff458avjwzm88kn076svcvl660h6n21cf"))))
+         "1hkc8xkd27yzfkgaglzn77j4qjmilyva4gaz3pc64vpism2hjgki"))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -4629,7 +4610,7 @@ messages.")
 (define-public perl-mime-types
   (package
     (name "perl-mime-types")
-    (version "2.14")
+    (version "2.16")
     (source
      (origin
        (method url-fetch)
@@ -4637,7 +4618,7 @@ messages.")
                            "MIME-Types-" version ".tar.gz"))
        (sha256
         (base32
-         "0w00fdci07cc6k1v4zaib4icggqjmg8hggpx4lzqj1ajq07wyja0"))))
+         "0nkv99yd8bxa6h8c52nd07142f0mdzjnhcdw66s3wljmzsi9z8hk"))))
     (build-system perl-build-system)
     (home-page "http://search.cpan.org/dist/MIME-Types/")
     (synopsis "Definition of MIME types")
@@ -5948,6 +5929,29 @@ cycle.  Functions called in the package itself will still be bound by their
 name, but they won't show up as methods on your class or instances.")
     (license (package-license perl))))
 
+(define-public perl-net-dns-native
+  (package
+    (name "perl-net-dns-native")
+    (version "0.15")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://cpan/authors/id/O/OL/OLEG/Net-DNS-Native-"
+             version ".tar.gz"))
+       (sha256
+        (base32 "12bsv5jkic3q4arpzk6dda35didkn445v658j87rmi540dpnac85"))))
+    (build-system perl-build-system)
+    (home-page "http://search.cpan.org/dist/Net-DNS-Native/")
+    (synopsis "Non-blocking system DNS resolver")
+    (description
+     "This class provides several methods for host name resolution.  It is
+designed to be used with event loops.  Names are resolved by your system's
+native @code{getaddrinfo(3)} implementation, called in a separate thread to
+avoid blocking the entire application.  Threading overhead is limited by using
+system threads instead of Perl threads.")
+    (license perl-license)))
+
 (define-public perl-net-idn-encode
   (package
     (name "perl-net-idn-encode")
@@ -6422,19 +6426,19 @@ for a given module is comprehensive.")
 (define-public perl-pod-simple
   (package
     (name "perl-pod-simple")
-    (version "3.31")
+    (version "3.35")
     (source (origin
               (method url-fetch)
-              (uri (string-append "mirror://cpan/authors/id/M/MA/MARCGREEN/"
+              (uri (string-append "mirror://cpan/authors/id/K/KH/KHW/"
                                   "Pod-Simple-" version ".tar.gz"))
               (sha256
                (base32
-                "04705pcs31s71vpmnpfdy8ds0q700q4cs2dlyssyrdjbvx3ymq3l"))))
+                "0gg11ibbc02l2aw0bsv4jx0jax8z0apgfy3p5csqnvhlsb6218cr"))))
     (build-system perl-build-system)
-    (home-page "http://search.cpan.org/dist/Pod-Simple//")
+    (home-page "http://search.cpan.org/dist/Pod-Simple/")
     (synopsis "Parsing library for text in Pod format")
-    (description "Pod::Simple is a Perl library for parsing text in
-the Pod (plain old documentation) markup language that is typically
+    (description "@code{Pod::Simple} is a Perl library for parsing text in
+the @dfn{Pod} (plain old documentation) markup language that is typically
 used for writing documentation for Perl and for Perl modules.")
     (license (package-license perl))))
 
@@ -7082,6 +7086,32 @@ return value is the sub.")
 The idea is just to fool caller().  All the really naughty bits of Tcl's
 uplevel() are avoided.")
     (license (package-license perl))))
+
+(define-public perl-super
+  (package
+    (name "perl-super")
+    (version "1.20141117")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://cpan/authors/id/C/CH/CHROMATIC/"
+                           "SUPER-" version ".tar.gz"))
+       (sha256
+        (base32 "1cn05kacg0xfbm1zzksm2yx2pnrzqja4d9163cxv3sdfc1yhwqhs"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)))
+    (propagated-inputs
+     `(("perl-sub-identify" ,perl-sub-identify)))
+    (home-page "http://search.cpan.org/dist/SUPER/")
+    (synopsis "Control superclass method dispatching")
+    (description
+     "When subclassing a class, you may occasionally want to dispatch control to
+the superclass---at least conditionally and temporarily.  This module provides
+nicer equivalents to the native Perl syntax for calling superclasses, along with
+a universal @code{super} method to determine a class' own superclass, and better
+support for run-time mix-ins and roles.")
+    (license perl-license)))
 
 (define-public perl-svg
   (package

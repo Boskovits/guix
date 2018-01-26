@@ -6,6 +6,7 @@
 ;;; Copyright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016, 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -559,10 +560,11 @@ as well as pick-place files.")
     (license license:gpl2+)))
 
 (define-public ao
-  (let ((commit "0bc2354b8dcd1a82a0fd6647706b126045e52734"))
+  (let ((commit "fb288c945aa7e30d9be10a564edad7e1b6a6c1ae")
+        (revision "1"))
     (package
       (name "ao-cad")            ;XXX: really "ao", but it collides with libao
-      (version (string-append "0." (string-take commit 7)))
+      (version (git-version "0" revision commit))
       (source (origin
                 (method git-fetch)
                 (uri (git-reference
@@ -570,8 +572,9 @@ as well as pick-place files.")
                       (commit commit)))
                 (sha256
                  (base32
-                  "0lm7iljklafs8dhlvaab2yhwx4xymrdjrqk9c5xvn59hlvbgl1j5"))
-                (file-name (string-append name "-" version "-checkout"))
+                  "0syplfqiq7ng7md44yriq5cz41jp8q9z3pl2iwkkllds6p9ylyal"))
+                (file-name (git-file-name name version))
+                (patches (search-patches "ao-cad-aarch64-support.patch"))
                 (modules '((guix build utils)))
                 (snippet
                  ;; Remove bundled libraries: Eigen, glm, and catch.  TODO:
@@ -594,6 +597,10 @@ as well as pick-place files.")
 
          #:phases
          (modify-phases %standard-phases
+           (add-after 'unpack 'remove-native-compilation
+             (lambda _
+               (substitute* "CMakeLists.txt" (("-march=native") ""))
+               #t))
            (add-before 'build 'add-eigen-to-search-path
              (lambda* (#:key inputs #:allow-other-keys)
                ;; Allow things to find our own Eigen and Catch.
@@ -615,16 +622,12 @@ as well as pick-place files.")
                  (with-directory-excursion ,(string-append "../"
                                                            name "-" version
                                                            "-checkout")
-                   (substitute* "bind/guile/ao/bind.scm"
+                   (substitute* "bind/guile/ao/sys/libao.scm"
                      (("\\(define libao \\(dynamic-link .*$")
                       (string-append "(define libao (dynamic-link \""
                                      out "/lib/libao\")) ;")))
 
-                   (for-each (lambda (file)
-                               (install-file file
-                                             (string-append moddir
-                                                            "/ao")))
-                             (find-files "bind/guile" "\\.scm$"))
+                   (copy-recursively "bind/guile/ao" (string-append moddir "/ao"))
 
                    (substitute* "bin/ao-guile"
                      (("\\(add-to-load-path .*")
@@ -896,16 +899,16 @@ interface to select the best such procedures to use on a given system.")
 (define-public harminv
   (package
     (name "harminv")
-    (version "1.4")
+    (version "1.4.1")
     (source (origin
               (method url-fetch)
               (uri
-               (string-append
-                "http://ab-initio.mit.edu/harminv/harminv-"
-                version ".tar.gz"))
+               (string-append "https://github.com/stevengj/harminv/"
+                              "releases/download/v" version "/"
+                              name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1pmm8d6fx9ahhnk7w12bfa6zx3afbkg4gkvlvgwhpjxbcrvrp3jk"))))
+                "0w1n4d249vlpda0hi6z1v13qp21vlbp3ykn0m8qg4rd5132j7fg1"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -920,7 +923,7 @@ interface to select the best such procedures to use on a given system.")
      `(("fortran" ,gfortran)))
     (inputs
      `(("lapack" ,lapack)))
-    (home-page "http://ab-initio.mit.edu/wiki/index.php/Harminv")
+    (home-page "https://github.com/stevengj/harminv")
     (synopsis "Harmonic inversion solver")
     (description
      "Harminv is a free program (and accompanying library) to solve the problem of

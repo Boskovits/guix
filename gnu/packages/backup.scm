@@ -2,11 +2,12 @@
 ;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2015, 2016, 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
+;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -36,6 +37,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages crypto)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages dejagnu)
   #:use-module (gnu packages ftp)
@@ -122,7 +124,7 @@ spying and/or modification by the server.")
 (define-public par2cmdline
   (package
     (name "par2cmdline")
-    (version "0.7.4")
+    (version "0.8.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/Parchive/par2cmdline/archive/v"
@@ -130,7 +132,7 @@ spying and/or modification by the server.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0iwwskiag3262mvhinvnbk6n0qh6sh56m86y4d0m285v0jl0y9pa"))))
+                "1jpshmmcr81mxly0md2rr231qz9c8c680bbvcmhh100dg9i4a6s6"))))
     (native-inputs
      `(("automake" ,automake)
        ("autoconf" ,autoconf)))
@@ -262,49 +264,47 @@ random access nor for in-place modification.")
 (define-public rdup
   (package
     (name "rdup")
-    (version "1.1.14")
+    (version "1.1.15")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://archive.miek.nl/projects/rdup/rdup-"
-                           version ".tar.bz2"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (uri (string-append "https://github.com/miekg/rdup/archive/"
+                           version ".tar.gz"))
        (sha256
         (base32
-         "0aklwd9v7ix0m4ayl762sil685f42cwljzx3jz5skrnjaq32npmj"))
-       (modules '((guix build utils)))
-       (snippet
-        ;; Some test scripts are missing shebangs, which cause "could not
-        ;; execute" errors.  Add shebangs.
-        '(for-each
-          (lambda (testscript)
-            (with-atomic-file-replacement
-                (string-append "testsuite/rdup/" testscript)
-              (lambda (in out)
-                (begin
-                  (format out "#!/bin/sh\n" )
-                  (dump-port in out)))))
-          '("rdup.hardlink.helper"
-            "rdup.hardlink-strip.helper"
-            "rdup.hardlink-strip2.helper"
-            "rdup.pipeline.helper")))))
+         "1jr91hgcf0rrpanqlwws72ql9db6d6grs2i122ki1s4bx0vqqyvq"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(("pkg-config" ,pkg-config)
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+
+       ;; For tests.
        ("dejagnu" ,dejagnu)))
     (inputs
      `(("glib" ,glib)
        ("pcre" ,pcre)
        ("libarchive" ,libarchive)
+       ("mcrypt" ,mcrypt)
        ("nettle" ,nettle)))
     (arguments
      `(#:parallel-build? #f             ;race conditions
        #:phases
        (modify-phases %standard-phases
-         (add-before 'build 'remove-Werror
-           ;; rdup uses a deprecated function from libarchive
+         (add-after 'unpack 'bootstrap
            (lambda _
-             (substitute* "GNUmakefile"
-               (("^(CFLAGS=.*)-Werror" _ front) front))
+             (invoke "autoreconf")))
+         (add-before 'build 'qualify-inputs
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; This script is full of pitfalls.  Fix some that particularly
+             ;; affect Guix users & leave the rest as reader excercises.
+             (substitute* "rdup-simple"
+               ;; Use the input ‘mcrypt’, not whatever's in $PATH at run time.
+               (("([' ])mcrypt " all delimiter)
+                (string-append delimiter (which "mcrypt") " "))
+               ;; Avoid frivolous dependency on ‘which’ with a shell builtin.
+               (("which") "command -v"))
              #t))
          (add-before 'check 'pre-check
            (lambda _
@@ -312,7 +312,7 @@ random access nor for in-place modification.")
              (substitute* "testsuite/rdup/rdup.rdup-up-t-with-file.exp"
                (("/bin/cat") (which "cat")))
              #t)))))
-    (home-page "http://archive.miek.nl/projects/rdup/index.html")
+    (home-page "https://github.com/miekg/rdup")
     (synopsis "Provide a list of files to backup")
     (description
      "Rdup is a utility inspired by rsync and the plan9 way of doing backups.
@@ -418,7 +418,7 @@ rdiff-backup is easy to use and settings have sensible defaults.")
        ("rsync" ,rsync)))
     (home-page "http://rsnapshot.org")
     (synopsis "Deduplicating snapshot backup utility based on rsync")
-    (description "rsnapshot is a filesystem snapshot utility based on rsync.
+    (description "rsnapshot is a file system snapshot utility based on rsync.
 rsnapshot makes it easy to make periodic snapshots of local machines, and
 remote machines over SSH.  To reduce the disk space required for each backup,
 rsnapshot uses hard links to deduplicate identical files.")
@@ -467,18 +467,22 @@ detection, and lossless compression.")
 (define-public borg
   (package
     (name "borg")
-    (version "1.1.3")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "borgbackup" version))
-              (patches (search-patches "borg-fix-archive-corruption-bug.patch"))
-              (sha256
-               (base32
-                "1rvn8b6clzd1r317r9jkvk34r31risi0dxfjc7jffhnwasck4anc"))
-              (modules '((guix build utils)))
-              (snippet
-               '(for-each
-                  delete-file (find-files "borg" "^(c|h|p).*\\.c$")))))
+    (version "1.1.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "borgbackup" version))
+       (sha256
+        (base32 "1cicqwh85wfp65y00qaq6q4i4jcyy9b66qz5gpl80qc880wab912"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (for-each delete-file
+                     (find-files "borg" "^(c|h|p).*\\.c$"))
+           ;; Remove bundled shared libraries.
+           (with-directory-excursion "src/borg/algorithms"
+             (for-each delete-file-recursively
+                       (list "blake2" "lz4" "zstd")))))))
     (build-system python-build-system)
     (arguments
      `(#:modules ((srfi srfi-26) ; for cut
@@ -489,9 +493,13 @@ detection, and lossless compression.")
          (add-after 'unpack 'set-env
            (lambda* (#:key inputs #:allow-other-keys)
              (let ((openssl (assoc-ref inputs "openssl"))
-                   (lz4 (assoc-ref inputs "lz4")))
+                   (libb2 (assoc-ref inputs "libb2"))
+                   (lz4 (assoc-ref inputs "lz4"))
+                   (zstd (assoc-ref inputs "zstd")))
                (setenv "BORG_OPENSSL_PREFIX" openssl)
-               (setenv "BORG_LZ4_PREFIX" lz4)
+               (setenv "BORG_LIBB2_PREFIX" libb2)
+               (setenv "BORG_LIBLZ4_PREFIX" lz4)
+               (setenv "BORG_LIBZSTD_PREFIX" zstd)
                (setenv "PYTHON_EGG_CACHE" "/tmp")
                ;; The test 'test_return_codes[python]' fails when
                ;; HOME=/homeless-shelter.
@@ -543,18 +551,20 @@ detection, and lossless compression.")
     (native-inputs
      `(("python-cython" ,python-cython)
        ("python-setuptools-scm" ,python-setuptools-scm)
-       ;; Borg 1.0.8's test suite uses 'tmpdir_factory', which was introduced in
-       ;; pytest 2.8.
+       ;; Borg >=1.0.8's test suite uses 'tmpdir_factory', which was introduced
+       ;; in pytest 2.8.
        ("python-pytest" ,python-pytest-3.0)
        ;; For generating the documentation.
        ("python-sphinx" ,python-sphinx)
        ("python-guzzle-sphinx-theme" ,python-guzzle-sphinx-theme)))
     (inputs
      `(("acl" ,acl)
+       ("libb2" ,libb2)
        ("lz4" ,lz4)
        ("openssl" ,openssl)
        ("python-llfuse" ,python-llfuse)
-       ("python-msgpack" ,python-msgpack)))
+       ("python-msgpack" ,python-msgpack)
+       ("zstd" ,zstd)))
     (synopsis "Deduplicated, encrypted, authenticated and compressed backups")
     (description "Borg is a deduplicating backup program.  Optionally, it
 supports compression and authenticated encryption.  The main goal of Borg is to
@@ -801,7 +811,7 @@ any special software, on top of SSH.")
     (synopsis "Fast, disk based, rotating network backup system")
     (description
      "With dirvish you can maintain a set of complete images of your
-filesystems with unattended creation and expiration.  A dirvish backup vault
+file systems with unattended creation and expiration.  A dirvish backup vault
 is like a time machine for your data. ")
     (license (license:fsf-free "file://COPYING"
                                "Open Software License 2.0"))))

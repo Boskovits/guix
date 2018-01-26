@@ -25,10 +25,13 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix utils)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (gnu packages)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages gsasl)
   #:use-module (gnu packages libidn)
@@ -43,7 +46,7 @@
   (package
    (name "curl")
    (version "7.55.1")
-   (replacement curl-7.57.0)
+   (replacement curl-7.58.0)
    (source (origin
             (method url-fetch)
             (uri (string-append "https://curl.haxx.se/download/curl-"
@@ -123,10 +126,10 @@ tunneling, and so on.")
                                   "See COPYING in the distribution."))
    (home-page "https://curl.haxx.se/")))
 
-(define-public curl-7.57.0
+(define-public curl-7.58.0
   (package
     (inherit curl)
-    (version "7.57.0")
+    (version "7.58.0")
     (source
       (origin
         (method url-fetch)
@@ -134,4 +137,42 @@ tunneling, and so on.")
                             version ".tar.xz"))
         (sha256
          (base32
-          "0y3qbjjcxhcvm1yawp3spfssjbskv0g6gyzld6ckif5pf8ygvxpm"))))))
+          "1qz303lagxidmkyym90mxiaqnqddwi2219vzydsyn29n4iski0ba"))))))
+
+(define-public kurly
+  (package
+    (name "kurly")
+    (version "1.1.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                     (url "https://github.com/davidjpeacock/kurly.git")
+                     (commit (string-append "v" version))))
+              (sha256
+               (base32
+                "1q192f457sjypgvwq7grrf8gq8w272p3zf1d5ppc20mriqm0mbc3"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/davidjpeacock/kurly"
+       #:install-source? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-readme
+           (lambda* (#:key outputs import-path #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (readme (string-append "src/" import-path "/README.md"))
+                    (misc (string-append out "/share/kurly/misc/")))
+               (install-file readme misc)
+               #t))))))
+    (inputs
+     `(("go-github-com-alsm-ioprogress" ,go-github-com-alsm-ioprogress)
+       ("go-github-com-aki237-nscjar" ,go-github-com-aki237-nscjar)
+       ("go-github-com-davidjpeacock-cli" ,go-github-com-davidjpeacock-cli)))
+    (synopsis "Command-line HTTP client")
+    (description "kurly is an alternative to the @code{curl} program written in
+Go.  kurly is designed to operate in a similar manner to curl, with select
+features.  Notably, kurly is not aiming for feature parity, but common flags and
+mechanisms particularly within the HTTP(S) realm are to be expected.  kurly does
+not offer a replacement for libcurl.")
+    (home-page "https://github.com/davidjpeacock/kurly")
+    (license license:asl2.0)))

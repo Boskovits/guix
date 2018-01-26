@@ -3,10 +3,11 @@
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016, 2017 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2016, 2017 David Craven <david@craven.ch>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -28,6 +29,7 @@
   #:use-module (gnu packages admin)
   #:use-module ((gnu packages algebra) #:select (bc))
   #:use-module (gnu packages assembly)
+  #:use-module (gnu packages base)
   #:use-module (gnu packages disk)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages cdrom)
@@ -35,16 +37,20 @@
   #:use-module (gnu packages disk)
   #:use-module (gnu packages flex)
   #:use-module (gnu packages fontutils)
+  #:use-module (gnu packages gcc)
   #:use-module (gnu packages gettext)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages man)
   #:use-module (gnu packages mtools)
   #:use-module (gnu packages ncurses)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages texinfo)
+  #:use-module (gnu packages tls)
   #:use-module (gnu packages swig)
   #:use-module (gnu packages virtualization)
+  #:use-module (gnu packages web)
   #:use-module (guix build-system gnu)
   #:use-module (guix download)
   #:use-module (guix git-download)
@@ -217,7 +223,8 @@ menu to select one of the installed operating systems.")
                                                 "/lib/grub")))
                  (for-each
                   (lambda (basename)
-                    (if (not (string-prefix? "." basename))
+                    (if (not (or (string-prefix? "." basename)
+                                 (file-exists? (string-append output-dir "/" basename))))
                         (symlink (string-append input-dir "/" basename)
                                  (string-append output-dir "/" basename))))
                   (scandir input-dir))
@@ -294,7 +301,7 @@ menu to select one of the installed operating systems.")
 (define-public dtc
   (package
     (name "dtc")
-    (version "1.4.5")
+    (version "1.4.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -302,11 +309,7 @@ menu to select one of the installed operating systems.")
                     "dtc-" version ".tar.xz"))
               (sha256
                (base32
-                "08gnl39i4xy3dm8iqwlz2ygx0ml1bgc5kpiys5ll1wvah1j72b04"))
-              ;; Fix build and tests on 32 bits platforms.
-              ;; Will probably be fixed in 1.4.6 release.
-              (patches (search-patches "dtc-format-modifier.patch"
-                                       "dtc-32-bits-check.patch"))))
+                "0zkvih0fpwvk31aqyyfy9kn13nbi76c21ihax15p6h1wrjzh48rq"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("bison" ,bison)
@@ -322,7 +325,7 @@ menu to select one of the installed operating systems.")
              "INSTALL=install")
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure))))
+         (delete 'configure))))         ; no configure script
     (home-page "https://www.devicetree.org")
     (synopsis "Compiles device tree source files")
     (description "@command{dtc} compiles
@@ -333,7 +336,7 @@ tree binary files.  These are board description files used by Linux and BSD.")
 (define u-boot
   (package
     (name "u-boot")
-    (version "2017.11")
+    (version "2018.01")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -341,11 +344,12 @@ tree binary files.  These are board description files used by Linux and BSD.")
                     "u-boot-" version ".tar.bz2"))
               (sha256
                (base32
-                "01bcsah5imy6m3fbjwhqywxg0pfk5fl8ks9ylb7kv3zmrb9qy0ba"))))
+                "1nidnnjprgxdhiiz7gmaj8cgcf52l5gbv64cmzjq4gmkjirmk3wk"))))
     (native-inputs
      `(("bc" ,bc)
-       ("dtc" ,dtc)
-       ("python-2" ,python-2)))
+       ;("dtc" ,dtc) ; they have their own incompatible copy.
+       ("python-2" ,python-2)
+       ("swig" ,swig)))
     (build-system  gnu-build-system)
     (home-page "http://www.denx.de/wiki/U-Boot/")
     (synopsis "ARM bootloader")
@@ -361,10 +365,12 @@ also initializes the boards (RAM etc).")
                       `#f)))
     (package
       (inherit u-boot)
-      (name (string-append "u-boot-" (string-downcase board)))
+      (name (string-append "u-boot-"
+                           (string-replace-substring (string-downcase board)
+                                                     "_" "-")))
       (native-inputs
        `(,@(if (not same-arch?)
-             `(("cross-gcc" ,(cross-gcc triplet))
+             `(("cross-gcc" ,(cross-gcc triplet #:xgcc gcc-7))
                ("cross-binutils" ,(cross-binutils triplet)))
              '())
          ,@(package-native-inputs u-boot)))
@@ -420,6 +426,88 @@ also initializes the boards (RAM etc).")
 
 (define-public u-boot-odroid-c2
   (make-u-boot-package "odroid-c2" "aarch64-linux-gnu"))
+
+(define-public u-boot-banana-pi-m2-ultra
+  (make-u-boot-package "Bananapi_M2_Ultra" "arm-linux-gnueabihf"))
+
+(define-public u-boot-a20-olinuxino-lime
+  (make-u-boot-package "A20-OLinuXino-Lime" "arm-linux-gnueabihf"))
+
+(define-public u-boot-a20-olinuxino-lime2
+  (make-u-boot-package "A20-OLinuXino-Lime2" "arm-linux-gnueabihf"))
+
+(define-public u-boot-a20-olinuxino-micro
+  (make-u-boot-package "A20-OLinuXino_MICRO" "arm-linux-gnueabihf"))
+
+(define-public u-boot-nintendo-nes-classic-edition
+  (make-u-boot-package "Nintendo_NES_Classic_Edition" "arm-linux-gnueabihf"))
+
+(define-public vboot-utils
+  (package
+    (name "vboot-utils")
+    (version "R63-10032.B")
+    (source (origin
+              ;; XXX: Snapshots are available but changes timestamps every download.
+              (method git-fetch)
+              (uri (git-reference
+                    (url (string-append "https://chromium.googlesource.com"
+                                        "/chromiumos/platform/vboot_reference"))
+                    (commit (string-append "release-" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "0h0m3l69vp9dr6xrs1p6y7ilkq3jq8jraw2z20kqfv7lvc9l1lxj"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list "CC=gcc"
+                          (string-append "DESTDIR=" (assoc-ref %outputs "out")))
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'patch-hard-coded-paths
+                    (lambda* (#:key inputs outputs #:allow-other-keys)
+                      (let ((coreutils (assoc-ref inputs "coreutils"))
+                            (diffutils (assoc-ref inputs "diffutils")))
+                        (substitute* "futility/misc.c"
+                          (("/bin/cp") (string-append coreutils "/bin/cp")))
+                        (substitute* "tests/bitmaps/TestBmpBlock.py"
+                          (("/usr/bin/cmp") (string-append diffutils "/bin/cmp")))
+                        (substitute* "vboot_host.pc.in"
+                          (("prefix=/usr")
+                           (string-append "prefix=" (assoc-ref outputs "out"))))
+                        #t)))
+                  (delete 'configure)
+                  (add-before 'check 'patch-tests
+                    (lambda _
+                      ;; These tests compare diffs against known-good values.
+                      ;; Patch the paths to match those in the build container.
+                      (substitute* (find-files "tests/futility/expect_output")
+                        (("/mnt/host/source/src/platform/vboot_reference")
+                         (string-append "/tmp/guix-build-" ,name "-" ,version
+                                        ".drv-0/source")))
+                      ;; Tests require write permissions to many of these files.
+                      (for-each make-file-writable (find-files "tests/futility"))
+                      #t)))
+       #:test-target "runtests"))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+
+       ;; For tests.
+       ("diffutils" ,diffutils)
+       ("python@2" ,python-2)))
+    (inputs
+     `(("coreutils" ,coreutils)
+       ("libyaml" ,libyaml)
+       ("openssl" ,openssl)
+       ("openssl:static" ,openssl "static")
+       ("util-linux" ,util-linux)))
+    (home-page
+     "https://dev.chromium.org/chromium-os/chromiumos-design-docs/verified-boot")
+    (synopsis "ChromiumOS verified boot utilities")
+    (description
+     "vboot-utils is a collection of tools to facilitate booting of
+Chrome-branded devices.  This includes the @command{cgpt} partitioning
+program, the @command{futility} and @command{crossystem} firmware management
+tools, and more.")
+    (license license:bsd-3)))
 
 (define-public os-prober
   (package

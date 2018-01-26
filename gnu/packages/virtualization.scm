@@ -6,7 +6,7 @@
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -96,7 +96,10 @@
      '(;; Running tests in parallel can occasionally lead to failures, like:
        ;; boot_sector_test: assertion failed (signature == SIGNATURE): (0x00000000 == 0x0000dead)
        #:parallel-tests? #f
-       #:configure-flags '("--enable-usb-redir" "--enable-opengl")
+       #:configure-flags (list "--enable-usb-redir" "--enable-opengl"
+                               (string-append "--smbd="
+                                              (assoc-ref %outputs "out")
+                                              "/libexec/samba-wrapper"))
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -135,6 +138,20 @@
                                       (install-file info infodir))
                                     (find-files "." "\\.info"))
                           #t))))))
+         ;; Create a wrapper for Samba. This allows QEMU to use Samba without
+         ;; pulling it in as an input. Note that you need to explicitly install
+         ;; Samba in your Guix profile for Samba support.
+         (add-after 'install-info 'create-samba-wrapper
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out    (assoc-ref %outputs "out"))
+                    (libexec (string-append out "/libexec")))
+               (call-with-output-file "samba-wrapper"
+                 (lambda (port)
+                   (format port "#!/bin/sh
+exec smbd $@")))
+               (chmod "samba-wrapper" #o755)
+               (install-file "samba-wrapper" libexec))
+             #t))
          (add-before 'check 'make-gtester-verbose
            (lambda _
              ;; Make GTester verbose to facilitate investigation upon failure.
@@ -176,7 +193,7 @@
                      ("pkg-config" ,pkg-config)
                      ("python" ,python-2) ; incompatible with Python 3 according to error message
                      ("texinfo" ,texinfo)))
-    (home-page "http://www.qemu-project.org")
+    (home-page "https://www.qemu.org")
     (synopsis "Machine emulator and virtualizer")
     (description
      "QEMU is a generic machine emulator and virtualizer.
@@ -328,14 +345,14 @@ manage system or application containers.")
 (define-public libvirt
   (package
     (name "libvirt")
-    (version "3.10.0")
+    (version "4.0.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://libvirt.org/sources/libvirt-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "03kb37iv3dvvdlslznlc0njvjpmq082lczmsslz5p4fcwb50kwfz"))))
+                "1j6zzajh4j3zzsaqn5f5mrchm0590xcf6rzkfajvqw3bd4dcms79"))))
     (build-system gnu-build-system)
     (arguments
      `(;; FAIL: virshtest
@@ -345,7 +362,7 @@ manage system or application containers.")
        ;; FAIL: networkxml2firewalltest
        ;; FAIL: nwfilterebiptablestest
        ;; FAIL: nwfilterxml2firewalltest
-       ;; Times while running commandest.
+       ;; Time-out while running commandtest.
        #:tests? #f
        #:configure-flags
        (list "--with-polkit"
@@ -365,9 +382,9 @@ manage system or application containers.")
            ;; at runtime, we must prevent writing to them at installation
            ;; time.
            (lambda _
-             (zero? (system* "make" "install"
-                             "sysconfdir=/tmp/etc"
-                             "localstatedir=/tmp/var"))))
+             (invoke "make" "install"
+                            "sysconfdir=/tmp/etc"
+                            "localstatedir=/tmp/var")))
          (add-after 'install 'wrap-libvirtd
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
@@ -711,7 +728,7 @@ Machine Protocol.")
 (define-public lookingglass
   (package
    (name "lookingglass")
-   (version "a5")
+   (version "a10")
    (source
     (origin
      (method url-fetch)
@@ -720,7 +737,7 @@ Machine Protocol.")
      (file-name (string-append name "-" version))
      (sha256
       (base32
-       "0lrb821914fp27xaq0spwhbblssz55phiygvdlvcrkifa138v8pf"))))
+       "0zlxg9ibzr0a598wr5nl1pb4l7mzsqn8ip72v4frph0vwsm5il6c"))))
    (build-system gnu-build-system)
    (inputs `(("fontconfig" ,fontconfig)
              ("glu" ,glu)

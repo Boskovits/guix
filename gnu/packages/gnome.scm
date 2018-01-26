@@ -24,11 +24,11 @@
 ;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Hartmut Goebel <h.goebel@crazy-compilers.com>
-;;; Copyright © 2017 nee <nee-git@hidamari.blue>
+;;; Copyright © 2017, 2018 nee <nee-git@hidamari.blue>
 ;;; Copyright © 2017 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Mohammed Sadiq <sadiq@sadiqpk.org>
 ;;; Copyright © 2017 Brendan Tildesley <brendan.tildesley@openmailbox.org>
-;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2017, 2018 Rutger Helling <rhelling@mykolab.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -142,8 +142,10 @@
   #:use-module (gnu packages readline)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages speech)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages virtualization)
   #:use-module (gnu packages vpn)
+  #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1))
 
 (define-public brasero
@@ -395,6 +397,7 @@ access the common Google services, and has full asynchronous support.")
               (uri (string-append "mirror://gnome/sources/" name "/"
                                   (version-major+minor version) "/"
                                   name "-" version ".tar.xz"))
+              (patches (search-patches "libgxps-CVE-2017-11590.patch"))
               (sha256
                (base32
                 "184r06s8g20cfigg7m169n42jjsc9wmzzlycr4g1fxxhr72r8x9y"))))
@@ -880,7 +883,7 @@ GNOME and KDE desktops to the icon names proposed in the specification.")
 (define-public adwaita-icon-theme
   (package (inherit gnome-icon-theme)
     (name "adwaita-icon-theme")
-    (version "3.26.0")
+    (version "3.26.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -888,7 +891,7 @@ GNOME and KDE desktops to the icon names proposed in the specification.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "04i2s6hkgzxgmq85dynmzih8rw5krc5apkks962mhgri37g8bbcw"))))
+                "17fpahgh5dyckgz7rwqvzgnhx53cx9kr2xw0szprc6bnqy977fi8"))))
     (native-inputs
      `(("gtk-encode-symbolic-svg" ,gtk+ "bin")))))
 
@@ -3667,6 +3670,11 @@ for application developers.")
 
        #:phases
        (modify-phases %standard-phases
+         (add-before
+          'install 'disable-cache-generation
+          (lambda _
+            (setenv "DESTDIR" "/")
+            #t))
          (add-after
           'install 'wrap-totem
           (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -4360,7 +4368,7 @@ classes for commonly used data structures.")
 (define-public gexiv2
   (package
     (name "gexiv2")
-    (version "0.10.6")
+    (version "0.10.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -4368,8 +4376,8 @@ classes for commonly used data structures.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "09aqsnpah71p9gx0ap2px2dyanrs7jmkkar6q114n9b7js8qh9qk"))))
-    (build-system gnu-build-system)
+                "1f7312zygw77ml37i5qilhfvmjm59dn753ax71rcb2jm1p76vgcb"))))
+    (build-system meson-build-system)
     (native-inputs
      `(("glib" ,glib "bin")
        ("pkg-config" ,pkg-config)))
@@ -4726,6 +4734,10 @@ to display dialog boxes from the commandline and shell scripts.")
              ;; The following flags are needed for the bundled clutter
              "--enable-x11-backend=yes"
 
+             (string-append "--with-xwayland-path="
+                            (assoc-ref %build-inputs "xorg-server-xwayland")
+                            "/bin/Xwayland")
+
              ;; the remaining flags are needed for the bundled cogl
              "--enable-cogl-gst"
              (string-append "--with-gl-libname="
@@ -4786,6 +4798,7 @@ to display dialog boxes from the commandline and shell scripts.")
        ("startup-notification" ,startup-notification)
        ("upower-glib" ,upower)
        ("xkeyboard-config" ,xkeyboard-config)
+       ("xorg-server-xwayland" ,xorg-server-xwayland)
        ("zenity" ,zenity)))
     (synopsis "Window and compositing manager")
     (home-page "https://www.gnome.org")
@@ -4799,7 +4812,7 @@ window manager.")
 (define-public gnome-online-accounts
   (package
     (name "gnome-online-accounts")
-    (version "3.24.3")
+    (version "3.26.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -4807,7 +4820,7 @@ window manager.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0m1qf2ffxzmwxa157lrvh3507d5gr3lg4kvj653zhcihjpmmhbi5"))))
+                "1l8p1ghknmkmjpnpl7jr53j66qbzpikickzbmrz0aczyhq6pdy29"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("glib:bin" ,glib "bin") ; for glib-compile-schemas, etc.
@@ -4823,7 +4836,6 @@ window manager.")
        ("json-glib" ,json-glib)
        ("libsecret" ,libsecret)
        ("rest" ,rest)
-       ("telepathy-glib" ,telepathy-glib)
        ("webkitgtk" ,webkitgtk)))
     (synopsis "Single sign-on framework for GNOME")
     (home-page "https://wiki.gnome.org/Projects/GnomeOnlineAccounts")
@@ -5219,7 +5231,7 @@ libxml2.")
 (define-public gdm
   (package
     (name "gdm")
-    (version "3.24.2")
+    (version "3.26.2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnome/sources/" name "/"
@@ -5227,7 +5239,7 @@ libxml2.")
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1s2xzrwcjhfb4ra8jrxqfycs1jpv97id0f6idb2h6vjkspxbjy23"))))
+                "0mxdal6hh345xk2xqmw5192jgpprkbcv1d4bwmnl4arcc00cpp8p"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      '(#:configure-flags
@@ -6915,35 +6927,24 @@ views can be printed as PDF or PostScript files, or exported to HTML.")
 (define-public lollypop
   (package
     (name "lollypop")
-    (version "0.9.304")
+    (version "0.9.306")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/gnumdk/lollypop/"
-                           "releases/download/" version "/"
+       (uri (string-append "https://gitlab.gnome.org/gnumdk/lollypop/uploads/"
+                           "b769805b7063ef9807e4e832e7e87ad2/"
                            name "-" version ".tar.xz"))
        (sha256
         (base32
-         "070y6wf1180hbl1ix8al7fmc6y06jb5m14h73g509g4xbwlk62g8"))))
-    ;; TODO: Use meson-build-system
-    (build-system glib-or-gtk-build-system)
+         "0c49v6793bywvh295xbii9yq21hh3qpmxwbgp9i71kj6r9grvhan"))))
+    (build-system meson-build-system)
     (arguments
      `(#:imported-modules ((guix build python-build-system)
-                           ,@%glib-or-gtk-build-system-modules)
+                           ,@%meson-build-system-modules)
+       #:glib-or-gtk? #t
        #:tests? #f ; no test suite
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
-         (replace 'build
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (let ((out (assoc-ref outputs "out")))
-               ;; remove post-install script, we update the caches later
-               (substitute* "meson.build"
-                 (("meson.add_install_script\\('meson_post_install.py'\\)") ""))
-               (zero?
-                 (system* "meson" "builddir" (string-append "--prefix=" out))))))
-         (replace 'install
-           (lambda _ (zero? (system* "ninja" "-C" "builddir" "install"))))
          (add-after 'install 'wrap-program
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out               (assoc-ref outputs "out"))
@@ -6956,16 +6957,15 @@ views can be printed as PDF or PostScript files, or exported to HTML.")
     (native-inputs
      `(("intltool" ,intltool)
        ("itstool" ,itstool)
-       ("ninja" ,ninja)
+       ("glib:bin" ,glib "bin")         ; For glib-compile-resources
+       ("gtk+:bin" ,gtk+ "bin")         ; For gtk-update-icon-cache
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("gobject-introspection" ,gobject-introspection)
        ("gst-plugins-base" ,gst-plugins-base)
-       ("gtk+" ,gtk+)
        ("libnotify" ,libnotify)
        ("libsecret" ,libsecret)
        ("libsoup" ,libsoup)
-       ("meson" ,meson)
        ("python" ,python)
        ("python-beautifulsoup4" ,python-beautifulsoup4)
        ("python-gst" ,python-gst)
@@ -7075,4 +7075,44 @@ photo-booth-like software, such as Cheese.")
     (description
      "Cheese uses your webcam to take photos and videos.  Cheese can also
 apply fancy special effects and lets you share the fun with others.")
+    (license license:gpl2+)))
+
+(define-public sound-juicer
+  (package
+    (name "sound-juicer")
+    (version "3.24.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://gnome/sources/" name "/"
+                           (version-major+minor version) "/"
+                           name "-" version ".tar.xz"))
+       (sha256
+        (base32
+         "19qg4xv0f9rkq34lragkmhii1llxsa87llbl28i759b0ks4f6sny"))))
+    (build-system glib-or-gtk-build-system)
+    (native-inputs
+     `(("desktop-file-utils" ,desktop-file-utils)
+       ("intltool" ,intltool)
+       ("itstool" ,itstool)
+       ("pkg-config" ,pkg-config)
+       ("xmllint" ,libxml2)))
+    (inputs
+     `(("gtk+" ,gtk+)
+       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
+       ("gstreamer" ,gstreamer)
+       ("gst-plugins-base" ,gst-plugins-base)
+       ("gst-plugins-good" ,gst-plugins-good)
+       ("iso-codes" ,iso-codes)
+       ("libbrasero-media3" ,brasero)
+       ("libcanberra" ,libcanberra)
+       ("libdiscid" ,libdiscid)
+       ("libmusicbrainz" ,libmusicbrainz)
+       ("neon" ,neon)))
+    (home-page "https://wiki.gnome.org/Apps/SoundJuicer")
+    (synopsis "Audio music cd ripper")
+    (description "Sound Juicer extracts audio from compact discs and convert it
+into audio files that a personal computer or digital audio player can play.
+It supports ripping to any audio codec supported by a GStreamer plugin, such as
+mp3, Ogg Vorbis and FLAC")
     (license license:gpl2+)))

@@ -15,7 +15,7 @@
 ;;; Copyright © 2016 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
 ;;; Copyright © 2016, 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Bake Timmons <b3timmons@speedymail.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
@@ -109,15 +109,14 @@
 (define-public httpd
   (package
     (name "httpd")
-    (version "2.4.27")
+    (version "2.4.29")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://apache/httpd/httpd-"
                                  version ".tar.bz2"))
              (sha256
               (base32
-               "0fn1778mxhf78np2d8qlycg1c2ak18rxax41plahasca4clc3z3i"))
-             (patches (search-patches "httpd-CVE-2017-9798.patch"))))
+               "003z3yckkdihfv69rgqsik1w2jsnh14j3ci8fjia4s2mlajm6xvp"))))
     (build-system gnu-build-system)
     (native-inputs `(("pcre" ,pcre "bin")))       ;for 'pcre-config'
     (inputs `(("apr" ,apr)
@@ -356,7 +355,7 @@ documentation.")
          ("libxslt" ,libxslt)
          ("nginx-xslscript" ,nginx-xslscript)))
       (home-page "https://nginx.org")
-      (synopsis "Documentation for nginx web server")
+      (synopsis "Documentation for the nginx web server")
       (description
        "This package provides HTML documentation for the nginx web server.")
       (license l:bsd-2))))
@@ -515,7 +514,7 @@ data.")
 (define-public json-c
   (package
     (name "json-c")
-    (version "0.12.1")
+    (version "0.13")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -523,7 +522,7 @@ data.")
                    version ".tar.gz"))
              (sha256
               (base32
-               "08qibrq29a5v7g23wi5icy6l4fbfw90h9ccps6vq0bcklx8n84ra"))
+               "0kf2594kxcfga6x0mvwzj2qg8pgxhjkibc16ghnw85mdx45ph5h3"))
              (modules '((guix build utils)))
              (snippet
               '(begin
@@ -543,9 +542,35 @@ data.")
     (synopsis "JSON implementation in C")
     (description
      "JSON-C implements a reference counting object model that allows you to
-easily construct JSON objects in C, output them as JSON formatted strings and
-parse JSON formatted strings back into the C representation of JSON objects.")
+easily construct JSON objects in C, output them as JSON-formatted strings and
+parse JSON-formatted strings back into the C representation of JSON objects.
+It aims to conform to RFC 7159.")
     (license l:x11)))
+
+;; TODO: remove this old version when all dependents have been updated.
+(define-public json-c-0.12
+  (package
+    (inherit json-c)
+    (version "0.12.1")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append
+                   "https://s3.amazonaws.com/json-c_releases/releases/json-c-"
+                   version ".tar.gz"))
+             (sha256
+              (base32 "08qibrq29a5v7g23wi5icy6l4fbfw90h9ccps6vq0bcklx8n84ra"))
+             (modules '((guix build utils)))
+             (snippet
+              '(begin
+                 ;; Somehow 'config.h.in' is older than
+                 ;; 'aclocal.m4', which would trigger a rule to
+                 ;; run 'autoheader'.
+                 (set-file-time "config.h.in"
+                                (stat "aclocal.m4"))
+
+                 ;; Don't try to build with -Werror.
+                 (substitute* (find-files "." "Makefile\\.in")
+                   (("-Werror") ""))))))))
 
 (define-public qjson
   (package
@@ -2899,7 +2924,7 @@ algorithm specified in section 8.2.2.1 of the draft standard.")
 (define-public perl-io-socket-ip
   (package
     (name "perl-io-socket-ip")
-    (version "0.36")
+    (version "0.38")
     (source
      (origin
        (method url-fetch)
@@ -2907,7 +2932,7 @@ algorithm specified in section 8.2.2.1 of the draft standard.")
                            "IO-Socket-IP-" version ".tar.gz"))
        (sha256
         (base32
-         "0ky20hmln6waipzqikizyw04vpszf70fgpshz7ib8zv8480ri456"))))
+         "0scsnahxwnymg80a3k0p0cnr574nk7x9inn9wjniz0iycicclyhb"))))
     (build-system perl-build-system)
     (native-inputs `(("perl-module-build" ,perl-module-build)))
     (home-page "http://search.cpan.org/dist/IO-Socket-IP")
@@ -3844,7 +3869,7 @@ directory.")
     (propagated-inputs
      `(("r-digest" ,r-digest)
        ("r-rcpp" ,r-rcpp)))
-    (home-page "http://cran.r-project.org/web/packages/htmltools")
+    (home-page "https://cran.r-project.org/web/packages/htmltools")
     (synopsis "R tools for HTML")
     (description
      "This package provides tools for HTML generation and output in R.")
@@ -3959,7 +3984,7 @@ callback or connection interfaces.")
         (base32
          "0arjsz854rfkfqhgvpqbm9lfni97dcjs66isdsfvwfd2wz932dbb"))))
     (build-system r-build-system)
-    (home-page "http://cran.r-project.org/web/packages/hwriter")
+    (home-page "https://cran.r-project.org/web/packages/hwriter")
     (synopsis "Output R objects in HTML format")
     (description
      "This package provides easy-to-use and versatile functions to output R
@@ -3978,7 +4003,7 @@ objects in HTML format.")
         (base32
          "1vzjyvf57k1fjizlk28rby65y5lsww5qnfvgnhln74qwda7hvl3p"))))
     (build-system r-build-system)
-    (home-page "http://cran.r-project.org/web/packages/rjson")
+    (home-page "https://cran.r-project.org/web/packages/rjson")
     (synopsis "JSON library for R")
     (description
      "This package provides functions to convert R objects into JSON objects
@@ -4280,7 +4305,7 @@ C.  It is developed as part of the NetSurf project.")
      `(("netsurf-buildsystem" ,netsurf-buildsystem)
        ("pkg-config" ,pkg-config)
        ("doxygen" ,doxygen)
-       ("json-c" ,json-c)
+       ("json-c" ,json-c-0.12)      ; check whether json-c-0.12 can be removed
        ("perl" ,perl)))
     (propagated-inputs
      `(("libparserutils" ,libparserutils))) ;for libhubbub.pc
@@ -4740,6 +4765,13 @@ handling many of the web standards in use today.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-before 'configure 'patch-perl
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((perl (assoc-ref inputs "perl")))
+               (substitute* "surfraw.IN"
+                 (("perl -e")
+                  (string-append perl "/bin/perl -e")))
+               #t)))
          (add-after 'install 'compress-elvi.1sr
            (lambda* (#:key outputs #:allow-other-keys)
              ;; The manpages of the elvis are symlinks to elvi.1sr.gz
@@ -5424,7 +5456,7 @@ files).  It currently supports linked brushing and filtering.")
     (properties `((upstream-name . "Rook")))
     (build-system r-build-system)
     (propagated-inputs `(("r-brew" ,r-brew)))
-    (home-page "http://cran.r-project.org/web/packages/Rook")
+    (home-page "https://cran.r-project.org/web/packages/Rook")
     (synopsis "Web server interface for R")
     (description
      "This package contains the Rook specification and convenience software

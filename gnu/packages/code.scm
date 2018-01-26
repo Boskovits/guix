@@ -1,11 +1,12 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2015 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2015, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Andy Wingo <wingo@igalia.com>
+;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -28,8 +29,10 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system cmake)
+  #:use-module (gnu packages)
   #:use-module (gnu packages base)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages cpp)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages emacs)
   #:use-module (gnu packages gcc)
@@ -39,7 +42,10 @@
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages autogen)
   #:use-module (gnu packages ncurses)
-  #:use-module (gnu packages autotools))
+  #:use-module (gnu packages autotools)
+  #:use-module (gnu packages llvm)
+  #:use-module (gnu packages lua)
+  #:use-module (gnu packages bash))
 
 ;;; Tools to deal with source code: metrics, cross-references, etc.
 
@@ -355,23 +361,23 @@ stack traces.")
 (define-public lcov
   (package
     (name "lcov")
-    (version "1.12")
+    (version "1.13")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/ltp/Coverage%20Analysis"
                                   "/LCOV-" version "/lcov-" version ".tar.gz"))
               (sha256
                (base32
-                "19wfifdpxxivhq9adbphanjfga9bg9spms9v7c3589wndjff8x5l"))))
+                "08wabnb0gcjqk0qc65a6cgbbmz6b8lvam3p7byh0dk42hj3jr5s4"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:make-flags (let ((out (assoc-ref %outputs "out")))
-                      (list (string-append "PREFIX=" out)
-                            (string-append "BIN_DIR=" out "/bin")
-                            (string-append "MAN_DIR=" out "/share/man")))
-       #:phases (modify-phases %standard-phases
-                  (delete 'configure))
-       #:tests? #f))                              ;no 'check' target
+     '(#:make-flags
+       (let ((out (assoc-ref %outputs "out")))
+         (list (string-append "PREFIX=" out)))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))           ; no configure script
+       #:tests? #f))                    ; no 'check' target
     (inputs `(("perl" ,perl)))
     (home-page "http://ltp.sourceforge.net/coverage/lcov.php")
     (synopsis "Code coverage tool that enhances GNU gcov")
@@ -383,3 +389,54 @@ case.  The extension consists of a set of Perl scripts which build on the
 textual @command{gcov} output to implement the following enhanced
 functionality such as HTML output.")
     (license license:gpl2+)))
+
+(define-public rtags
+  (package
+    (name "rtags")
+    (version "2.16")
+    (home-page "https://github.com/Andersbakken/rtags")
+    (source
+     (origin
+       (method url-fetch)
+       (uri
+        (string-append home-page "/archive/v" version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (patches (search-patches "rtags-separate-rct.patch"))
+       (modules '((guix build utils)))
+       (snippet
+        ;; Part of spliting rct with rtags.
+        ;; Substitute #include "rct/header.h" with #include <rct/header.h>.
+        '(with-directory-excursion "src"
+           (delete-file-recursively "rct")        ;remove bundled copy
+           (let ((files (find-files "." ".*\\.cpp|.*\\.h")))
+             (substitute* files
+               (("#include ?\"rct/(.*.h)\"" all header)
+                (string-append "#include <rct/" header ">"))))))
+       (sha256
+        (base32
+         "17rkci3mmiw93qc32b9x76pg57b0lx80avr6wnmh190jx8n3v3wy"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:configure-flags
+       '("-DRTAGS_NO_ELISP_FILES=1"
+         "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+         "-DCMAKE_CXX_FLAGS=-std=c++11"
+         "-DBUILD_TESTING=FALSE")
+       #:tests? #f))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("bash-completion" ,bash-completion)
+       ("clang" ,clang)
+       ("llvm" ,llvm)
+       ("lua" ,lua)
+       ("rct" ,rct)
+       ("selene" ,selene)))
+    (synopsis "Indexer for the C language family with Emacs integration")
+    (description
+     "RTags is a client/server application that indexes C/C++ code and keeps a
+persistent file-based database of references, declarations, definitions,
+symbolnames etc.  There’s also limited support for ObjC/ObjC++.  It allows you
+to find symbols by name (including nested class and namespace scope).  Most
+importantly we give you proper follow-symbol and find-references support.")
+    (license license:gpl3+)))

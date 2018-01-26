@@ -6,6 +6,7 @@
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -250,14 +251,14 @@ implementing @code{javax.usb} (JSR-80).")
 (define-public libmtp
   (package
     (name "libmtp")
-    (version "1.1.13")
+    (version "1.1.14")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://sourceforge/libmtp/libmtp/" version
                                  "/libmtp-" version ".tar.gz"))
              (sha256
               (base32
-               "0h3dv9py5mmvxhfxmkr8ky4s80hgq3d66cmrfnnnlcdwpwpy0kj9"))))
+               "1s0jyhypxmj0j8s003ba1n74x63h1rw8am9q4z2ip3xyjvid65rq"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -352,3 +353,64 @@ HID-Class devices.")
     (license (list gpl3
                    bsd-3
                    (non-copyleft "file://LICENSE-orig.txt")))))
+
+(define-public python-hidapi
+  (package
+    (name "python-hidapi")
+    (version "0.7.99.post21")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "hidapi" version))
+       (sha256
+        (base32
+         "15ws59zdrxahf3k7z5rcrwc4jgv1307anif8ixm2cyb9ask1mgp0"))
+       (modules '((guix build utils)))
+       (snippet
+        ;; Remove bundled libraries.
+        '(begin
+           (delete-file-recursively "hidapi")
+           #t))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-configuration
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "setup.py"
+               (("'/usr/include/libusb-1.0'")
+                (string-append "'" (assoc-ref inputs "libusb")
+                               "/include/libusb-1.0'"))
+               (("'/usr/include/hidapi'")
+                (string-append "'" (assoc-ref inputs "hidapi")
+                               "/include/hidapi'")))
+             #t))
+         ;; XXX Necessary because python-build-system drops the arguments.
+         (replace 'build
+           (lambda _
+             (invoke "python" "setup.py" "build" "--with-system-hidapi")))
+         (replace 'check
+           (lambda _
+             (invoke "python" "setup.py" "test" "--with-system-hidapi")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (invoke "python" "setup.py" "install" "--with-system-hidapi"
+                     (string-append "--prefix=" (assoc-ref outputs "out"))
+                     "--single-version-externally-managed" "--root=/"))))))
+    (inputs
+     `(("hidapi" ,hidapi)
+       ("libusb" ,libusb)
+       ("eudev" ,eudev)))
+    (native-inputs
+     `(("python-cython" ,python-cython)))
+    (home-page "https://github.com/trezor/cython-hidapi")
+    (synopsis "Cython interface to hidapi")
+    (description "This package provides a Cython interface to @code{hidapi}.")
+    ;; The library can be used under either of these licenses.
+    (license (list gpl3 bsd-3
+                   (non-copyleft
+                    "https://github.com/trezor/cython-hidapi/blob/master/LICENSE-orig.txt"
+                    "You are free to use cython-hidapi code for any purpose.")))))
+
+(define-public python2-hidapi
+  (package-with-python2 python-hidapi))

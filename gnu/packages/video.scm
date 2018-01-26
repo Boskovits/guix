@@ -15,13 +15,14 @@
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2017 Feng Shu <tumashu@163.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Gregor Giesen <giesen@zaehlwerk.net>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2018 Roel Janssen <roel@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -88,6 +89,7 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages iso-codes)
   #:use-module (gnu packages libreoffice)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages lua)
@@ -101,6 +103,7 @@
   #:use-module (gnu packages popt)
   #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages qt)
   #:use-module (gnu packages ruby)
@@ -522,10 +525,10 @@ SMPTE 314M.")
     (inputs
      `(("libebml" ,libebml)))
     (home-page "https://www.matroska.org")
-    (synopsis "C++ libary to parse Matroska files (.mkv and .mka)")
+    (synopsis "C++ library to parse Matroska files (.mkv and .mka)")
     (description
      "Matroska aims to become the standard of multimedia container formats.
-It is based on EBML (Extensible Binary Meta Language), a binary derivative
+It is based on @dfn{EBML} (Extensible Binary Meta Language), a binary derivative
 of XML.  EBML enables the Matroska Development Team to gain significant
 advantages in terms of future format extensibility, without breaking file
 support in old parsers.
@@ -782,6 +785,25 @@ audio/video codec library.")
                     flag))
               ,flags))))))
 
+;; Annoyingly enough, the latest mpv release does not build with the stable
+;; release of ffmpeg. Use a git commit until the situation is fixed.
+(define-public ffmpeg-git
+  (let ((commit "3f887440677328c9cfed97ad81d14051ffa32aae")
+        (revision "1"))
+    (package
+     (inherit ffmpeg)
+     (name "ffmpeg-git")
+     (version (string-append "3.4-" revision "." (string-take commit 9)))
+     (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/FFmpeg/FFmpeg.git")
+                    (commit commit)))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1b7n3g4m2rbvrwsgbfl8wl91z42g1ld42clwxs8qpl9ny5rwz6sq")))))))
+
 (define-public vlc
   (package
     (name "vlc")
@@ -986,7 +1008,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
 (define-public mpv
   (package
     (name "mpv")
-    (version "0.27.0")
+    (version "0.28.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -994,7 +1016,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
                     ".tar.gz"))
               (sha256
                (base32
-                "1754371fkva8aqxgbm50jxyvij7mnysq0538bf6zghbmigqqn79l"))
+                "1d2p6k3y9lqx8bpdal4grrj8ljy7pvd8qgdq8004fmr38afmbb7f"))
               (file-name (string-append name "-" version ".tar.gz"))))
     (build-system waf-build-system)
     (native-inputs
@@ -1005,7 +1027,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("enca" ,enca)
-       ("ffmpeg" ,ffmpeg)
+       ("ffmpeg" ,ffmpeg-git)
        ("jack" ,jack-1)
        ("ladspa" ,ladspa)
        ("lcms" ,lcms)
@@ -1034,6 +1056,7 @@ SVCD, DVD, 3ivx, DivX 3/4/5, WMV and H.264 movies.")
        ("rsound" ,rsound)
        ("waf" ,python-waf)
        ("wayland" ,wayland)
+       ("wayland-protocols" ,wayland-protocols)
        ("libxkbcommon", libxkbcommon)
        ("youtube-dl" ,youtube-dl)
        ("zlib" ,zlib)))
@@ -1124,12 +1147,12 @@ access to mpv's powerful playback capabilities.")
     (synopsis "VP8/VP9 video codec")
     (description "libvpx is a codec for the VP8/VP9 video compression format.")
     (license license:bsd-3)
-    (home-page "http://www.webmproject.org/")))
+    (home-page "https://www.webmproject.org/")))
 
 (define-public youtube-dl
   (package
     (name "youtube-dl")
-    (version "2017.12.14")
+    (version "2018.01.21")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://yt-dl.org/downloads/"
@@ -1137,7 +1160,7 @@ access to mpv's powerful playback capabilities.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "01hvsch7ybff0amivl86m6klz156bm3hfh66zz5q8ha2af5j44hj"))))
+                "14ggjxnhc2sxc93h7d5k3z4n35n5q3ffsif97np0ar93x5z3zgn5"))))
     (build-system python-build-system)
     (arguments
      ;; The problem here is that the directory for the man page and completion
@@ -1160,11 +1183,12 @@ access to mpv's powerful playback capabilities.")
                           (("'etc/")
                            (string-append "'" prefix "/etc/"))
                           (("'share/")
-                           (string-append "'" prefix "/share/")))))))))
+                           (string-append "'" prefix "/share/")))
+                        #t))))))
     (synopsis "Download videos from YouTube.com and other sites")
     (description
      "Youtube-dl is a small command-line program to download videos from
-YouTube.com and a few more sites.")
+YouTube.com and many more sites.")
     (home-page "https://yt-dl.org")
     (license license:public-domain)))
 
@@ -1246,7 +1270,7 @@ other site that youtube-dl supports.")
 (define-public you-get
   (package
     (name "you-get")
-    (version "0.4.995")
+    (version "0.4.1011")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1255,13 +1279,27 @@ other site that youtube-dl supports.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0i89mn8v8znn3csgzfg8dz5vcn3ld66xj02az6137bljhgivjxra"))))
+                "0cdbh5w0chw3dlrwizm91l6sgkkzy7p6h0072dai4xbw5zgld31k"))))
     (build-system python-build-system)
-    (arguments
-     '(#:tests? #f))                    ; no tests
     (inputs
-     `(("ffmpeg" ,ffmpeg)))
-    (synopsis "Download videos, audios, or images from Web sites")
+     `(("ffmpeg" ,ffmpeg)))             ; for multi-part and >=1080p videos
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'qualify-input-references
+           ;; Explicitly invoke the input ffmpeg, instead of whichever one
+           ;; happens to be in the user's $PATH at run time.
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((ffmpeg (string-append (assoc-ref inputs "ffmpeg")
+                                          "/bin/ffmpeg")))
+               (substitute* "src/you_get/processor/ffmpeg.py"
+                 ;; Don't blindly replace all occurrences of ‘'ffmpeg'’: the
+                 ;; same string is also used when sniffing ffmpeg's output.
+                 (("(FFMPEG == |\\()'ffmpeg'" _ prefix)
+                  (string-append prefix "'" ffmpeg "'")))
+               #t))))
+       #:tests? #f))                    ; XXX some tests need Internet access
+    (synopsis "Download videos, audio, or images from Web sites")
     (description
      "You-Get is a command-line utility to download media contents (videos,
 audio, images) from the Web.  It can use either mpv or vlc for playback.")
@@ -1323,6 +1361,12 @@ players, like VLC or MPlayer.")
                (base32
                 "0ayqiq0psq18rcp6f5pz82sxsq66v0kwv0y55dbrcg68plnxy71j"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags '("--with-libdvdcss=yes")))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (propagated-inputs
+     `(("libdvdcss" ,libdvdcss)))
     (home-page "http://dvdnav.mplayerhq.hu/")
     (synopsis "Library for reading video DVDs")
     (description
@@ -1683,6 +1727,35 @@ from various services and pipes them into a video playing application.")
     (home-page "http://livestreamer.io/")
     (license license:bsd-2)))
 
+(define-public streamlink
+  (package
+    (name "streamlink")
+    (version "0.10.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "streamlink" version))
+       (sha256
+        (base32
+         "17299xnd9jzi7m1d2rr4xdlj47q64bzj2957nlsrhw0hskds1s6h"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/streamlink/streamlink")
+    (native-inputs
+     `(("python-pytest" ,python-pytest)
+       ("python-mock" ,python-mock)
+       ("python-requests-mock" ,python-requests-mock)))
+    (propagated-inputs
+     `(("python-pysocks" ,python-pysocks)
+       ("python-websocket-client" ,python-websocket-client)
+       ("python-iso3166" ,python-iso3166)
+       ("python-iso639" ,python-iso639)
+       ("python-pycryptodome" ,python-pycryptodome)
+       ("python-requests" ,python-requests)))
+    (synopsis "Extract streams from various services")
+    (description "Streamlink is command-line utility that extracts streams
+from sites like Twitch.tv and pipes them into a video player of choice.")
+    (license license:bsd-2)))
+
 (define-public mlt
   (package
     (name "mlt")
@@ -1715,6 +1788,7 @@ from various services and pipes them into a video playing application.")
             #t)))))
     (inputs
      `(("alsa-lib" ,alsa-lib)
+       ("ffmpeg" ,ffmpeg)
        ("fftw" ,fftw)
        ("libxml2" ,libxml2)
        ("jack" ,jack-1)
@@ -1733,7 +1807,7 @@ broadcasting.  It provides a toolkit for broadcasters, video editors, media
 players, transcoders, web streamers and many more types of applications.  The
 functionality of the system is provided via an assortment of ready to use
 tools, XML authoring components, and an extensible plug-in based API.")
-    (license license:lgpl2.1+)))
+    (license license:gpl3)))
 
 (define-public v4l-utils
   (package
@@ -1773,7 +1847,7 @@ be used for realtime video capture via Linux-specific APIs.")
 (define-public obs
   (package
     (name "obs")
-    (version "18.0.2")
+    (version "20.1.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/jp9000/obs-studio"
@@ -1781,7 +1855,7 @@ be used for realtime video capture via Linux-specific APIs.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "02pbiyvf5x0zh448h5rpmyn33qnsqk694xxlyns83mdi74savyqw"))))
+                "1g5z6z050v25whc7n3xvg6l238wmg5crp7ihvk73qngvzxr8bg28"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f)) ; no tests
@@ -2630,3 +2704,47 @@ It counts more than 100 plugins.")
                    ;; src/filter/ndvi/ndvi.cpp
                    ;; src/filter/facedetect/facedetect.cpp
                    license:lgpl2.1+))))
+
+(define-public motion
+  (package
+    (name "motion")
+    (version "4.1.1")
+    (home-page "https://motion-project.github.io/")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/Motion-Project/motion/archive/"
+                    "release-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1qm4i8zrqafl60sv2frhixvkd0wh0r5jfcrj5i6gha7yplsvjx10"))
+              (file-name (string-append name "-" version ".tar.gz"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("autoconf" ,(autoconf-wrapper))
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)))
+    (inputs
+     `(("libjpeg" ,libjpeg)
+       ("ffmpeg" ,ffmpeg)
+       ("sqlite" ,sqlite)))
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'bootstrap
+                    (lambda _
+                      (patch-shebang "version.sh")
+                      (invoke "autoreconf" "-vfi"))))
+       #:configure-flags '("--sysconfdir=/etc")
+       #:make-flags (list (string-append "sysconfdir="
+                                         (assoc-ref %outputs "out")
+                                         "/etc"))
+
+       #:tests? #f))                              ;no 'check' target
+    (synopsis "Detect motion from video signals")
+    (description
+     "Motion is a program that monitors the video signal from one or more
+cameras and is able to detect if a significant part of the picture has
+changed.  Or in other words, it can detect motion.")
+
+    ;; Some files say "version 2" and others "version 2 or later".
+    (license license:gpl2)))

@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 Chris Marusich <cmmarusich@gmail.com>
@@ -90,6 +90,7 @@
             operating-system-activation-script
             operating-system-user-accounts
             operating-system-shepherd-service-names
+            operating-system-user-kernel-arguments
 
             operating-system-derivation
             operating-system-profile
@@ -449,7 +450,7 @@ a container or that of a \"bare metal\" system."
          (other-fs  (non-boot-file-system-service os))
          (unmount   (user-unmount-service known-fs))
          (swaps     (swap-services os))
-         (procs     (user-processes-service))
+         (procs     (service user-processes-service-type))
          (host-name (host-name-service (operating-system-host-name os)))
          (entries   (operating-system-directory-base-entries
                      os #:container? container?)))
@@ -491,8 +492,9 @@ a container or that of a \"bare metal\" system."
 (define* (operating-system-services os #:key container?)
   "Return all the services of OS, including \"internal\" services that do not
 explicitly appear in OS."
-  (append (operating-system-user-services os)
-          (essential-services os #:container? container?)))
+  (instantiate-missing-services
+   (append (operating-system-user-services os)
+           (essential-services os #:container? container?))))
 
 
 ;;;

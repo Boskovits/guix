@@ -12,7 +12,7 @@
 ;;; Copyright © 2017 Peter Mikkelsen <petermikkelsen10@gmail.com>
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 rsiddharth <s@ricketyspace.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -2042,7 +2042,7 @@ lines continued at an indented level below.")
 (define-public ghc-iproute
   (package
     (name "ghc-iproute")
-    (version "1.7.0")
+    (version "1.7.1")
     (source
      (origin
        (method url-fetch)
@@ -2052,7 +2052,7 @@ lines continued at an indented level below.")
              ".tar.gz"))
        (sha256
         (base32
-         "1ply0i110c2sppjbfyysgw48jfjnsbam5zwil8xws0hp20rh1pb5"))))
+         "1viyxq3m1aifl05w0hxwrhhhcfpmvwz4ymil2gngi4nfm0yd1f2p"))))
     (build-system haskell-build-system)
     (arguments `(#:tests? #f)) ; FIXME: Tests cannot find System.ByteOrder,
                                ; exported by ghc-byteorder.  Doctest issue.
@@ -2061,7 +2061,7 @@ lines continued at an indented level below.")
        ("ghc-byteorder" ,ghc-byteorder)
        ("ghc-network" ,ghc-network)
        ("ghc-safe" ,ghc-safe)))
-    (home-page "http://www.mew.org/~kazu/proj/iproute/")
+    (home-page "https://www.mew.org/~kazu/proj/iproute/")
     (synopsis "IP routing table")
     (description "IP Routing Table is a tree of IP ranges to search one of
 them on the longest match base.  It is a kind of TRIE with one way branching
@@ -4970,7 +4970,7 @@ do on-demand loading.")
 (define-public ghc-juicypixels
   (package
     (name "ghc-juicypixels")
-    (version "3.2.6.2")
+    (version "3.2.9.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://hackage.haskell.org/package/"
@@ -4978,7 +4978,7 @@ do on-demand loading.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0hxa57cdknz86zywpjwfbdhac5lmk7j0wd5hy4mcnb8mw6r2m592"))))
+                "14s57fgf6kd5n5al2kcvk1aaxbq1ph0r5h8blflrjkx83yl6r8yn"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-mtl" ,ghc-mtl)
@@ -5942,7 +5942,7 @@ supported.  A module of colour names (\"Data.Colour.Names\") is provided.")
          "0zkqihmdfz7bzv3sxh1p9ijl4vra880kfy3qy9h96flq7d2if0f2"))))
     (build-system haskell-build-system)
     (home-page "http://hackage.haskell.org/package/directory")
-    (synopsis "Platform-agnostic library for filesystem operations")
+    (synopsis "Platform-agnostic library for file system operations")
     (description
      "This library provides a basic set of operations for manipulating
 files and directories in a portable way.")
@@ -6203,7 +6203,7 @@ increasing type safety.")
        ("ghc-text" ,ghc-text)
        ("ghc-temporary" ,ghc-temporary)))
     (home-page "https://github.com/fpco/haskell-filesystem")
-    (synopsis "Consistent filesystem interaction across GHC versions")
+    (synopsis "Consistent file system interaction across GHC versions")
     (description
      "This is a small wrapper around the directory, unix, and Win32 packages,
 for use with system-filepath.  It provides a consistent API to the various
@@ -6306,16 +6306,16 @@ testing strategies.")
 (define ghc-chell-quickcheck-bootstrap
   (package
     (name "ghc-chell-quickcheck-bootstrap")
-    (version "0.2.5")
+    (version "0.2.5.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "https://hackage.haskell.org/package/chell-quickcheck/chell-quickcheck-"
-             version ".tar.gz"))
+             "https://hackage.haskell.org/package/chell-quickcheck/"
+             "chell-quickcheck-" version ".tar.gz"))
        (sha256
         (base32
-         "02bkcnx5k6r5csdnnkvk4wfd0l36nxb87i1463ynw17n7ym9s4cs"))))
+         "1iicsys9igx7m7n4l2b8djardmjy2ah5ibzp7kzs758h460fq53a"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-chell" ,ghc-chell)
@@ -6331,16 +6331,16 @@ testing strategies.")
 (define-public ghc-chell-quickcheck
   (package
     (name "ghc-chell-quickcheck")
-    (version "0.2.5")
+    (version "0.2.5.1")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "https://hackage.haskell.org/package/chell-quickcheck/chell-quickcheck-"
-             version ".tar.gz"))
+             "https://hackage.haskell.org/package/chell-quickcheck/"
+             "chell-quickcheck-" version ".tar.gz"))
        (sha256
         (base32
-         "02bkcnx5k6r5csdnnkvk4wfd0l36nxb87i1463ynw17n7ym9s4cs"))))
+         "1iicsys9igx7m7n4l2b8djardmjy2ah5ibzp7kzs758h460fq53a"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-chell" ,ghc-chell)
@@ -6424,7 +6424,7 @@ increasing type safety.")
        ("ghc-chell" ,ghc-chell)
        ("ghc-temporary" ,ghc-temporary)))
     (home-page "https://github.com/fpco/haskell-filesystem")
-    (synopsis "Consistent filesystem interaction across GHC versions")
+    (synopsis "Consistent file system interaction across GHC versions")
     (description
      "This is a small wrapper around the directory, unix, and Win32 packages,
 for use with system-filepath.  It provides a consistent API to the various
@@ -6456,7 +6456,7 @@ and Fortran complex data types.")
 (define-public ghc-hmatrix
   (package
     (name "ghc-hmatrix")
-    (version "0.17.0.2")
+    (version "0.18.1.0")
     (source
      (origin
        (method url-fetch)
@@ -6464,7 +6464,7 @@ and Fortran complex data types.")
              "http://hackage.haskell.org/package/hmatrix/hmatrix-"
              version ".tar.gz"))
        (sha256
-        (base32 "1fgsrh2y9y971pzrd3767rg97bjr1ghpdvwmn1nn65s90rc9bv98"))))
+        (base32 "07zkwvg872hfk6jyn4s54ws8mvclynazaxf7fsbqi16dmf9dn61c"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-random" ,ghc-random)
@@ -6486,7 +6486,7 @@ numerical computations based on BLAS and LAPACK.")
 (define-public ghc-hmatrix-gsl
   (package
     (name "ghc-hmatrix-gsl")
-    (version "0.17.0.0")
+    (version "0.18.0.1")
     (source
      (origin
        (method url-fetch)
@@ -6494,7 +6494,7 @@ numerical computations based on BLAS and LAPACK.")
              "http://hackage.haskell.org/package/hmatrix-gsl/hmatrix-gsl-"
              version ".tar.gz"))
        (sha256
-        (base32 "1jbqwn9d2nldc4klhy0n8gcxr889h0daw2mjfhwgksfy1bwfjl7w"))))
+        (base32 "0mflm7zg6c6a5vy092pa429rzpyv5drc1589r3x4fbmvcyqc79gx"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-hmatrix" ,ghc-hmatrix)
@@ -6512,7 +6512,7 @@ using GSL.")
 (define-public ghc-hmatrix-special
   (package
     (name "ghc-hmatrix-special")
-    (version "0.4.0.0")
+    (version "0.4.0.1")
     (source
      (origin
        (method url-fetch)
@@ -6521,7 +6521,7 @@ using GSL.")
          "http://hackage.haskell.org/package/hmatrix-special/hmatrix-special-"
          version ".tar.gz"))
        (sha256
-        (base32 "0cr9y3swzj7slrd84g1nhdkp1kpq4q5ihwapmiaidpr2bv3hrfhz"))))
+        (base32 "0kpcqdchi7ikzhqacy4rh4dxz3v37paxyb84wqa66sysb72wkabj"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-hmatrix" ,ghc-hmatrix)
@@ -6535,7 +6535,7 @@ functions for Haskell.")
 (define-public ghc-hmatrix-gsl-stats
   (package
     (name "ghc-hmatrix-gsl-stats")
-    (version "0.4.1.3")
+    (version "0.4.1.7")
     (source
      (origin
        (method url-fetch)
@@ -6544,7 +6544,7 @@ functions for Haskell.")
          "http://hackage.haskell.org/package/hmatrix-gsl-stats/hmatrix-gsl-stats-"
          version ".tar.gz"))
        (sha256
-        (base32 "0f3pzi494n4js0xiq5b38n07cnby0h9da6gmwywf8plvxm9271fl"))))
+        (base32 "1gslgk58lzin43cvbpivhw7nrn9qyaa6qwhy1z9ypvyal5p8n3sa"))))
     (build-system haskell-build-system)
     (inputs
      `(("ghc-vector" ,ghc-vector)
@@ -6744,7 +6744,7 @@ accessed or modified.")
     (synopsis "Cross platform library for file change notification.")
     (description "Cross platform library for file creation, modification, and
 deletion notification. This library builds upon existing libraries for platform
-specific Windows, Mac, and Linux filesystem event notification.")
+specific Windows, Mac, and Linux file system event notification.")
     (license license:bsd-3)))
 
 (define-public ghc-ieee754

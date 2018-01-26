@@ -13,11 +13,12 @@
 ;;; Copyright © 2016 Peter Feigl <peter.feigl@nexoid.at>
 ;;; Copyright © 2016 John J. Foerch <jjfoerch@earthlink.net>
 ;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Ben Sturmfels <ben@sturm.com.au>
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
+;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +43,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages)
@@ -500,9 +502,9 @@ connection alive.")
 (define-public isc-dhcp
   (let* ((bind-major-version "9")
          (bind-minor-version "9")
-         (bind-patch-version "10")
+         (bind-patch-version "11")
          (bind-release-type "-P")         ; for patch release, use "-P"
-         (bind-release-version "3")      ; for patch release, e.g. "6"
+         (bind-release-version "1")      ; for patch release, e.g. "6"
          (bind-version (string-append bind-major-version
                                       "."
                                       bind-minor-version
@@ -512,14 +514,14 @@ connection alive.")
                                       bind-release-version)))
     (package
       (name "isc-dhcp")
-      (version "4.3.5")
+      (version "4.3.6")
       (source (origin
                 (method url-fetch)
                 (uri (string-append "http://ftp.isc.org/isc/dhcp/"
                                     version "/dhcp-" version ".tar.gz"))
                 (sha256
                  (base32
-                  "0m7rwxvpb7xrmfl9ynpckhl0hi0xgm9bq1fmbp2r68sxy5mr75gb"))))
+                  "06vgxhm6agzkp6r1jy10467vrfw2rzcp2mnkcph7ydziciisy7m4"))))
       (build-system gnu-build-system)
       (arguments
        `(#:parallel-build? #f
@@ -618,7 +620,7 @@ connection alive.")
                                         "/bind-" bind-version ".tar.gz"))
                     (sha256
                      (base32
-                      "00yh1d5shrq7y0kfwacax4f8dc0akaa2fha430j92n7mshms65m1"))))
+                      "1a4g6nzzrbmhngdgvgv1jjq4fm06m8fwc2a0gskkchplxl7dva20"))))
 
                 ;; When cross-compiling, we need the cross Coreutils and sed.
                 ;; Otherwise just use those from %FINAL-INPUTS.
@@ -756,6 +758,31 @@ console window to allow commands to be interactively run on multiple servers
 over ssh connections.")
     (license license:gpl2+)))
 
+(define-public rename
+  (package
+    (name "rename")
+    (version "0.20")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://cpan/authors/id/R/RM/RMBARKER/File-Rename-"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "1cf6xx2hiy1xalp35fh8g73j67r0w0g66jpcbc6971x9jbm7bvjy"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/pod/distribution/File-Rename/rename.PL")
+    (synopsis "Perl extension for renaming multiple files")
+    (description
+     "This package provides a Perl interface (@code{Perl::Rename}) as well
+as a command-line utility (@command{rename}) that can rename multiple files
+at once based on a Perl regular expression.")
+    (license license:perl-license)))
+
 (define-public rottlog
   (package
     (name "rottlog")
@@ -826,7 +853,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.8.21p2")
+    (version "1.8.22")
     (source (origin
               (method url-fetch)
               (uri
@@ -836,7 +863,7 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "0s33szq6q59v5s377l4v6ybsdy7pfq6sz7y364j4x09ssdn79ibl"))
+                "00pxp74xkwdcmrjwy55j0k8p684jk1zx3nzdc11v30q8q8kwnmkj"))
               (modules '((guix build utils)))
               (snippet
                '(delete-file-recursively "lib/zlib"))))
@@ -1051,7 +1078,7 @@ network, which causes enabled computers to power on.")
 (define-public dmidecode
   (package
     (name "dmidecode")
-    (version "3.0")
+    (version "3.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1059,7 +1086,7 @@ network, which causes enabled computers to power on.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0iby0xfk5x3cdr0x0gxj5888jjyjhafvaq0l79civ73jjfqmphvy"))))
+                "1h0sg0lxa15nzf8s7884p6q7p6md9idm0c79wyqmk32l4ndwwrnp"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases (delete 'configure))
@@ -1115,16 +1142,16 @@ development, not the kernel implementation of ACPI.")
 (define-public stress
   (package
     (name "stress")
-    (version "1.0.1")
+    (version "1.0.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://debian/pool/main/s/stress/stress_"
                                   version ".orig.tar.gz"))
               (sha256
                (base32
-                "1v9vnzlihqfjsxa93hdbrq72pqqk00dkylmlg8jpxhm7s1w9qfl1"))))
+                "0nw210jajk38m3y7h8s130ps2qsbz7j75wab07hi2r3hlz14yzh5"))))
     (build-system gnu-build-system)
-    (home-page "http://packages.debian.org/wheezy/stress")
+    (home-page "https://packages.debian.org/sid/stress")
     (synopsis "Impose load on and stress test a computer system")
     (description
      "Stress is a tool that imposes a configurable amount of CPU, memory, I/O,
@@ -1189,7 +1216,7 @@ characters can be replaced as well, as can UTF-8 characters.")
        ("e2fsprogs" ,e2fsprogs)
        ("libjpeg" ,libjpeg)
        ("ncurses" ,ncurses)))
-    (home-page "http://www.cgsecurity.org/wiki/TestDisk")
+    (home-page "https://www.cgsecurity.org/wiki/TestDisk")
     (synopsis "Data recovery tool")
     (description
      "TestDisk is a program for data recovery, primarily designed to help
@@ -1281,7 +1308,7 @@ track changes in important system configuration files.")
                 "0ssvnh4cvhya0c1j6k6192zvqcq7nc0x01fb5nwhr0prfqr0i8j8"))))
     (build-system gnu-build-system)
     (inputs `(("python" ,python)))
-    (home-page "http://people.redhat.com/sgrubb/libcap-ng/")
+    (home-page "https://people.redhat.com/sgrubb/libcap-ng/")
     (synopsis "Library for more easily working with POSIX capabilities")
     (description
      "The libcap-ng library is intended to make programming with POSIX
@@ -1387,14 +1414,14 @@ of supported upstream metrics systems simultaneously.")
 (define-public ansible
   (package
     (name "ansible")
-    (version "2.4.1.0")
+    (version "2.4.2.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "ansible" version))
        (sha256
         (base32
-         "0spv0kjaicwss4q52s727b6grdizcxpa0bbsfg26pgf5kjrayqfs"))
+         "0n3n9py4s3aykiii31xq8g4wmd6693jvby0424pjrg0bna01apri"))
        (patches (search-patches "ansible-wrap-program-hack.patch"))))
     (build-system python-build-system)
     (native-inputs
@@ -1413,12 +1440,12 @@ of supported upstream metrics systems simultaneously.")
        ("python2-paramiko" ,python2-paramiko)))
     (arguments
      `(#:python ,python-2)) ; incompatible with Python 3
-    (home-page "http://ansible.com/")
+    (home-page "https://www.ansible.com/")
     (synopsis "Radically simple IT automation")
     (description "Ansible is a radically simple IT automation system.  It
-handles configuration-management, application deployment, cloud provisioning,
-ad-hoc task-execution, and multinode orchestration - including trivializing
-things like zero downtime rolling updates with load balancers.")
+handles configuration management, application deployment, cloud provisioning,
+ad hoc task execution, and multinode orchestration---including trivializing
+things like zero-downtime rolling updates with load balancers.")
     (license license:gpl3+)))
 
 (define-public cpulimit
@@ -1805,14 +1832,14 @@ produce uniform output across heterogeneous networks.")
 (define-public cbatticon
   (package
     (name "cbatticon")
-    (version "1.6.6")
+    (version "1.6.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/valr/"
                                   name "/archive/" version ".tar.gz"))
               (sha256
                (base32
-                "1rxlrwd817f2zl4fsc5ha43wjzfidq3yyagq4lgyi150qg36svv3"))
+                "1s2n49ydh7pznnf02fak4yy0wqkgi9ag7yiw1zg1lhp4m0h37hyh"))
               (file-name (string-append name "-" version ".tar.gz"))))
     (build-system gnu-build-system)
     (arguments
@@ -2068,7 +2095,7 @@ buffers.")
 (define-public intel-gpu-tools
   (package
     (name "intel-gpu-tools")
-    (version "1.18")
+    (version "1.21")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://cgit.freedesktop.org/xorg/app/"
@@ -2076,7 +2103,7 @@ buffers.")
                                   "intel-gpu-tools-" version ".tar.gz"))
               (sha256
                (base32
-                "0w7djk0y5w76hzn1b3cm39zd5c6w9za1wfn80wd857h0v313rzq3"))))
+                "1xfy4cgimyyn5qixlrfkadgnl9qwbk30vw8k80g8vjnrcc4hx986"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; many of the tests try to load kernel modules
@@ -2084,9 +2111,9 @@ buffers.")
        (modify-phases %standard-phases
          (add-after 'unpack 'autogen
            (lambda _
-             ;; Don't run configure in this phase
+             ;; Don't run configure in this phase.
              (setenv "NOCONFIGURE" "1")
-             (zero? (system* "sh" "autogen.sh")))))))
+             (invoke "sh" "autogen.sh"))))))
     (inputs
      `(("util-macros" ,util-macros)
        ("libdrm" ,libdrm)
@@ -2333,3 +2360,35 @@ application, collecting the information received.")
         ;; 'src/siphash24.c' is the SipHash reference implementation, which
         ;; bears a CC0 Public Domain Dedication.
     (license license:agpl3+)))
+
+(define-public hungrycat
+  (package
+    (name "hungrycat")
+    (version "0.4.1")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/jwilk/hungrycat/"
+                                  "releases/download/" version "/"
+                                  name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "03fc1zsrf99lvxa7b4ps6pbi43304wbxh1f6ci4q0vkal370yfwh"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     ;; For tests.
+     `(("python" ,python-wrapper)
+       ("python-nose" ,python-nose)))
+    (arguments
+     `(#:test-target "test"))
+    (synopsis "A single tool that combines @command{cat} & @command{rm}")
+    (description
+     "hungrycat prints the contents of a file to standard output, while
+simultaneously freeing the disk space it occupied.  It is useful if you need
+to process a large file, don't have enough space to store both the input and
+output files, and don't need the input file afterwards.
+While similar in principle to running @command{cat} immediately followed by
+@command{rm}, @command{hungrycat} actually frees blocks as soon as they are
+printed instead of after the entire file has been read, which is often too
+late.")
+    (home-page "https://jwilk.net/software/hungrycat")
+    (license license:expat)))

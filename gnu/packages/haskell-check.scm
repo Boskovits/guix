@@ -7,7 +7,7 @@
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2017 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2017 rsiddharth <s@ricketyspace.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -343,17 +343,16 @@ provided by the Haskell Platform.")
 (define-public ghc-quickcheck-unicode
   (package
     (name "ghc-quickcheck-unicode")
-    (version "1.0.0.1")
+    (version "1.0.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "https://hackage.haskell.org/package/quickcheck-unicode/quickcheck-unicode-"
-             version
-             ".tar.gz"))
+             "https://hackage.haskell.org/package/quickcheck-unicode/"
+             "quickcheck-unicode-" version ".tar.gz"))
        (sha256
         (base32
-         "1a8nl6x7l9b22yx61wm0bh2n1xzb1hd5i5zgg1w4fpaivjnrrhi4"))))
+         "0s43s1bzbg3gwsjgm7fpyksd1339f0m26dlw2famxwyzgvm0a80k"))))
     (build-system haskell-build-system)
     (inputs `(("ghc-quickcheck" ,ghc-quickcheck)))
     (home-page
@@ -584,7 +583,7 @@ JUnit tool for Java.")
     (arguments `(#:haddock? #f)) ; Haddock phase fails because there are no
                                  ; documentation files.
     (inputs `(("ghc-hspec-meta" ,ghc-hspec-meta)))
-    (home-page "http://hspec.github.io/")
+    (home-page "https://hspec.github.io/")
     (synopsis "Automatically discover and run Hspec tests")
     (description "hspec-discover is a tool which automatically discovers and
 runs Hspec tests.")
@@ -615,7 +614,7 @@ runs Hspec tests.")
        ("ghc-quickcheck" ,ghc-quickcheck)
        ("ghc-hspec-expectations" ,ghc-hspec-expectations)
        ("ghc-silently" ,ghc-silently)))
-    (home-page "http://hspec.github.io/")
+    (home-page "https://hspec.github.io/")
     (synopsis "Testing framework for Haskell")
     (description "This library exposes internal types and functions that can
 be used to extend Hspec's functionality.")
@@ -645,7 +644,7 @@ be used to extend Hspec's functionality.")
        ("ghc-setenv" ,ghc-setenv)
        ("ghc-random" ,ghc-random)
        ("ghc-quickcheck-io" ,ghc-quickcheck-io)))
-    (home-page "http://hspec.github.io/")
+    (home-page "https://hspec.github.io/")
     (synopsis "Version of Hspec to test Hspec itself")
     (description "This library provides a stable version of Hspec which is
 used to test the in-development version of Hspec.")
@@ -674,7 +673,7 @@ used to test the in-development version of Hspec.")
        ("ghc-hunit" ,ghc-hunit)
        ("ghc-stringbuilder" ,ghc-stringbuilder)
        ("ghc-hspec-meta" ,ghc-hspec-meta)))
-    (home-page "http://hspec.github.io/")
+    (home-page "https://hspec.github.io/")
     (synopsis "Testing Framework for Haskell")
     (description "This library provides the Hspec testing framework for
 Haskell, inspired by the Ruby library RSpec.")
@@ -700,7 +699,7 @@ Haskell, inspired by the Ruby library RSpec.")
        ("ghc-quickcheck" ,ghc-quickcheck)))
     (native-inputs
      `(("hspec-discover" ,hspec-discover)))
-    (home-page "http://hspec.github.io/")
+    (home-page "https://hspec.github.io/")
     (synopsis "Contributed functionality for Hspec")
     (description
      "This package provides contributed Hspec extensions.")

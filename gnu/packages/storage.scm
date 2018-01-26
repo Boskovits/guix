@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -109,6 +110,10 @@
                "-DWITH_XIO=OFF"
                ;; Use jemalloc instead of tcmalloc.
                "-DALLOCATOR=jemalloc"))
+       ;; FIXME: Some of the tests leak Btrfs subvolumes on Btrfs. See
+       ;; <https://bugs.gnu.org/29674> for details. Disable tests until
+       ;; resolved.
+       #:tests? #f
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'patch-source
@@ -335,7 +340,7 @@
     (description
      "Ceph is a distributed storage system designed for reliability and
 performance.  It provides network-based block devices (RBD), a POSIX
-compliant filesystem (CephFS), and offers compatibility with various
+compliant file system (CephFS), and offers compatibility with various
 storage protocols (S3, NFS, and others) through the RADOS gateway.")
     ;; The Ceph libraries are LGPL2.1 and most of the utilities fall under
     ;; GPL2. The installed erasure code plugins are BSD-3 licensed and do

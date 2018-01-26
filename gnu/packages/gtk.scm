@@ -8,14 +8,15 @@
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2015 David Hashe <david.hashe@dhashe.com>
-;;; Coypright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 Patrick Hetu <patrick.hetu@auf.org>
-;;; Coypright © 2016 ng0 <ng0@we.make.ritual.n0.is>
-;;; Coypright © 2017 Roel Janssen <roel@gnu.org>
-;;; Coypright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016 ng0 <ng0@we.make.ritual.n0.is>
+;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1237,7 +1238,7 @@ write GNOME applications.")
 (define-public girara
   (package
     (name "girara")
-    (version "0.2.7")
+    (version "0.2.8")
     (source (origin
               (method url-fetch)
               (uri
@@ -1245,19 +1246,31 @@ write GNOME applications.")
                               version ".tar.gz"))
               (sha256
                (base32
-                "1r9jbhf9n40zj4ddqv1q5spijpjm683nxg4hr5lnir4a551s7rlq"))))
+                "18wss3sak3djip090v2vdbvq1mvkwcspfswc87zbvv3magihan98"))))
     (native-inputs `(("pkg-config" ,pkg-config)
-                     ("gettext" ,gettext-minimal)))
-    (inputs `(("gtk+" ,gtk+)
-              ("check" ,check)))
+                     ("check" ,check)
+                     ("gettext" ,gettext-minimal)
+                     ("glib:bin" ,glib "bin")
+                     ("xorg-server" ,xorg-server)))
+    ;; Listed in 'Requires.private' of 'girara.pc'.
+    (propagated-inputs `(("gtk+" ,gtk+)))
     (arguments
      `(#:make-flags
        `(,(string-append "PREFIX=" (assoc-ref %outputs "out"))
          "COLOR=0" "CC=gcc")
        #:test-target "test"
-       #:tests? #f ; Tests fail with "Gtk cannot open display:"
-       #:phases
-       (modify-phases %standard-phases (delete 'configure))))
+       #:phases (modify-phases %standard-phases
+                  (delete 'configure)
+                  (add-before 'check 'start-xserver
+                    ;; Tests require a running X server.
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (let ((xorg-server (assoc-ref inputs "xorg-server"))
+                            (display ":1"))
+                        (setenv "DISPLAY" display)
+                        ;; Don't fail due to missing '/etc/machine-id'.
+                        (setenv "DBUS_FATAL_WARNINGS" "0")
+                        (zero? (system (string-append xorg-server "/bin/Xvfb "
+                                                      display " &")))))))))
     (build-system gnu-build-system)
     (home-page "https://pwmt.org/projects/girara/")
     (synopsis "Library for minimalistic gtk+3 user interfaces")
@@ -1397,14 +1410,14 @@ glass artworks done by Venicians glass blowers.")
 (define-public gtkspell3
   (package
     (name "gtkspell3")
-    (version "3.0.8")
+    (version "3.0.9")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gtkspell/"
-                                  version "/" name "-" version ".tar.gz"))
+                                  version "/" name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1zrz5pz4ryvcssk898liynmy2wyxgj95ak7mp2jv7x62yzihq6h1"))))
+                "09jdicmpipmj4v84gnkqwbmj4lh8v0i6pn967rb9jx4zg2ia9x54"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("intltool" ,intltool)

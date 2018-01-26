@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
@@ -57,7 +57,7 @@
             file-system-service-type
             user-unmount-service
             swap-service
-            user-processes-service
+            user-processes-service-type
             host-name-service
             console-keymap-service
             %default-console-font
@@ -161,6 +161,129 @@
 ;;; use.
 ;;;
 ;;; Code:
+
+
+
+;;;
+;;; User processes.
+;;;
+
+(define %do-not-kill-file
+  ;; Name of the file listing PIDs of processes that must survive when halting
+  ;; the system.  Typical example is user-space file systems.
+  "/etc/shepherd/do-not-kill")
+
+(define (user-processes-shepherd-service requirements)
+  "Return the 'user-processes' Shepherd service with dependencies on
+REQUIREMENTS (a list of service names).
+
+This is a synchronization point used to make sure user processes and daemons
+get started only after crucial initial services have been started---file
+system mounts, etc.  This is similar to the 'sysvinit' target in systemd."
+  (define grace-delay
+    ;; Delay after sending SIGTERM and before sending SIGKILL.
+    4)
+
+  (list (shepherd-service
+         (documentation "When stopped, terminate all user processes.")
+         (provision '(user-processes))
+         (requirement requirements)
+         (start #~(const #t))
+         (stop #~(lambda _
+                   (define (kill-except omit signal)
+                     ;; Kill all the processes with SIGNAL except those listed
+                     ;; in OMIT and the current process.
+                     (let ((omit (cons (getpid) omit)))
+                       (for-each (lambda (pid)
+                                   (unless (memv pid omit)
+                                     (false-if-exception
+                                      (kill pid signal))))
+                                 (processes))))
+
+                   (define omitted-pids
+                     ;; List of PIDs that must not be killed.
+                     (if (file-exists? #$%do-not-kill-file)
+                         (map string->number
+                              (call-with-input-file #$%do-not-kill-file
+                                (compose string-tokenize
+                                         (@ (ice-9 rdelim) read-string))))
+                         '()))
+
+                   (define (now)
+                     (car (gettimeofday)))
+
+                   (define (sleep* n)
+                     ;; Really sleep N seconds.
+                     ;; Work around <http://bugs.gnu.org/19581>.
+                     (define start (now))
+                     (let loop ((elapsed 0))
+                       (when (> n elapsed)
+                         (sleep (- n elapsed))
+                         (loop (- (now) start)))))
+
+                   (define lset= (@ (srfi srfi-1) lset=))
+
+                   (display "sending all processes the TERM signal\n")
+
+                   (if (null? omitted-pids)
+                       (begin
+                         ;; Easy: terminate all of them.
+                         (kill -1 SIGTERM)
+                         (sleep* #$grace-delay)
+                         (kill -1 SIGKILL))
+                       (begin
+                         ;; Kill them all except OMITTED-PIDS.  XXX: We would
+                         ;; like to (kill -1 SIGSTOP) to get a fixed list of
+                         ;; processes, like 'killall5' does, but that seems
+                         ;; unreliable.
+                         (kill-except omitted-pids SIGTERM)
+                         (sleep* #$grace-delay)
+                         (kill-except omitted-pids SIGKILL)
+                         (delete-file #$%do-not-kill-file)))
+
+                   (let wait ()
+                     ;; Reap children, if any, so that we don't end up with
+                     ;; zombies and enter an infinite loop.
+                     (let reap-children ()
+                       (define result
+                         (false-if-exception
+                          (waitpid WAIT_ANY (if (null? omitted-pids)
+                                                0
+                                                WNOHANG))))
+
+                       (when (and (pair? result)
+                                  (not (zero? (car result))))
+                         (reap-children)))
+
+                     (let ((pids (processes)))
+                       (unless (lset= = pids (cons 1 omitted-pids))
+                         (format #t "waiting for process termination\
+ (processes left: ~s)~%"
+                                 pids)
+                         (sleep* 2)
+                         (wait))))
+
+                   (display "all processes have been terminated\n")
+                   #f))
+         (respawn? #f))))
+
+(define user-processes-service-type
+  (service-type
+   (name 'user-processes)
+   (extensions (list (service-extension shepherd-root-service-type
+                                        user-processes-shepherd-service)))
+   (compose concatenate)
+   (extend append)
+
+   ;; The value is the list of Shepherd services 'user-processes' depends on.
+   ;; Extensions can add new services to this list.
+   (default-value '())
+
+   (description "The @code{user-processes} service is responsible for
+terminating all the processes so that the root file system can be re-mounted
+read-only, just before rebooting/halting.  Processes still running after a few
+seconds after @code{SIGTERM} has been sent are terminated with
+@code{SIGKILL}.")))
 
 
 ;;;
@@ -349,7 +472,11 @@ FILE-SYSTEM."
                  (list (service-extension shepherd-root-service-type
                                           file-system-shepherd-services)
                        (service-extension fstab-service-type
-                                          identity)))
+                                          identity)
+
+                       ;; Have 'user-processes' depend on 'file-systems'.
+                       (service-extension user-processes-service-type
+                                          (const '(file-systems)))))
                 (compose concatenate)
                 (extend append)
                 (description
@@ -389,111 +516,6 @@ file systems, as well as corresponding @file{/etc/fstab} entries.")))
 in KNOWN-MOUNT-POINTS when it is stopped."
   (service user-unmount-service-type known-mount-points))
 
-(define %do-not-kill-file
-  ;; Name of the file listing PIDs of processes that must survive when halting
-  ;; the system.  Typical example is user-space file systems.
-  "/etc/shepherd/do-not-kill")
-
-(define user-processes-service-type
-  (shepherd-service-type
-   'user-processes
-   (lambda (grace-delay)
-     (shepherd-service
-      (documentation "When stopped, terminate all user processes.")
-      (provision '(user-processes))
-      (requirement '(file-systems))
-      (start #~(const #t))
-      (stop #~(lambda _
-                (define (kill-except omit signal)
-                  ;; Kill all the processes with SIGNAL except those listed
-                  ;; in OMIT and the current process.
-                  (let ((omit (cons (getpid) omit)))
-                    (for-each (lambda (pid)
-                                (unless (memv pid omit)
-                                  (false-if-exception
-                                   (kill pid signal))))
-                              (processes))))
-
-                (define omitted-pids
-                  ;; List of PIDs that must not be killed.
-                  (if (file-exists? #$%do-not-kill-file)
-                      (map string->number
-                           (call-with-input-file #$%do-not-kill-file
-                             (compose string-tokenize
-                                      (@ (ice-9 rdelim) read-string))))
-                      '()))
-
-                (define (now)
-                  (car (gettimeofday)))
-
-                (define (sleep* n)
-                  ;; Really sleep N seconds.
-                  ;; Work around <http://bugs.gnu.org/19581>.
-                  (define start (now))
-                  (let loop ((elapsed 0))
-                    (when (> n elapsed)
-                      (sleep (- n elapsed))
-                      (loop (- (now) start)))))
-
-                (define lset= (@ (srfi srfi-1) lset=))
-
-                (display "sending all processes the TERM signal\n")
-
-                (if (null? omitted-pids)
-                    (begin
-                      ;; Easy: terminate all of them.
-                      (kill -1 SIGTERM)
-                      (sleep* #$grace-delay)
-                      (kill -1 SIGKILL))
-                    (begin
-                      ;; Kill them all except OMITTED-PIDS.  XXX: We would
-                      ;; like to (kill -1 SIGSTOP) to get a fixed list of
-                      ;; processes, like 'killall5' does, but that seems
-                      ;; unreliable.
-                      (kill-except omitted-pids SIGTERM)
-                      (sleep* #$grace-delay)
-                      (kill-except omitted-pids SIGKILL)
-                      (delete-file #$%do-not-kill-file)))
-
-                (let wait ()
-                  ;; Reap children, if any, so that we don't end up with
-                  ;; zombies and enter an infinite loop.
-                  (let reap-children ()
-                    (define result
-                      (false-if-exception
-                       (waitpid WAIT_ANY (if (null? omitted-pids)
-                                             0
-                                             WNOHANG))))
-
-                    (when (and (pair? result)
-                               (not (zero? (car result))))
-                      (reap-children)))
-
-                  (let ((pids (processes)))
-                    (unless (lset= = pids (cons 1 omitted-pids))
-                      (format #t "waiting for process termination\
- (processes left: ~s)~%"
-                              pids)
-                      (sleep* 2)
-                      (wait))))
-
-                (display "all processes have been terminated\n")
-                #f))
-      (respawn? #f)))))
-
-(define* (user-processes-service #:key (grace-delay 4))
-  "Return the service that is responsible for terminating all the processes so
-that the root file system can be re-mounted read-only, just before
-rebooting/halting.  Processes still running GRACE-DELAY seconds after SIGTERM
-has been sent are terminated with SIGKILL.
-
-The returned service will depend on 'file-systems', meaning that it is
-considered started after all the auto-mount file systems have been mounted.
-
-All the services that spawn processes must depend on this one so that they are
-stopped before 'kill' is called."
-  (service user-processes-service-type grace-delay))
-
 
 ;;;
 ;;; Preserve entropy to seed /dev/urandom on boot.
@@ -507,7 +529,10 @@ stopped before 'kill' is called."
   (list (shepherd-service
          (documentation "Preserve entropy across reboots for /dev/urandom.")
          (provision '(urandom-seed))
-         (requirement '(user-processes))
+
+         ;; Depend on udev so that /dev/hwrng is available.
+         (requirement '(file-systems udev))
+
          (start #~(lambda _
                     ;; On boot, write random seed into /dev/urandom.
                     (when (file-exists? #$%random-seed-file)
@@ -568,13 +593,20 @@ stopped before 'kill' is called."
   (service-type (name 'urandom-seed)
                 (extensions
                  (list (service-extension shepherd-root-service-type
-                                          urandom-seed-shepherd-service)))
+                                          urandom-seed-shepherd-service)
+
+                       ;; Have 'user-processes' depend on 'urandom-seed'.
+                       ;; This ensures that user processes and daemons don't
+                       ;; start until we have seeded the PRNG.
+                       (service-extension user-processes-service-type
+                                          (const '(urandom-seed)))))
+                (default-value #f)
                 (description
                  "Seed the @file{/dev/urandom} pseudo-random number
 generator (RNG) with the value recorded when the system was last shut
 down.")))
 
-(define (urandom-seed-service)
+(define (urandom-seed-service)                    ;deprecated
   (service urandom-seed-service-type #f))
 
 
@@ -1402,10 +1434,14 @@ failed to register hydra.gnu.org public key: ~a~%" status))))))))
                     (default #t))
   (substitute-urls  guix-configuration-substitute-urls ;list of strings
                     (default %default-substitute-urls))
+  (chroot-directories guix-configuration-chroot-directories ;list of file-like/strings
+                      (default '()))
   (max-silent-time  guix-configuration-max-silent-time ;integer
                     (default 0))
   (timeout          guix-configuration-timeout    ;integer
                     (default 0))
+  (log-compression  guix-configuration-log-compression
+                    (default 'bzip2))
   (extra-options    guix-configuration-extra-options ;list of strings
                     (default '()))
   (log-file         guix-configuration-log-file   ;string
@@ -1420,39 +1456,49 @@ failed to register hydra.gnu.org public key: ~a~%" status))))))))
 
 (define (guix-shepherd-service config)
   "Return a <shepherd-service> for the Guix daemon service with CONFIG."
-  (match config
-    (($ <guix-configuration> guix build-group build-accounts
-                             authorize-key? keys
-                             use-substitutes? substitute-urls
-                             max-silent-time timeout
-                             extra-options
-                             log-file http-proxy tmpdir)
-     (list (shepherd-service
-            (documentation "Run the Guix daemon.")
-            (provision '(guix-daemon))
-            (requirement '(user-processes))
-            (start
-             #~(make-forkexec-constructor
-                (list #$(file-append guix "/bin/guix-daemon")
+  (match-record config <guix-configuration>
+    (guix build-group build-accounts authorize-key? authorized-keys
+          use-substitutes? substitute-urls max-silent-time timeout
+          log-compression extra-options log-file http-proxy tmpdir
+          chroot-directories)
+    (list (shepherd-service
+           (documentation "Run the Guix daemon.")
+           (provision '(guix-daemon))
+           (requirement '(user-processes))
+           (modules '((srfi srfi-1)))
+           (start
+            #~(make-forkexec-constructor
+               (cons* #$(file-append guix "/bin/guix-daemon")
                       "--build-users-group" #$build-group
                       "--max-silent-time" #$(number->string max-silent-time)
                       "--timeout" #$(number->string timeout)
+                      "--log-compression" #$(symbol->string log-compression)
                       #$@(if use-substitutes?
                              '()
                              '("--no-substitutes"))
                       "--substitute-urls" #$(string-join substitute-urls)
-                      #$@extra-options)
+                      #$@extra-options
 
-                #:environment-variables
-                (list #$@(if http-proxy
-                             (list (string-append "http_proxy=" http-proxy))
-                             '())
-                      #$@(if tmpdir
-                             (list (string-append "TMPDIR=" tmpdir))
-                             '()))
+                      ;; Add CHROOT-DIRECTORIES and all their dependencies (if
+                      ;; these are store items) to the chroot.
+                      (append-map (lambda (file)
+                                    (append-map (lambda (directory)
+                                                  (list "--chroot-directory"
+                                                        directory))
+                                                (call-with-input-file file
+                                                  read)))
+                                  '#$(map references-file chroot-directories)))
 
-                #:log-file #$log-file))
-            (stop #~(make-kill-destructor)))))))
+               #:environment-variables
+               (list #$@(if http-proxy
+                            (list (string-append "http_proxy=" http-proxy))
+                            '())
+                     #$@(if tmpdir
+                            (list (string-append "TMPDIR=" tmpdir))
+                            '()))
+
+               #:log-file #$log-file))
+           (stop #~(make-kill-destructor))))))
 
 (define (guix-accounts config)
   "Return the user accounts and user groups for CONFIG."
@@ -1482,6 +1528,24 @@ failed to register hydra.gnu.org public key: ~a~%" status))))))))
              #$@(map (cut hydra-key-authorization <> guix) keys))
          #~#f))))
 
+(define* (references-file item #:optional (name "references"))
+  "Return a file that contains the list of references of ITEM."
+  (if (struct? item)                              ;lowerable object
+      (computed-file name
+                     (with-imported-modules (source-module-closure
+                                             '((guix build store-copy)))
+                       #~(begin
+                           (use-modules (guix build store-copy))
+
+                           (call-with-output-file #$output
+                             (lambda (port)
+                               (write (call-with-input-file "graph"
+                                        read-reference-graph)
+                                      port)))))
+                     #:options `(#:local-build? #f
+                                 #:references-graphs (("graph" ,item))))
+      (plain-file name "()")))
+
 (define guix-service-type
   (service-type
    (name 'guix)
@@ -1491,6 +1555,16 @@ failed to register hydra.gnu.org public key: ~a~%" status))))))))
           (service-extension activation-service-type guix-activation)
           (service-extension profile-service-type
                              (compose list guix-configuration-guix))))
+
+   ;; Extensions can specify extra directories to add to the build chroot.
+   (compose concatenate)
+   (extend (lambda (config directories)
+             (guix-configuration
+              (inherit config)
+              (chroot-directories
+               (append (guix-configuration-chroot-directories config)
+                       directories)))))
+
    (default-value (guix-configuration))
    (description
     "Run the build daemon of GNU@tie{}Guix, aka. @command{guix-daemon}.")))
@@ -1954,9 +2028,10 @@ This service is not part of @var{%base-services}."
         (service static-networking-service-type
                  (list (static-networking (interface "lo")
                                           (ip "127.0.0.1")
+                                          (requirement '())
                                           (provision '(loopback)))))
         (syslog-service)
-        (urandom-seed-service)
+        (service urandom-seed-service-type)
         (guix-service)
         (nscd-service)
 

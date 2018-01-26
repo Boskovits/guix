@@ -396,6 +396,26 @@ library.")
 (define-public python2-pyopenssl
   (package-with-python2 python-pyopenssl))
 
+(define-public python-ed25519
+  (package
+    (name "python-ed25519")
+    (version "1.4")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "ed25519" version))
+        (sha256
+          (base32
+            "0ahx1nkxa0xis3cw0h5c4fpgv8mq4znkq7kajly33lc3317bk499"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/warner/python-ed25519")
+    (synopsis "Ed25519 public-key signatures")
+    (description "Ed25519 public-key signatures")
+    (license license:expat)))
+
+(define-public python2-ed25519
+  (package-with-python2 python-ed25519))
+
 (define-public python-axolotl-curve25519
   (package
     (name "python-axolotl-curve25519")
@@ -635,3 +655,106 @@ Certificate (DER encoded, PEM encoded), RSA PEM (encoded private key, public
 key), SSH public key, ASC-encoded OpenPGP key, APK Android application, LDIFF
 file, and more.")
     (license license:gpl3)))
+
+(define-public python-ecpy
+  (package
+    (name "python-ecpy")
+    (version "0.8.2")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "ECPy" version))
+        (sha256
+          (base32
+            "090fqnj8z0xm44jrfpll7j45r68m6kp7mjr7yxzg93j42h3sj285"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-future" ,python-future)))
+    (home-page "https://github.com/ubinity/ECPy")
+    (synopsis "Pure Python Elliptic Curve Library")
+    (description "This package provides a Elliptic Curve Library in pure
+Python.")
+    (license license:asl2.0)))
+
+(define-public python2-ecpy
+  (package-with-python2 python-ecpy))
+
+(define-public python-josepy
+  (package
+    (name "python-josepy")
+    (version "1.0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "josepy" version))
+              (sha256
+               (base32
+                "1k0ahzzaq2rrjiifwbhbp7vm8z4zk0ipgiqwicil80kzlf6bhj4z"))))
+    (build-system python-build-system)
+    (arguments
+     ;; The tests require pytest >= 3.2, which is not yet packaged.
+     '(#:tests? #f))
+    (propagated-inputs
+     `(("python-cryptography" ,python-cryptography)
+       ("python-pyopenssl" ,python-pyopenssl)
+       ("python-six" ,python-six)))
+;; TODO Enable when we have pytest >= 3.2.
+;    (native-inputs
+;     `(("python-coverage" ,python-coverage)
+;       ("python-flake8" ,python-flake8)
+;       ("python-isort" ,python-isort)
+;       ("python-mock" ,python-mock)
+;       ("python-pytest" ,python-pytest-3.0)
+;       ("python-pytest-cov" ,python-pytest-cov)
+;       ("python-pytest-cache" ,python-pytest-cache)
+;       ("python-pytest-flake8" ,python-pytest-flake8)))
+    (home-page "https://github.com/certbot/josepy")
+    (synopsis "JOSE protocol implementation in Python")
+    (description "This package provides a Python implementation of the JOSE
+protocol (Javascript Object Signing and Encryption).")
+    (license license:asl2.0)))
+
+(define-public python2-josepy
+  (package-with-python2 python-josepy))
+
+(define-public python-pycryptodome
+  (package
+    (name "python-pycryptodome")
+    (version "3.4.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pycryptodome" version))
+       (sha256
+        (base32
+         "1xrsd6ql4w0ypkxnsg3fivs3r3z6dd93x44lhvam7jzh3gixzn0q"))))
+    (build-system python-build-system)
+    (home-page "https://www.pycryptodome.org")
+    (synopsis "Cryptographic library for Python")
+    (description "This package provides a cryptographic library for Python.
+
+It brings the following enhancements with respect to the last official version
+of PyCrypto:
+
+@itemize
+@item Authenticated encryption modes (GCM, CCM, EAX, SIV, OCB)
+@item Accelerated AES on Intel platforms via AES-NI
+@item First class support for PyPy
+@item Elliptic curves cryptography (NIST P-256 curve only)
+@item Better and more compact API (nonce and iv attributes for ciphers,
+automatic generation of random nonces and IVs, simplified CTR cipher mode, and
+more)
+@item SHA-3 (including SHAKE XOFs) and BLAKE2 hash algorithms
+@item Salsa20 and ChaCha20 stream ciphers
+@item scrypt and HKDF
+@item Deterministic (EC)DSA
+@item Password-protected PKCS#8 key containers
+@item Shamir’s Secret Sharing scheme
+@item Random numbers get sourced directly from the OS (and not from a CSPRNG
+in userspace)
+@item Cleaner RSA and DSA key generation (largely based on FIPS 186-4)
+@item Major clean ups and simplification of the code base
+@end itemize\n")
+    (license license:bsd-2)))
+
+(define-public python2-pycryptodome
+  (package-with-python2 python-pycryptodome))

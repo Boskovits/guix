@@ -10,11 +10,11 @@
 ;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2017 ng0 <ng0@n0.is>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
@@ -58,6 +58,7 @@
   #:use-module (gnu packages java)
   #:use-module (gnu packages maths)
   #:use-module (gnu packages perl)
+  #:use-module (gnu packages perl-check)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages tls)
@@ -371,7 +372,7 @@ compression algorithm is currently LZMA2, which is used inside the .xz
 container format.  With typical files, XZ Utils create 30 % smaller output
 than gzip and 15 % smaller output than bzip2.")
    (license (list license:gpl2+ license:lgpl2.1+)) ; bits of both
-   (home-page "http://tukaani.org/xz/")))
+   (home-page "https://tukaani.org/xz/")))
 
 (define-public lzo
   (package
@@ -709,7 +710,7 @@ writing of compressed data created with the zlib and bzip2 libraries.")
 (define-public lz4
   (package
     (name "lz4")
-    (version "1.8.0")
+    (version "1.8.1.2")
     (source
      (origin
        (method url-fetch)
@@ -717,15 +718,14 @@ writing of compressed data created with the zlib and bzip2 libraries.")
                            "v" version ".tar.gz"))
        (sha256
         (base32
-         "1xnckwwah74gl98gylf1b00vk4km1d8sgd8865h07ccvgbm8591c"))
+         "1y93h6dyi3026gvpzdv310ldcylnnhwf32n75mdjf8x9fvkskwqj"))
        (file-name (string-append name "-" version ".tar.gz"))))
     (build-system gnu-build-system)
     (native-inputs `(("valgrind" ,valgrind)))   ; for tests
     (arguments
      `(#:test-target "test"
-       #:parallel-tests? #f ; tests fail if run in parallel
        #:make-flags (list "CC=gcc"
-                          (string-append "PREFIX=" (assoc-ref %outputs "out")))
+                          (string-append "prefix=" (assoc-ref %outputs "out")))
        #:phases (modify-phases %standard-phases
                   (delete 'configure))))        ; no configure script
     (home-page "http://www.lz4.org")
@@ -985,7 +985,7 @@ respectively, based on the reference implementation from Google.")
            (lambda _ (chdir "xdelta3")))
          (add-after 'enter-build-directory 'autoconf
            (lambda _ (zero? (system* "autoreconf" "-vfi")))))))
-    (home-page "http://xdelta.com")
+    (home-page "http://xdelta.org")
     (synopsis "Delta encoder for binary files")
     (description "xdelta encodes only the differences between two binary files
 using the VCDIFF algorithm and patch file format described in RFC 3284.  It can
@@ -1033,22 +1033,16 @@ well as bzip2.")
 (define-public bitshuffle
   (package
     (name "bitshuffle")
-    (version "0.3.2")
+    (version "0.3.4")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "bitshuffle" version))
               (sha256
                (base32
-                "01vcjrvsxjvv47y5hf9rps69zwv0vwd4ydhhms2jfs4rpcnlak6v"))))
+                "0ydawb01ghsvmw0lraczhrgvkjj97bpg98f1qqs1cnfp953mdd5v"))))
     (build-system python-build-system)
     (arguments
-     `(#:tests? #f
-       #:phases
-       (modify-phases %standard-phases
-         (add-before 'check 'make-required-dir
-           (lambda _
-             (mkdir-p "bitshuffle/plugin")
-             #t)))))
+     `(#:tests? #f))           ; fail: https://github.com/h5py/h5py/issues/769
     (inputs
      `(("numpy" ,python-numpy)
        ("h5py" ,python-h5py)
@@ -1308,10 +1302,11 @@ compresser/decompresser.")
        ("java-snappy" ,java-snappy)
        ("hamcrest" ,java-hamcrest-core)
        ("testng" ,java-testng)))
-    (synopsis "Java port of snappy")
-    (description "Iq80-snappy is a rewrite (port) of Snappy writen in pure
-Java.  This compression code produces a byte-for-byte exact copy of the output
-created by the original C++ code, and extremely fast.")
+    (synopsis "Java port of the Snappy (de)compressor")
+    (description
+     "Iq80-snappy is a port of the Snappy compressor and decompressor rewritten
+in pure Java.  This compression code produces a byte-for-byte exact copy of the
+output created by the original C++ code, and is extremely fast.")
     (license license:asl2.0)))
 
 (define-public java-jbzip2
@@ -1615,8 +1610,7 @@ or junctions, and always follows hard links.")
              "HAVE_LZMA=0"
              ;; Not currently detected, but be explicit & avoid surprises later.
              "HAVE_LZ4=0"
-             "HAVE_ZLIB=0")
-       #:test-target "test"))
+             "HAVE_ZLIB=0")))
     (home-page "http://zstd.net/")
     (synopsis "Zstandard real-time compression algorithm")
     (description "Zstandard (@command{zstd}) is a lossless compression algorithm
@@ -1808,24 +1802,27 @@ recreates the stored directory structure by default.")
      "ZZipLib is a library based on zlib for accessing zip files.")
     (license license:lgpl2.0+)))
 
-(define-public perl-zip
+(define-public perl-archive-zip
   (package
-    (name "perl-zip")
-    (version "1.59")
+    (name "perl-archive-zip")
+    (version "1.60")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
-             "mirror://cpan/authors/id/A/AD/ADAMK/Archive-Zip-"
+             "mirror://cpan/authors/id/P/PH/PHRED/Archive-Zip-"
              version ".tar.gz"))
        (sha256
         (base32
-         "0m31qlppg65vh32pwxkwjby02q70abx49d2yk6vfd4585fqb27cx"))))
+         "02y2ylq83hy9kgj57sc0239x65br9sm98c0chsm61s08yc2mpiza"))))
     (build-system perl-build-system)
-    (synopsis  "Provides an interface to ZIP archive files")
-    (description "The Archive::Zip module allows a Perl program to create,
-manipulate, read, and write Zip archive files.")
-    (home-page "http://search.cpan.org/~adamk/Archive-Zip-1.30/")
+    (native-inputs
+     ;; For tests.
+     `(("perl-test-mockmodule" ,perl-test-mockmodule)))
+    (synopsis  "Provides an interface to Zip archive files")
+    (description "The @code{Archive::Zip} module allows a Perl program to
+create, manipulate, read, and write Zip archive files.")
+    (home-page "http://search.cpan.org/dist/Archive-Zip/")
     (license license:perl-license)))
 
 (define-public libzip
@@ -1943,3 +1940,114 @@ type by using either Perl modules, or command-line tools on your system.")
     (description "Tukaani-xz is an implementation of xz compression/decompression
 algorithms in Java.")
     (license license:public-domain)))
+
+(define-public lunzip
+  (package
+    (name "lunzip")
+    (version "1.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/lzip/"
+                           name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1ax3d9cp66z1qb9q7lfzg5bpx9630xrxgq9a5sw569wm0qqgpg2q"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "CC=gcc")))
+    (home-page "http://www.nongnu.org/lzip/lunzip.html")
+    (synopsis "Small, stand-alone lzip decompressor")
+    (description
+     "Lunzip is a decompressor for files in the lzip compression format (.lz),
+written as a single small C tool with no dependencies.  This makes it
+well-suited to embedded and other systems without a C++ compiler, or for use in
+applications such as software installers that need only to decompress files,
+not compress them.
+Lunzip is intended to be fully compatible with the regular lzip package.")
+    (license (list license:bsd-2        ; carg_parser.[ch]
+                   license:gpl2+))))    ; everything else
+
+(define-public clzip
+  (package
+    (name "clzip")
+    (version "1.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/lzip/"
+                           name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "1brvsnpihzj81cf4wk2x5bnr2qldlq0wncpdbzxmzvxapm1cq2yc"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list "CC=gcc")))
+    (home-page "http://www.nongnu.org/lzip/clzip.html")
+    (synopsis "Small, stand-alone lzip compressor and decompressor")
+    (description
+     "Clzip is a compressor and decompressor for files in the lzip compression
+format (.lz), written as a single small C tool with no dependencies.  This makes
+it well-suited to embedded and other systems without a C++ compiler, or for use
+in other applications like package managers.
+Clzip is intended to be fully compatible with the regular lzip package.")
+    (license (list license:bsd-2        ; carg_parser.[ch], lzd in clzip.texi
+                   license:gpl2+))))
+
+(define-public lzlib
+  (package
+    (name "lzlib")
+    (version "1.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/lzip/"
+                           name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "13mssf3hrcnmd4ijbqnxfk0zgj1q5lvpxxkm1hmrbl1h73czhwi4"))))
+    (build-system gnu-build-system)
+    ;; The included minilzip binary is only ~16 smaller than the ‘real’ lzip.
+    ;; It's used during the test suite, but don't be tempted to install it.
+    (arguments
+     `(#:configure-flags
+       (list "CC=gcc"
+             "--enable-shared")))       ; only static (.a) is built by default
+    (home-page "http://www.nongnu.org/lzip/lzlib.html")
+    (synopsis "Lzip data compression C library")
+    (description
+     "Lzlib is a C library for in-memory LZMA compression and decompression in
+the lzip format.  It supports integrity checking of the decompressed data, and
+all functions are thread-safe.  The library should never crash, even in case of
+corrupted input.")
+    (license (list license:bsd-2        ; the library itself
+                   license:gpl2+))))    ; main.c (i.e. minilzip used by tests)
+
+(define-public plzip
+  (package
+    (name "plzip")
+    (version "1.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "mirror://savannah/lzip/"
+                           name "/" name "-" version ".tar.gz"))
+       (sha256
+        (base32 "0z2cs6vn4xl65wakd013xl3sdfpg8dr0cvcjwc2slh8y9bz7j7ax"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("lzlib" ,lzlib)))
+    (home-page "http://www.nongnu.org/lzip/plzip.html")
+    (synopsis "Parallel lossless data compressor for the lzip format")
+    (description
+     "Plzip is a massively parallel (multi-threaded) lossless data compressor
+and decompressor that uses the lzip file format (.lz).  Files produced by plzip
+are fully compatible with lzip and can be rescued with lziprecover.
+On multiprocessor machines, plzip can compress and decompress large files much
+faster than lzip, at the cost of a slightly reduced compression ratio (0.4% to
+2%).  The number of usable threads is limited by file size: on files of only a
+few MiB, plzip is no faster than lzip.
+Files that were compressed with regular lzip will also not be decompressed
+faster by plzip, unless the @code{-b} option was used: lzip usually produces
+single-member files which can't be decompressed in parallel.")
+    (license (list license:bsd-2        ; arg_parser.{cc,h}
+                   license:gpl2+))))    ; everything else

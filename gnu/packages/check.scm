@@ -27,6 +27,7 @@
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -1039,7 +1040,7 @@ testing frameworks.")
     (synopsis "Test utilities for code working with files and commands")
     (description
      "Testpath is a collection of utilities for Python code working with files
-and commands.  It contains functions to check things on the filesystem, and
+and commands.  It contains functions to check things on the file system, and
 tools for mocking system commands and recording calls to those.")
     (license license:expat)))
 
@@ -1204,16 +1205,24 @@ seamlessly into your existing Python unit testing work flow.")
 (define-public python-lit
   (package
     (name "python-lit")
-    (version "0.5.0")
+    (version "0.5.1")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "lit" version))
         (sha256
          (base32
-          "135m2b9cwih85g66rjggavck328z7lj37srgpq3jxszbg0g2b91y"))))
+          "0z651m3vkbk85y41larnsjxrszkbi58x9gzml3lb6ga7qwcrsg97"))))
     (build-system python-build-system)
-    (home-page "http://llvm.org/")
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "py.test"))))))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
+    (home-page "https://llvm.org/")
     (synopsis "LLVM Software Testing Tool")
     (description "@code{lit} is a portable tool for executing LLVM and Clang
 style test suites, summarizing their results, and providing indication of
@@ -1442,7 +1451,7 @@ pytest report.")
     (build-system python-build-system)
     (propagated-inputs
      `(("pytest" ,python-pytest-3.0)))
-    (home-page "http://bitbucket.org/memedough/pytest-capturelog/overview")
+    (home-page "https://bitbucket.org/memedough/pytest-capturelog/overview")
     (synopsis "Pytest plugin to catch log messages")
     (description
      "Python-pytest-catchlog is a pytest plugin to catch log messages.")
@@ -1540,12 +1549,16 @@ backported from Python 2.7 for Python 2.4+.")
               (base32
                "1iypp6z46r19n4xmgx6m1lwmlpfjh8vapq8izigrqlaarvp2y64c"))))
     (build-system python-build-system)
+    (native-inputs
+     `(("python-mock" ,python-mock)
+       ("python-nose" ,python-nose)
+       ("python-pyhamcrest" ,python-pyhamcrest)))
     (propagated-inputs
      `(("python-six" ,python-six)
        ("python-parse" ,python-parse)
        ("python-parse-type" ,python-parse-type)))
-    (arguments `(#:tests? #f))          ;TODO: tests require nose>=1.3 and
-                                        ;PyHamcrest>=1.8
+    (arguments
+     '(#:test-target "behave_test"))
     (home-page "https://github.com/behave/behave")
     (synopsis "Python behavior-driven development")
     (description
@@ -1591,24 +1604,15 @@ JSON APIs with Behave.")
 (define-public python-rednose
   (package
     (name "python-rednose")
-    (version "1.2.1")
+    (version "1.2.3")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "rednose" version))
         (sha256
           (base32
-            "0b0bsna217lr1nykyhl5fgjly15zhdvqd4prg4wy1zrgfv7al6m0"))))
+            "11x5nx5b4wdq04s7vj1gcdl07jvvkfb37p0r5lg773gr5rr8mj6h"))))
     (build-system python-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'fix-deps
-           (lambda _
-             ;; See <https://github.com/JBKahn/rednose/issues/12>
-             (substitute* "setup.py"
-               (("python-termstyle") "termstyle"))
-             #t)))))
     (propagated-inputs
      `(("python-colorama" ,python-colorama)
        ("python-termstyle" ,python-termstyle)))
@@ -1684,14 +1688,14 @@ create data based on random numbers and yet remain repeatable.")
 (define-public python-freezegun
   (package
     (name "python-freezegun")
-    (version "0.3.8")
+    (version "0.3.9")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "freezegun" version))
        (sha256
         (base32
-         "1sf38d3ibv1jhhvr52x7dhrsiyqk1hm165dfv8w8wh0fhmgxg151"))))
+         "1vhf3kgdy7gpy70n3bxa3y1n6aza316137md97z8p5k0gz6wqg3q"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-mock" ,python-mock)
@@ -1767,3 +1771,37 @@ retried.")
 
 (define-public python2-flaky
   (package-with-python2 python-flaky))
+
+(define-public python-pyhamcrest
+  (package
+    (name "python-pyhamcrest")
+    (version "1.9.0")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append
+                "https://github.com/hamcrest/PyHamcrest/archive/V"
+                version
+                ".tar.gz"))
+              (file-name
+               (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1lqjajhwf7x7igvvnj5p1cm31y9njy07qby94w18kl6zwbdjqrwy"))))
+    (native-inputs                      ; All native inputs are for tests
+     `(("python-pytest-cov" ,python-pytest-cov)
+       ("python-mock" ,python-mock)
+       ("python-pytest" ,python-pytest-3.0)
+       ("python-hypothesis" ,python-hypothesis)))
+    (propagated-inputs
+     `(("python-six" ,python-six)))
+    (build-system python-build-system)
+    (home-page "http://hamcrest.org/")
+    (synopsis "Hamcrest matchers for Python")
+    (description
+     "PyHamcrest is a framework for writing matcher objects,
+ allowing you to declaratively define \"match\" rules.")
+    (license license:bsd-3)))
+
+(define-public python2-pyhamcrest
+  (package-with-python2 python-pyhamcrest))

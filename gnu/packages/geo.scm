@@ -2,6 +2,8 @@
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Björn Höfling <bjoern.hoefling@bjoernhoefling.de>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -25,9 +27,11 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
+  #:use-module (gnu packages image)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages webkit)
   #:use-module (gnu packages xml))
@@ -35,7 +39,7 @@
 (define-public geos
   (package
     (name "geos")
-    (version "3.6.1")
+    (version "3.6.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://download.osgeo.org/geos/geos-"
@@ -43,7 +47,7 @@
                                   ".tar.bz2"))
               (sha256
                (base32
-                "1icz31kd5sml2kdxhjznvmv33zfr6nig9l0i6bdcz9q9g8x4wbja"))))
+                "0ak5szby29l9l0vy43dm5z2g92xzdky20q1gc1kah1fnhkgi6nh4"))))
     (build-system gnu-build-system)
     (arguments `(#:phases
                  (modify-phases %standard-phases
@@ -69,9 +73,6 @@ topology functions.")
                    license:zlib              ; tests/xmltester/tinyxml/*
                    license:public-domain)))) ; include/geos/timeval.h
 
-;;; FIXME GNOME Maps only runs within GNOME. On i3, it fails with this error:
-;;; (org.gnome.Maps:8568): GLib-GIO-ERROR **: Settings schema
-;;; 'org.gnome.desktop.interface' is not installed
 (define-public gnome-maps
   (package
     (name "gnome-maps")
@@ -119,13 +120,19 @@ topology functions.")
      `(("folks" ,folks)
        ("libchamplain" ,libchamplain)
        ("libgee" ,libgee)
+       ("libsecret" ,libsecret)
+       ("libsoup" ,libsoup)
+       ("libgweather" ,libgweather)
        ("libxml2" ,libxml2)
+       ("gdk-pixbuf" ,gdk-pixbuf)
+       ("glib-networking" ,glib-networking)
        ("geoclue" ,geoclue)
        ("geocode-glib" ,geocode-glib)
        ("gfbgraph" ,gfbgraph)
        ("gjs" ,gjs)
        ("glib" ,glib)
        ("gnome-online-accounts" ,gnome-online-accounts)
+       ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)
        ("rest" ,rest)
        ("webkitgtk" ,webkitgtk)))
     (propagated-inputs
@@ -136,6 +143,55 @@ the OpenStreetMap project.  It can provide directions for walking, bicycling,
 and driving.")
     (home-page "https://wiki.gnome.org/Apps/Maps")
     (license license:gpl2+)))
+
+(define-public libgeotiff
+  (package
+    (name "libgeotiff")
+    (version "1.4.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://download.osgeo.org/geotiff/libgeotiff/libgeotiff-"
+                           version ".tar.gz"))
+       (sha256
+        (base32
+         "0vjy3bwfhljjx66p9w999i4mdhsf7vjshx29yc3pn5livf5091xd"))
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           ;; Remove .csv files, distributed from EPSG under a restricted
+           ;; license. See LICENSE for full license text.
+           (for-each delete-file (find-files "." "\\.csv$"))
+           ;; Now that we have removed the csv files, we need to modify the Makefile.
+           (substitute* "Makefile.in"
+             (("^all-am: .*$")
+              "all-am: Makefile $(LTLIBRARIES) $(HEADERS) geo_config.h\n")
+             (("^install-data-am: .*$")
+              "install-data-am: install-includeHEADERS"))))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("libjpeg-turbo" ,libjpeg-turbo)
+       ("libtiff" ,libtiff)
+       ("proj.4" ,proj.4)
+       ("zlib" ,zlib)))
+    (arguments
+     `(#:configure-flags
+       (list (string-append "--with-zlib")
+             (string-append "--with-jpeg")
+             (string-append "--with-libtiff=" (assoc-ref %build-inputs "libtiff")))))
+    (synopsis "Library for handling GeoTIFF (geographic enabled TIFF)")
+    (description "libgeotiff is a library on top of libtiff for reading and
+writing GeoTIFF information tags.")
+    (home-page "https://trac.osgeo.org/geotiff/")
+    ;; This is a mixture of various contributions under different licenses.
+    ;; Note that the EPSG database is NOT "free to use" as the LICENSE file
+    ;; states, as its commercial redistribution is restricted. Hence, we have
+    ;; removed it from the package.
+    (license (list license:public-domain
+                   license:x11
+                   license:bsd-3
+                   (license:non-copyleft "file://LICENSE"
+                                         "See LICENSE in the distribution.")))))
 
 (define-public proj.4
   (package

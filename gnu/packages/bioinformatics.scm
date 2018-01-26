@@ -1,13 +1,13 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2016, 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2015, 2016 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Raoul Bonnal <ilpuccio.febo@gmail.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -71,6 +71,7 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages java)
+  #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages ldc)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages logging)
@@ -493,6 +494,20 @@ BED, GFF/GTF, VCF.")
                (base32
                 "0ykjbps1y3z3085q94npw8i9x5gldc6shy8vlc08v76zljsm07hv"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-executables
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out")))
+               (for-each
+                (lambda (script)
+                  (wrap-program (string-append out "/bin/" script)
+                    `("R_LIBS_SITE" ":" = (,(getenv "R_LIBS_SITE")))))
+                '("create_annotations_files.bash"
+                  "create_metaplots.bash"
+                  "Ribotaper_ORF_find.sh"
+                  "Ribotaper.sh"))))))))
     (inputs
      `(("bedtools" ,bedtools-2.18)
        ("samtools" ,samtools-0.1)
@@ -775,20 +790,6 @@ into separate processes; and more.")
 
 (define-public python2-biopython
   (package-with-python2 python-biopython))
-
-;; An outdated version of biopython is required for seqmagick, see
-;; https://github.com/fhcrc/seqmagick/issues/59
-;; When that issue has been resolved this package should be removed.
-(define python2-biopython-1.66
-  (package
-    (inherit python2-biopython)
-    (version "1.66")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "biopython" version))
-              (sha256
-               (base32
-                "1gdv92593klimg22icf5j9by7xiq86jnwzkpz4abaa05ylkdf6hp"))))))
 
 (define-public bpp-core
   ;; The last release was in 2014 and the recommended way to install from source
@@ -1439,7 +1440,7 @@ multiple sequence alignments.")
 (define-public python-pysam
   (package
     (name "python-pysam")
-    (version "0.11.2.2")
+    (version "0.13.0")
     (source (origin
               (method url-fetch)
               ;; Test data is missing on PyPi.
@@ -1449,7 +1450,7 @@ multiple sequence alignments.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1cfqdxsqs3xhacns9n0271ck6wkc76px66ddjm91wfw2jxxfklvc"))
+                "0dzap2axin9cbbl0d825w294bpn00zagfm1sigamm4v2pm5bj9lp"))
               (modules '((guix build utils)))
               (snippet
                ;; Drop bundled htslib. TODO: Also remove samtools and bcftools.
@@ -2038,7 +2039,7 @@ with Python.")
     (version "2.5.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://github.com/fidelram/deepTools/"
+              (uri (string-append "https://github.com/deeptools/deepTools/"
                                   "archive/" version ".tar.gz"))
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
@@ -2057,7 +2058,7 @@ with Python.")
      `(("python-mock" ,python-mock)   ;for tests
        ("python-nose" ,python-nose)   ;for tests
        ("python-pytz" ,python-pytz))) ;for tests
-    (home-page "https://github.com/fidelram/deepTools")
+    (home-page "https://github.com/deeptools/deepTools")
     (synopsis "Tools for normalizing and visualizing deep-sequencing data")
     (description
      "DeepTools addresses the challenge of handling the large amounts of data
@@ -2073,7 +2074,7 @@ identify enrichments with functional annotations of the genome.")
 (define-public diamond
   (package
     (name "diamond")
-    (version "0.9.14")
+    (version "0.9.15")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2082,7 +2083,7 @@ identify enrichments with functional annotations of the genome.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "07li3chjdna0wjyh680j3bhwiqh1fbfq9dy9jxxs82mc0rw0m1yy"))))
+                "0c9v0lddz8df5pnra464832cgn1igzpawgsknly7s1mq0qk9aiqj"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f ; no "check" target
@@ -3213,7 +3214,7 @@ VCF.")
 (define-public htslib
   (package
     (name "htslib")
-    (version "1.5")
+    (version "1.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -3221,7 +3222,7 @@ VCF.")
                     version "/htslib-" version ".tar.bz2"))
               (sha256
                (base32
-                "0bcjmnbwp2bib1z1bkrp95w9v2syzdwdfqww10mkb1hxlmg52ax0"))))
+                "1jsca3hg4rbr6iqq6imkj4lsvgl8g9768bcmny3hlff2w25vx24m"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -3242,7 +3243,8 @@ VCF.")
     (synopsis "C library for reading/writing high-throughput sequencing data")
     (description
      "HTSlib is a C library for reading/writing high-throughput sequencing
-data.  It also provides the bgzip, htsfile, and tabix utilities.")
+data.  It also provides the @command{bgzip}, @command{htsfile}, and
+@command{tabix} utilities.")
     ;; Files under cram/ are released under the modified BSD license;
     ;; the rest is released under the Expat license
     (license (list license:expat license:bsd-3))))
@@ -3432,7 +3434,7 @@ sometimes better.  Khmer can also identify and fix problems with shotgun
 data.")
     ;; When building on i686, armhf and mips64el, we get the following error:
     ;; error: ['khmer', 'khmer.tests', 'oxli'] require 64-bit operating system
-    (supported-systems '("x86_64-linux"))
+    (supported-systems '("x86_64-linux" "aarch64-linux"))
     (license license:bsd-3)))
 
 (define-public kaiju
@@ -3503,16 +3505,16 @@ sequencing tag position and orientation.")
 (define-public mafft
   (package
     (name "mafft")
-    (version "7.310")
+    (version "7.313")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "http://mafft.cbrc.jp/alignment/software/mafft-" version
+                    "https://mafft.cbrc.jp/alignment/software/mafft-" version
                     "-without-extensions-src.tgz"))
               (file-name (string-append name "-" version ".tgz"))
               (sha256
                (base32
-                "0gbsaz6z2qa307kd7wfb06c3y4ikmv1hsdvlns11f6zq4w1z9pwc"))))
+                "0r83qmg2if8mi6jyx3xdf8ar2gcxl7r9nmj98jr7lxym97v61a2k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; no automated tests, though there are tests in the read me
@@ -5376,34 +5378,19 @@ bioinformatics file formats, sequence alignment, and more.")
 (define-public seqmagick
   (package
     (name "seqmagick")
-    (version "0.6.1")
+    (version "0.7.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "https://pypi.python.org/packages/source/s/seqmagick/seqmagick-"
-             version ".tar.gz"))
+       (uri (pypi-uri "seqmagick" version))
        (sha256
         (base32
-         "0cgn477n74gsl4qdaakrrhi953kcsd4q3ivk2lr18x74s3g4ma1d"))))
+         "12bfyp8nqi0hd36rmj450aygafp01qy3hkbvlwn3bk39pyjjkgg5"))))
     (build-system python-build-system)
-    (arguments
-     ;; python2 only, see https://github.com/fhcrc/seqmagick/issues/56
-     `(#:python ,python-2
-       #:phases
-       (modify-phases %standard-phases
-         ;; Current test in setup.py does not work as of 0.6.1,
-         ;; so use nose to run tests instead for now. See
-         ;; https://github.com/fhcrc/seqmagick/issues/55
-         (replace 'check (lambda _ (zero? (system* "nosetests")))))))
     (inputs
-     ;; biopython-1.66 is required due to
-     ;; https://github.com/fhcrc/seqmagick/issues/59
-     ;; When that issue is resolved the 'python2-biopython-1.66' package
-     ;; should be removed.
-     `(("python-biopython" ,python2-biopython-1.66)))
+     `(("python-biopython" ,python-biopython)))
     (native-inputs
-     `(("python-nose" ,python2-nose)))
+     `(("python-nose" ,python-nose)))
     (home-page "https://github.com/fhcrc/seqmagick")
     (synopsis "Tools for converting and modifying sequence files")
     (description
@@ -5576,6 +5563,11 @@ application of SortMeRNA is filtering rRNA from metatranscriptomic data.")
        (modify-phases %standard-phases
          (add-after 'unpack 'enter-source-dir
            (lambda _ (chdir "source") #t))
+         (add-after 'enter-source-dir 'make-reproducible
+           (lambda _
+             (substitute* "Makefile"
+               (("(COMPILATION_TIME_PLACE=\")(.*)(\")" _ pre mid post)
+                (string-append pre "Built with Guix" post)))))
          (add-after 'enter-source-dir 'do-not-use-bundled-htslib
            (lambda _
              (substitute* "Makefile"
@@ -6367,7 +6359,7 @@ track.  The database is exposed as a @code{TxDb} object.")
   (propagated-inputs
    `(("r-rcurl" ,r-rcurl)
      ("r-xml" ,r-xml)))
-  (home-page "http://cran.r-project.org/web/packages/SPARQL")
+  (home-page "https://cran.r-project.org/web/packages/SPARQL")
   (synopsis "SPARQL client for R")
   (description "This package provides an interface to use SPARQL to pose
 SELECT or UPDATE queries to an end-point.")
@@ -6378,7 +6370,7 @@ SELECT or UPDATE queries to an end-point.")
 (define-public vsearch
   (package
     (name "vsearch")
-    (version "2.6.0")
+    (version "2.6.2")
     (source
      (origin
        (method url-fetch)
@@ -6388,7 +6380,7 @@ SELECT or UPDATE queries to an end-point.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0rplgpvsdkxw0k371ckxrp6i77jn93ckhslaazwbyd85m83nkynr"))
+         "02khrgh8hm11cgww2f9mqc6886zqli9ss4pd4kfpqzd0d31vbzv5"))
        (patches (search-patches "vsearch-unbundle-cityhash.patch"))
        (snippet
         '(begin
@@ -6601,7 +6593,7 @@ BLAST, KEGG, GenBank, MEDLINE and GO.")
     (propagated-inputs
       `(("r-ggplot2" ,r-ggplot2)
         ("r-gridextra" ,r-gridextra)))
-    (home-page "http://cran.r-project.org/web/packages/ACSNMineR")
+    (home-page "https://cran.r-project.org/web/packages/ACSNMineR")
     (synopsis "Gene enrichment analysis")
     (description
      "This package provides tools to compute and represent gene set enrichment
@@ -8332,14 +8324,14 @@ library implementing most of the pipeline's features.")
 (define-public r-mutationalpatterns
   (package
     (name "r-mutationalpatterns")
-    (version "1.4.1")
+    (version "1.4.2")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "MutationalPatterns" version))
        (sha256
         (base32
-         "1qhxlfl85ifr30wrsidcn3kca3vs8fd8cmwd82gvgx9ppww8vs06"))))
+         "08ay9h5cqsi8ypb6r0g4rfa5l1g06jgfzl64wmhgz134yqbl7vfv"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-biocgenerics" ,r-biocgenerics)
@@ -8497,7 +8489,7 @@ factors bound at the specific regions.")
        ("r-rtracklayer" ,r-rtracklayer)
        ("r-s4vectors" ,r-s4vectors)
        ("r-seqinr" ,r-seqinr)))
-    (home-page "http://cran.r-project.org/web/packages/gkmSVM")
+    (home-page "https://cran.r-project.org/web/packages/gkmSVM")
     (synopsis "Gapped-kmer support vector machine")
     (description
      "This R package provides tools for training gapped-kmer SVM classifiers
@@ -9090,7 +9082,7 @@ trait.")
          "047s6007ydc38x8wm027mlb4mngz15n0d4238fr8h43wyll5zy0z"))))
     (properties `((upstream-name . "MALDIquant")))
     (build-system r-build-system)
-    (home-page "http://cran.r-project.org/web/packages/MALDIquant")
+    (home-page "https://cran.r-project.org/web/packages/MALDIquant")
     (synopsis "Quantitative analysis of mass spectrometry data")
     (description
      "This package provides a complete analysis pipeline for matrix-assisted
@@ -9997,7 +9989,7 @@ interval to data view, mismatch pileup, and several splicing summaries.")
     (propagated-inputs
      `(("r-plyr" ,r-plyr)
        ("r-rcurl" ,r-rcurl)))
-    (home-page "http://cran.r-project.org/web/packages/gProfileR/")
+    (home-page "https://cran.r-project.org/web/packages/gProfileR/")
     (synopsis "Interface to the g:Profiler toolkit")
     (description
      "This package provides tools for functional enrichment analysis,
@@ -11123,3 +11115,463 @@ for alignment.  Pseudoalignment of reads preserves the key information needed
 for quantification, and kallisto is therefore not only fast, but also as
 accurate as existing quantification tools.")
     (license license:bsd-2)))
+
+(define-public libgff
+  (package
+    (name "libgff")
+    (version "1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/Kingsford-Group/"
+                    "libgff/archive/v" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0vc4nxyhlm6g9vvmx5l4lfs5pnvixsv1hiiy4kddf2y3p6jna8ls"))))
+    (build-system cmake-build-system)
+    (arguments `(#:tests? #f))          ; no tests included
+    (home-page "https://github.com/Kingsford-Group/libgff")
+    (synopsis "Parser library for reading/writing GFF files")
+    (description "This is a simple \"libraryfication\" of the GFF/GTF parsing
+code that is used in the Cufflinks codebase.  The goal of this library is to
+provide this functionality without the necessity of drawing in a heavy-weight
+dependency like SeqAn.")
+    (license (license:x11-style "http://www.boost.org/LICENSE_1_0.txt"))))
+
+(define-public libdivsufsort
+  (package
+    (name "libdivsufsort")
+    (version "2.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/y-256/libdivsufsort.git")
+                    (commit version)))
+              (sha256
+               (base32
+                "0fgdz9fzihlvjjrxy01md1bv9vh12rkgkwbm90b1hj5xpbaqp7z2"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:tests? #f                      ; there are no tests
+       #:configure-flags
+       ;; Needed for rapmap and sailfish.
+       '("-DBUILD_DIVSUFSORT64=ON")))
+    (home-page "https://github.com/y-256/libdivsufsort")
+    (synopsis "Lightweight suffix-sorting library")
+    (description "libdivsufsort is a software library that implements a
+lightweight suffix array construction algorithm.  This library provides a
+simple and an efficient C API to construct a suffix array and a
+Burrows-Wheeler transformed string from a given string over a constant-size
+alphabet.  The algorithm runs in O(n log n) worst-case time using only 5n+O(1)
+bytes of memory space, where n is the length of the string.")
+    (license license:expat)))
+
+(define-public sailfish
+  (package
+    (name "sailfish")
+    (version "0.10.1")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append "https://github.com/kingsfordgroup/"
+                              "sailfish/archive/v" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1inn60dxiwsz8g9w7kvfhjxj4bwfb0r12dyhpzzhfbig712dkmm0"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete bundled headers for eigen3.
+                  (delete-file-recursively "include/eigen3/")
+                  #t))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DBOOST_INCLUDEDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/include/")
+             (string-append "-DBOOST_LIBRARYDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/lib/")
+             (string-append "-DBoost_LIBRARIES="
+                            "-lboost_iostreams "
+                            "-lboost_filesystem "
+                            "-lboost_system "
+                            "-lboost_thread "
+                            "-lboost_timer "
+                            "-lboost_chrono "
+                            "-lboost_program_options")
+             "-DBoost_FOUND=TRUE"
+             ;; Don't download RapMap---we already have it!
+             "-DFETCHED_RAPMAP=1")
+       ;; Tests must be run after installation and the location of the test
+       ;; data file must be overridden.  But the tests fail.  It looks like
+       ;; they are not really meant to be run.
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         ;; Boost cannot be found, even though it's right there.
+         (add-after 'unpack 'do-not-look-for-boost
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("find_package\\(Boost 1\\.53\\.0") "#"))))
+         (add-after 'unpack 'do-not-assign-to-macro
+           (lambda _
+             (substitute* "include/spdlog/details/format.cc"
+               (("const unsigned CHAR_WIDTH = 1;") ""))))
+         (add-after 'unpack 'prepare-rapmap
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((src "external/install/src/rapmap/")
+                   (include "external/install/include/rapmap/")
+                   (rapmap (assoc-ref inputs "rapmap")))
+               (mkdir-p "/tmp/rapmap")
+               (system* "tar" "xf"
+                        (assoc-ref inputs "rapmap")
+                        "-C" "/tmp/rapmap"
+                        "--strip-components=1")
+               (mkdir-p src)
+               (mkdir-p include)
+               (for-each (lambda (file)
+                           (install-file file src))
+                         (find-files "/tmp/rapmap/src" "\\.(c|cpp)"))
+               (copy-recursively "/tmp/rapmap/include" include))))
+         (add-after 'unpack 'use-system-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* '("src/SailfishIndexer.cpp"
+                            "src/SailfishUtils.cpp"
+                            "src/SailfishQuantify.cpp"
+                            "src/FASTAParser.cpp"
+                            "include/PCA.hpp"
+                            "include/SailfishUtils.hpp"
+                            "include/SailfishIndex.hpp"
+                            "include/CollapsedEMOptimizer.hpp"
+                            "src/CollapsedEMOptimizer.cpp")
+               (("#include \"jellyfish/config.h\"") ""))
+             (substitute* "src/CMakeLists.txt"
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/include/jellyfish-2.2..")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/include/jellyfish-" ,(package-version jellyfish)))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libjellyfish-2.0.a")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/lib/libjellyfish-2.0.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort.so"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort64.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort64.so")))
+             (substitute* "CMakeLists.txt"
+               ;; Don't prefer static libs
+               (("SET\\(CMAKE_FIND_LIBRARY_SUFFIXES.*") "")
+               (("find_package\\(Jellyfish.*") "")
+               (("ExternalProject_Add\\(libjellyfish") "message(")
+               (("ExternalProject_Add\\(libgff") "message(")
+               (("ExternalProject_Add\\(libsparsehash") "message(")
+               (("ExternalProject_Add\\(libdivsufsort") "message("))
+
+             ;; Ensure that Eigen headers can be found
+             (setenv "CPLUS_INCLUDE_PATH"
+                     (string-append (getenv "CPLUS_INCLUDE_PATH")
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3")))))))
+    (inputs
+     `(("boost" ,boost)
+       ("eigen" ,eigen)
+       ("jemalloc" ,jemalloc)
+       ("jellyfish" ,jellyfish)
+       ("sparsehash" ,sparsehash)
+       ("rapmap" ,(origin
+                    (method git-fetch)
+                    (uri (git-reference
+                          (url "https://github.com/COMBINE-lab/RapMap.git")
+                          (commit (string-append "sf-v" version))))
+                    (file-name (string-append "rapmap-sf-v" version "-checkout"))
+                    (sha256
+                     (base32
+                      "1hv79l5i576ykv5a1srj2p0q36yvyl5966m0fcy2lbi169ipjakf"))
+                    (modules '((guix build utils)))
+                    ;; These files are expected to be excluded.
+                    (snippet
+                     '(begin (delete-file-recursively "include/spdlog")
+                             (for-each delete-file '("include/xxhash.h"
+                                                     "src/xxhash.c"))))))
+       ("libdivsufsort" ,libdivsufsort)
+       ("libgff" ,libgff)
+       ("tbb" ,tbb)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "http://www.cs.cmu.edu/~ckingsf/software/sailfish")
+    (synopsis "Mapping-based isoform quantification from RNA-Seq reads")
+    (description "Sailfish is a tool for genomic transcript quantification
+from RNA-seq data.  It requires a set of target transcripts (either from a
+reference or de-novo assembly) to quantify.  All you need to run sailfish is a
+fasta file containing your reference transcripts and a (set of) fasta/fastq
+file(s) containing your reads.")
+    (license license:gpl3+)))
+
+(define libstadenio-for-salmon
+  (package
+    (name "libstadenio")
+    (version "1.14.8")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/staden-io_lib.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1x8kxxqxl892vwfbprlbyfwkkv7c34ggkc94892x9x0g37x5nbwx"))))
+    (build-system gnu-build-system)
+    (arguments '(#:parallel-tests? #f)) ; not supported
+    (inputs
+     `(("zlib" ,zlib)))
+    (native-inputs
+     `(("perl" ,perl)))                 ; for tests
+    (home-page "https://github.com/COMBINE-lab/staden-io_lib")
+    (synopsis "General purpose trace and experiment file library")
+    (description "This package provides a library of file reading and writing
+code to provide a general purpose Trace file (and Experiment File) reading
+interface.
+
+The following file formats are supported:
+
+@enumerate
+@item SCF trace files
+@item ABI trace files
+@item ALF trace files
+@item ZTR trace files
+@item SFF trace archives
+@item SRF trace archives
+@item Experiment files
+@item Plain text files
+@item SAM/BAM sequence files
+@item CRAM sequence files
+@end enumerate\n")
+    (license license:bsd-3)))
+
+(define spdlog-for-salmon
+  (package
+    (name "spdlog")
+    (version "0.14.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/spdlog.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "13730429gwlabi432ilpnja3sfvy0nn2719vnhhmii34xcdyc57q"))))
+    (build-system cmake-build-system)
+    (home-page "https://github.com/COMBINE-lab/spdlog")
+    (synopsis "Very fast C++ logging library")
+    (description "Spdlog is a very fast header-only C++ logging library with
+performance as its primary goal.")
+    (license license:expat)))
+
+;; This is a modified variant of bwa for use with Salmon. It installs a
+;; library to avoid having to build this as part of Salmon.
+(define bwa-for-salmon
+  (package (inherit bwa)
+    (name "bwa")
+    (version "0.7.12.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/bwa.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append "bwa-for-salmon-" version "-checkout"))
+              (sha256
+               (base32
+                "1z2qa64y0c5hky10510x137mnzlhz6k8qf27csw4w9j6qihq95gb"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f ;no "check" target
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (lib (string-append out "/lib"))
+                    (doc (string-append out "/share/doc/bwa"))
+                    (man (string-append out "/share/man/man1"))
+                    (inc (string-append out "/include/bwa")))
+               (install-file "bwa" bin)
+               (install-file "README.md" doc)
+               (install-file "bwa.1" man)
+               (install-file "libbwa.a" lib)
+               (mkdir-p lib)
+               (mkdir-p inc)
+               (for-each (lambda (file)
+                           (install-file file inc))
+                         (find-files "." "\\.h$")))
+             #t))
+         ;; no "configure" script
+         (delete 'configure))))))
+
+(define-public salmon
+  (package
+    (name "salmon")
+    (version "0.9.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/salmon.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1zi1ff4i7y2ykk0vdzysgwzzzv166vg2x77pj1mf4baclavxj87a"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete bundled headers for eigen3.
+                  (delete-file-recursively "include/eigen3/")
+                  #t))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DBOOST_INCLUDEDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/include/")
+             (string-append "-DBOOST_LIBRARYDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/lib/")
+             (string-append "-DBoost_LIBRARIES="
+                            "-lboost_iostreams "
+                            "-lboost_filesystem "
+                            "-lboost_system "
+                            "-lboost_thread "
+                            "-lboost_timer "
+                            "-lboost_chrono "
+                            "-lboost_program_options")
+             "-DBoost_FOUND=TRUE"
+             "-DTBB_LIBRARIES=tbb tbbmalloc"
+             ;; Don't download RapMap---we already have it!
+             "-DFETCHED_RAPMAP=1")
+       #:phases
+       (modify-phases %standard-phases
+         ;; Boost cannot be found, even though it's right there.
+         (add-after 'unpack 'do-not-look-for-boost
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("find_package\\(Boost 1\\.53\\.0") "#"))))
+         (add-after 'unpack 'do-not-phone-home
+           (lambda _
+             (substitute* "src/Salmon.cpp"
+               (("getVersionMessage\\(\\)") "\"\""))))
+         (add-after 'unpack 'prepare-rapmap
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((src "external/install/src/rapmap/")
+                   (include "external/install/include/rapmap/")
+                   (rapmap (assoc-ref inputs "rapmap")))
+               (mkdir-p src)
+               (mkdir-p include)
+               (for-each (lambda (file)
+                           (install-file file src))
+                         (find-files (string-append rapmap "/src") "\\.(c|cpp)"))
+               (copy-recursively (string-append rapmap "/include") include)
+               (for-each delete-file '("external/install/include/rapmap/xxhash.h"
+                                       "external/install/include/rapmap/FastxParser.hpp"
+                                       "external/install/include/rapmap/concurrentqueue.h"
+                                       "external/install/include/rapmap/FastxParserThreadUtils.hpp"
+                                       "external/install/src/rapmap/FastxParser.cpp"
+                                       "external/install/src/rapmap/xxhash.c")))))
+         (add-after 'unpack 'use-system-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "src/CMakeLists.txt"
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/include/jellyfish-2.2..")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/include/jellyfish-" ,(package-version jellyfish)))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libjellyfish-2.0.a")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/lib/libjellyfish-2.0.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort.so"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libstaden-read.a")
+                (string-append (assoc-ref inputs "libstadenio-for-salmon")
+                               "/lib/libstaden-read.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libbwa.a")
+                (string-append (assoc-ref inputs "bwa") "/lib/libbwa.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort64.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort64.so")))
+             (substitute* "CMakeLists.txt"
+               ;; Don't prefer static libs
+               (("SET\\(CMAKE_FIND_LIBRARY_SUFFIXES.*") "")
+               (("set\\(TBB_LIBRARIES") "message(")
+               (("find_package\\(Jellyfish.*") "")
+               (("ExternalProject_Add\\(libcereal") "message(")
+               (("ExternalProject_Add\\(libbwa") "message(")
+               (("ExternalProject_Add\\(libjellyfish") "message(")
+               (("ExternalProject_Add\\(libgff") "message(")
+               (("ExternalProject_Add\\(libtbb") "message(")
+               (("ExternalProject_Add\\(libspdlog") "message(")
+               (("ExternalProject_Add\\(libdivsufsort") "message(")
+               (("ExternalProject_Add\\(libstadenio") "message(")
+               (("ExternalProject_Add_Step\\(") "message("))
+
+             ;; Ensure that all headers can be found
+             (setenv "CPLUS_INCLUDE_PATH"
+                     (string-append (getenv "CPLUS_INCLUDE_PATH")
+                                    ":"
+                                    (assoc-ref inputs "bwa")
+                                    "/include/bwa"
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3"))
+             (setenv "CPATH"
+                     (string-append (assoc-ref inputs "bwa")
+                                    "/include/bwa"
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3"))
+             #t))
+         ;; CMAKE_INSTALL_PREFIX does not exist when the tests are
+         ;; run.  It only exists after the install phase.
+         (add-after 'unpack 'fix-tests
+           (lambda _
+             (substitute* "src/CMakeLists.txt"
+               (("DTOPLEVEL_DIR=\\$\\{CMAKE_INSTALL_PREFIX")
+                "DTOPLEVEL_DIR=${GAT_SOURCE_DIR"))
+             #t)))))
+    (inputs
+     `(("boost" ,boost)
+       ("bwa" ,bwa-for-salmon)
+       ("bzip2" ,bzip2)
+       ("cereal" ,cereal)
+       ("eigen" ,eigen)
+       ("rapmap" ,(origin
+                    (method git-fetch)
+                    (uri (git-reference
+                          (url "https://github.com/COMBINE-lab/RapMap.git")
+                          (commit (string-append "salmon-v" version))))
+                    (file-name (string-append "rapmap-salmon-v" version "-checkout"))
+                    (sha256
+                     (base32
+                      "1yc12yqsz6f0r8sg1qnk57xg34aqwc9jbqq6gd5ys28xw3plj98p"))))
+       ("jemalloc" ,jemalloc)
+       ("jellyfish" ,jellyfish)
+       ("libgff" ,libgff)
+       ("tbb" ,tbb)
+       ("libdivsufsort" ,libdivsufsort)
+       ("libstadenio-for-salmon" ,libstadenio-for-salmon)
+       ("spdlog-for-salmon" ,spdlog-for-salmon)
+       ("xz" ,xz)
+       ("zlib" ,zlib)))
+    (home-page "https://github.com/COMBINE-lab/salmon")
+    (synopsis "Quantification from RNA-seq reads using lightweight alignments")
+    (description "Salmon is a program to produce highly-accurate,
+transcript-level quantification estimates from RNA-seq data.  Salmon achieves
+its accuracy and speed via a number of different innovations, including the
+use of lightweight alignments (accurate but fast-to-compute proxies for
+traditional read alignments) and massively-parallel stochastic collapsed
+variational inference.")
+    (license license:gpl3+)))

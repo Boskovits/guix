@@ -10,8 +10,8 @@
 ;;; Copyright © 2015 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 ng0 <ng0@n0.is>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 André <eu@euandre.org>
@@ -138,14 +138,14 @@ as well as the classic centralized workflow.")
    (name "git")
    ;; XXX When updating Git, check if the special 'git:src' input to cgit needs
    ;; to be updated as well.
-   (version "2.15.1")
+   (version "2.16.1")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "0p04linqdywdf7m1hqa904fzqvgzplsxlzdqrn96j1j5gpyr174r"))))
+              "06gay8k29glg4giwphjalcc1fknxw4bmxkmbr3ic3gzxy8vl7bfg"))))
    (build-system gnu-build-system)
    (native-inputs
     `(("native-perl" ,perl)
@@ -158,7 +158,7 @@ as well as the classic centralized workflow.")
                 version ".tar.xz"))
           (sha256
            (base32
-            "0mi609plzqqwx271hr9m5j4syggqx255bbzml6ca9j5fadywysvc"))))))
+            "1ympib7kd818v4wjgfrhxjrmv91n50lgxxg0i9gcqihgy3divrlp"))))))
    (inputs
     `(("curl" ,curl)
       ("expat" ,expat)
@@ -582,10 +582,10 @@ collaboration using typical untrusted file hosts or services.")
        ("git:src"
         ,(origin
            (method url-fetch)
-           (uri "mirror://kernel.org/software/scm/git/git-2.10.4.tar.xz")
+           (uri "mirror://kernel.org/software/scm/git/git-2.10.5.tar.xz")
            (sha256
             (base32
-             "1pni4mgih5w42813dxljl61s7xmcpdnar34d9m4548hzpljjyd4l"))))
+             "1r2aa19gnrvm2y4fqcvpw1g9l72n48axqmpgv18s6d0y2p72vhzj"))))
        ("openssl" ,openssl)
        ("zlib" ,zlib)))
     (home-page "https://git.zx2c4.com/cgit/")
@@ -1183,7 +1183,7 @@ standards-compliant ChangeLog entries based on the changes that it detects.")
                (base32
                 "1vjmda2zfjxg0qkaj8hfqa8g6bfwnn1ja8696rxrjgqq4w69wd95"))))
     (build-system gnu-build-system)
-    (home-page "http://invisible-island.net/diffstat/")
+    (home-page "https://invisible-island.net/diffstat/")
     (synopsis "Make histograms from the output of @command{diff}")
     (description
      "Diffstat reads the output of @command{diff} and displays a histogram of
@@ -1318,22 +1318,33 @@ any project with more than one developer, is one of Aegis's major functions.")
 (define-public reposurgeon
   (package
     (name "reposurgeon")
-    (version "3.37")
+    (version "3.43")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.catb.org/~esr/" name "/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "14asjg4xy3mhh5z0r3k7c1wv9y803j2zfq32g5q5m95sf7yzygan"))))
+                "1af0z14wcm4bk5a9ysinbwq2fp3lf5f7i8mvwh7286hr3fnagcaz"))
+              (patches (search-patches
+                        "reposurgeon-add-missing-docbook-files.patch"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f                      ;no test suite distributed
-       #:make-flags
-       (list (string-append "target=" (assoc-ref %outputs "out")))
+     `(#:make-flags
+       (list "ECHO=echo"
+             (string-append "target=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
+         (add-after 'unpack 'patch-inputs
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((tzdata (assoc-ref inputs "tzdata")))
+               (substitute* "reposurgeon"
+                 (("/usr/share/zoneinfo")
+                  (string-append tzdata "/share/zoneinfo")))
+               (substitute* "test/svn-to-svn"
+                 (("/bin/echo") "echo"))
+               #t)))
+         (delete 'configure)            ; no configure script
          (add-before 'build 'fix-docbook
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* (find-files "." "\\.xml$")
@@ -1341,19 +1352,32 @@ any project with more than one developer, is one of Aegis's major functions.")
                 (string-append (assoc-ref inputs "docbook-xml")
                                "/xml/dtd/docbook/docbookx.dtd")))
              #t))
+         (add-before 'check 'set-up-test-environment
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((tzdata (assoc-ref inputs "tzdata")))
+               (setenv "TZDIR" (string-append tzdata "/share/zoneinfo"))
+               #t)))
          (add-after 'install 'install-emacs-data
            (lambda* (#:key outputs #:allow-other-keys)
              (install-file "reposurgeon-mode.el"
                            (string-append (assoc-ref outputs "out")
                                           "/share/emacs/site-lisp")))))))
     (inputs
-     `(("python" ,python-wrapper)))
+     `(("python" ,python-wrapper)
+       ("tzdata" ,tzdata)))
     (native-inputs
-     `(("asciidoc" ,asciidoc)
-       ("docbook-xml" ,docbook-xml-4.1.2)
+     `( ;; For building documentation.
+       ("asciidoc" ,asciidoc)
+       ("docbook-xml" ,docbook-xml)
        ("docbook-xsl" ,docbook-xsl)
        ("libxml2" ,libxml2)
-       ("xmlto" ,xmlto)))
+       ("xmlto" ,xmlto)
+
+       ;; For tests.
+       ("cvs" ,cvs)
+       ("git" ,git)
+       ("mercurial" ,mercurial)
+       ("subversion" ,subversion)))
     (home-page "http://www.catb.org/~esr/reposurgeon/")
     (synopsis "Edit version-control repository history")
     (description "Reposurgeon enables risky operations that version-control
@@ -1503,6 +1527,8 @@ repository\" with git-annex.")
              (string-append
               "https://www.fossil-scm.org/index.html/uv/"
               "fossil-src-" version ".tar.gz")))
+       (patches (search-patches "fossil-CVE-2017-17459.patch"))
+       (patch-flags '("-p0"))
        (sha256
         (base32
          "0wfgacfg29dkl0c3l1rp5ji0kraa64gcbg5lh8p4m7mqdqcq53wv"))))
@@ -1547,14 +1573,14 @@ a built-in wiki, built-in file browsing, built-in tickets system, etc.")
 (define-public stagit
   (package
     (name "stagit")
-    (version "0.5")
+    (version "0.7.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://dl.2f30.org/releases/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0ym1dwzn2z23hcg53qh1m1g5pfibrfnnlp3sm3z1v4mhz0pgaj56"))))
+                "1m3s9g1z9szbjrhm8sic91xh6f2bfpi56rskdkqd5wc4wdycpyi5"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; No tests
@@ -1753,8 +1779,8 @@ network protocols, and core version control algorithms.")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://github.com/acaudwell/Gource/archive/"
-                    "gource-" version ".tar.gz"))
+                    "https://github.com/acaudwell/Gource/releases/download"
+                    "/gource-" version "/gource-" version ".tar.gz"))
               (sha256
                (base32
                 "1llqwdnfa1pff8bxk27qsqff1fcg0a9kfdib0rn7p28vl21n1cgj"))))

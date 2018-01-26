@@ -12,12 +12,13 @@
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
 ;;; Copyright © 2017 Gregor Giesen <giesen@zaehlwerk.net>
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
+;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -91,21 +92,21 @@ things the parser might find in the XML document (like start tags).")
 (define-public libebml
   (package
     (name "libebml")
-    (version "1.3.4")
+    (version "1.3.5")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "https://dl.matroska.org/downloads/"
-                           name "/" name "-" version ".tar.bz2"))
+                           name "/" name "-" version ".tar.xz"))
        (sha256
         (base32
-         "11zka6z9ncywyjr1gfm5cnii33ln7y3w6s86kiacchip2g7kw3f5"))))
+         "005a0ipqnfbsq47zrc61zszi439jw32q5xd6dc1jyb3lc0zl266q"))))
     (build-system gnu-build-system)
-    (home-page "https://www.matroska.org")
-    (synopsis "C++ libary to parse EBML files")
-    (description "libebml is a C++ library to read and write EBML (Extensible
-Binary Meta Language) files.  EBML was designed to be a simplified binary
-extension of XML for the purpose of storing and manipulating data in a
+    (home-page "https://matroska-org.github.io/libebml/")
+    (synopsis "C++ library to parse EBML files")
+    (description "libebml is a C++ library to read and write @dfn{EBML}
+(Extensible Binary Meta Language) files.  EBML was designed to be a simplified
+binary extension of XML for the purpose of storing and manipulating data in a
 hierarchical form with variable field lengths.")
     (license license:lgpl2.1)))
 
@@ -154,10 +155,11 @@ project (but it is usable outside of the Gnome platform).")
                         "libxml2-CVE-2017-7375.patch"
                         "libxml2-CVE-2017-7376.patch"
                         "libxml2-CVE-2017-9047+CVE-2017-9048.patch"
-                        "libxml2-CVE-2017-9049+CVE-2017-9050.patch")))))))
+                        "libxml2-CVE-2017-9049+CVE-2017-9050.patch"
+                        "libxml2-CVE-2017-15412.patch")))))))
 
 (define-public python-libxml2
-  (package (inherit libxml2)
+  (package/inherit libxml2
     (name "python-libxml2")
     (build-system python-build-system)
     (arguments
@@ -971,18 +973,28 @@ Libxml2).")
 (define-public minixml
   (package
     (name "minixml")
-    (version "2.10")
+    (version "2.11")
     (source (origin
-              (method url-fetch)
+              (method url-fetch/tarbomb)
               (uri (string-append "https://github.com/michaelrsweet/mxml/"
-                                  "releases/download/release-" version
+                                  "releases/download/v" version
                                   "/mxml-" version ".tar.gz"))
               (sha256
                (base32
-                "14bqfq4lymhb31snz6wsvzhlavy0573v1nki1lbngiyxcj5zazr6"))))
+                "13xsw8vvkxd10vca42ccdyl9rs64lcvhbfz57aknpl3xcfn8mxma"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f))  ;no "check" target
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-permissions
+           ;; FIXME: url-fetch/tarbomb resets all permissions to 555/444.
+           (lambda _
+             (for-each
+              (lambda (file)
+                (chmod file #o644))
+              (find-files "doc" "\\."))
+             #t)))
+       #:tests? #f))                    ; tests are run during build
     (home-page "https://michaelrsweet.github.io/mxml")
     (synopsis "Small XML parsing library")
     (description
@@ -1115,6 +1127,61 @@ used to transform, query, validate, and edit XML documents.  XPath is used to
 match and extract data, and elements can be added, deleted or modified using
 XSLT and EXSLT.")
    (license license:x11)))
+
+(define-public html-xml-utils
+ (package
+   (name "html-xml-utils")
+   (version "7.4")
+   (source
+    (origin
+      (method url-fetch)
+      (uri (string-append
+            "https://www.w3.org/Tools/HTML-XML-utils/html-xml-utils-"
+            version ".tar.gz"))
+      (sha256
+       (base32
+        "04pgrahsfawnzd9pilvirs05pfdgsd7qwvw4dvkb42rgybhw6h95"))))
+   (build-system gnu-build-system)
+   (home-page "https://www.w3.org/Tools/HTML-XML-utils/")
+   (synopsis "Command line utilities to manipulate HTML and XML files")
+   (description "HTML-XML-utils provides a number of simple utilities for
+manipulating and converting HTML and XML files in various ways.  The suite
+consists of the following tools:
+
+@itemize
+ @item @command{asc2xml} convert from @code{UTF-8} to @code{&#nnn;} entities
+ @item @command{xml2asc} convert from @code{&#nnn;} entities to @code{UTF-8}
+ @item @command{hxaddid} add IDs to selected elements
+ @item @command{hxcite} replace bibliographic references by hyperlinks
+ @item @command{hxcite} mkbib - expand references and create bibliography
+ @item @command{hxclean} apply heuristics to correct an HTML file
+ @item @command{hxcopy} copy an HTML file while preserving relative links
+ @item @command{hxcount} count elements and attributes in HTML or XML files
+ @item @command{hxextract} extract selected elements
+ @item @command{hxincl} expand included HTML or XML files
+ @item @command{hxindex} create an alphabetically sorted index
+ @item @command{hxmkbib} create bibliography from a template
+ @item @command{hxmultitoc} create a table of contents for a set of HTML files
+ @item @command{hxname2id} move some @code{ID=} or @code{NAME=} from A
+elements to their parents
+ @item @command{hxnormalize} pretty-print an HTML file
+ @item @command{hxnsxml} convert output of hxxmlns back to normal XML
+ @item @command{hxnum} number section headings in an HTML file
+ @item @command{hxpipe} convert XML to a format easier to parse with Perl or AWK
+ @item @command{hxprintlinks} number links and add table of URLs at end of an HTML file
+ @item @command{hxprune} remove marked elements from an HTML file
+ @item @command{hxref} generate cross-references
+ @item @command{hxselect} extract elements that match a (CSS) selector
+ @item @command{hxtoc} insert a table of contents in an HTML file
+ @item @command{hxuncdata} replace CDATA sections by character entities
+ @item @command{hxunent} replace HTML predefined character entities to @code{UTF-8}
+ @item @command{hxunpipe} convert output of pipe back to XML format
+ @item @command{hxunxmlns} replace \"global names\" by XML Namespace prefixes
+ @item @command{hxwls} list links in an HTML file
+ @item @command{hxxmlns} replace XML Namespace prefixes by \"global names\"
+@end itemize
+")
+   (license license:expat)))
 
 (define-public xlsx2csv
   (package

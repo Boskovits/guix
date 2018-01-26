@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -346,7 +346,7 @@ the image."
                                (label "GNU-ESP")             ;cosmetic only
                                ;; Use "vfat" here since this property is used
                                ;; when mounting. The actual FAT-ness is based
-                               ;; on filesystem size (16 in this case).
+                               ;; on file system size (16 in this case).
                                (file-system "vfat")
                                (flags '(esp))))))))
              (initialize-hard-disk "/dev/vda"
@@ -503,6 +503,14 @@ of the GNU system as described by OS."
                     (string-prefix? "/dev/" source))))
             (operating-system-file-systems os)))
 
+  (define root-uuid
+    ;; UUID of the root file system.
+    (operating-system-uuid os
+                           (if (string=? file-system-type "iso9660")
+                               'iso9660
+                               'dce)))
+
+
   (let ((os (operating-system (inherit os)
               ;; Use an initrd with the whole QEMU shebang.
               (initrd (lambda (file-systems . rest)
@@ -511,10 +519,13 @@ of the GNU system as described by OS."
                                #:virtio? #t
                                rest)))
 
-              ;; Force our own root file system.
+              ;; Force our own root file system.  Refer to it by UUID so that
+              ;; it works regardless of how the image is used ("qemu -hda",
+              ;; Xen, etc.).
               (file-systems (cons (file-system
                                     (mount-point "/")
-                                    (device "/dev/sda1")
+                                    (device root-uuid)
+                                    (title 'uuid)
                                     (type file-system-type))
                                   file-systems-to-keep)))))
     (mlet* %store-monad
@@ -526,6 +537,7 @@ of the GNU system as described by OS."
                                  (operating-system-bootloader os))
                    #:disk-image-size disk-image-size
                    #:file-system-type file-system-type
+                   #:file-system-uuid root-uuid
                    #:inputs `(("system" ,os-drv)
                               ("bootcfg" ,bootcfg))
                    #:copy-inputs? #t))))

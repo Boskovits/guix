@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2014, 2015, 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2017 Eric Bavier <bavier@member.fsf.org>
@@ -32,19 +32,20 @@
 ;;; Copyright © 2016, 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2016, 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2016, 2017 Julien Lepiller <julien@lepiller.eu>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2017 Frederick M. Muriithi <fredmanglis@gmail.com>
-;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
+;;; Copyright © 2017, 2018 Adriano Peluso <catonano@gmail.com>
 ;;; Copyright © 2017 Ben Sturmfels <ben@sturm.com.au>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017 José Miguel Sánchez García <jmi2k@openmailbox.org>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
+;;; Copyright © 2017, 2018 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Muriithi Frederick Muriuki <fredmanglis@gmail.com>
 ;;; Copyright © 2017 Brendan Tildesley <brendan.tildesley@openmailbox.org>
+;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -76,6 +77,7 @@
   #:use-module (gnu packages file)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages gcc)
+  #:use-module (gnu packages geo)
   #:use-module (gnu packages ghostscript)
   #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
@@ -469,6 +471,52 @@ pidof, tty, taskset, pmap.")
 
 (define-public python2-psutil
   (package-with-python2 python-psutil))
+
+(define-public python-shapely
+  (package
+    (name "python-shapely")
+    (version "1.6.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "Shapely" version))
+       (sha256
+        (base32
+         "0svc58dzcw9gj92b4sgq35sdxkf85z0qwlzxarkzq4bp3h8jy58l"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-cython" ,python-cython)
+       ("python-matplotlib" ,python-matplotlib)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)))
+    (inputs
+     `(("geos" ,geos)))
+    (propagated-inputs
+     `(("python-numpy" ,python-numpy)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-geos-path
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((geos (assoc-ref inputs "geos"))
+                   (glibc (assoc-ref inputs ,(if (%current-target-system)
+                                                 "cross-libc" "libc"))))
+               (substitute* "shapely/geos.py"
+                 (("_lgeos = load_dll\\('geos_c', fallbacks=.*\\)")
+                  (string-append "_lgeos = load_dll('geos_c', fallbacks=['"
+                                 geos "/lib/libgeos_c.so'])"))
+                 (("free = load_dll\\('c'\\)\\.free")
+                  (string-append "free = load_dll('c', fallbacks=['"
+                                 glibc "/lib/libc.so.6']).free"))))
+             #t)))))
+    (home-page "https://github.com/Toblerity/Shapely")
+    (synopsis "Library for the manipulation and analysis of geometric objects")
+    (description "Shapely is a Python package for manipulation and analysis of
+planar geometric objects.  It is based on the @code{GEOS} library.")
+    (license license:bsd-3)))
+
+(define-public python2-shapely
+  (package-with-python2 python-shapely))
 
 (define-public python-clyent
   (package
@@ -967,7 +1015,7 @@ from the Python interpreter, or as a small part of a larger application.")
     (native-inputs
      `(("python-py" ,python-py)
        ("python-pytest" ,python-pytest)))
-    (home-page "http://pypi.python.org/pypi/six/")
+    (home-page "https://pypi.python.org/pypi/six/")
     (synopsis "Python 2 and 3 compatibility utilities")
     (description
      "Six is a Python 2 and 3 compatibility library.  It provides utility
@@ -2472,7 +2520,8 @@ interested parties to subscribe to events, or \"signals\".")
        ("python-blinker" ,python-blinker)
        ("python-unidecode" ,python-unidecode)
        ("python-six" ,python-six)
-       ("python-dateutil" ,python-dateutil)))
+       ("python-dateutil" ,python-dateutil)
+       ("python-markdown" ,python-markdown)))
     (home-page "http://getpelican.com/")
     (arguments
      `(;; XXX Requires a lot more packages to do unit tests :P
@@ -2619,12 +2668,12 @@ between language specification and implementation aspects.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
-        (add-before 'build 'set-environment-variables
-         (lambda* (#:key inputs #:allow-other-keys)
-          (call-with-output-file "site.cfg"
-            (lambda (port)
-              (format port
-                      "[openblas]
+         (add-before 'build 'configure-blas-lapack
+           (lambda* (#:key inputs #:allow-other-keys)
+             (call-with-output-file "site.cfg"
+               (lambda (port)
+                 (format port
+                         "[openblas]
 libraries = openblas
 library_dirs = ~a/lib
 include_dirs = ~a/include
@@ -2635,30 +2684,33 @@ lapack_libs = lapack
 library_dirs = ~a/lib
 include_dirs = ~a/include
 "
-                      (assoc-ref inputs "openblas")
-                      (assoc-ref inputs "openblas")
-                      (assoc-ref inputs "lapack")
-                      (assoc-ref inputs "lapack"))))
-          ;; Make /gnu/store/...-bash-.../bin/sh the default shell, instead of
-          ;; /bin/sh.
-          (substitute* "numpy/distutils/exec_command.py"
-            (("(os.environ.get\\('SHELL', ')(/bin/sh'\\))" match match-start match-end)
-            (string-append match-start (assoc-ref inputs "bash") match-end)))
-          ;; Use "gcc" executable, not "cc".
-          (substitute* "numpy/distutils/system_info.py"
-            (("c = distutils\\.ccompiler\\.new_compiler\\(\\)")
-             "c = distutils.ccompiler.new_compiler(); c.set_executables(compiler='gcc',compiler_so='gcc',linker_exe='gcc',linker_so='gcc -shared')"))
-          #t))
-        ;; Tests can only be run after the library has been installed and not
-        ;; within the source directory.
-        (delete 'check)
-        (add-after 'install 'check
-         (lambda* (#:key outputs inputs #:allow-other-keys)
-           ;; Make installed package available for running the tests
-           (add-installed-pythonpath inputs outputs)
-           (with-directory-excursion "/tmp"
-             (zero? (system* "python" "-c"
-                             "import numpy; numpy.test(verbose=2)"))))))))
+                         (assoc-ref inputs "openblas")
+                         (assoc-ref inputs "openblas")
+                         (assoc-ref inputs "lapack")
+                         (assoc-ref inputs "lapack"))))
+             #t))
+         (add-before 'build 'fix-executable-paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             ;; Make /gnu/store/...-bash-.../bin/sh the default shell,
+             ;; instead of /bin/sh.
+             (substitute* "numpy/distutils/exec_command.py"
+               (("(os.environ.get\\('SHELL', ')(/bin/sh'\\))" match match-start match-end)
+                (string-append match-start (assoc-ref inputs "bash") match-end)))
+             ;; Use "gcc" executable, not "cc".
+             (substitute* "numpy/distutils/system_info.py"
+               (("c = distutils\\.ccompiler\\.new_compiler\\(\\)")
+                "c = distutils.ccompiler.new_compiler(); c.set_executables(compiler='gcc',compiler_so='gcc',linker_exe='gcc',linker_so='gcc -shared')"))
+             #t))
+         ;; Tests can only be run after the library has been installed and not
+         ;; within the source directory.
+         (delete 'check)
+         (add-after 'install 'check
+           (lambda* (#:key outputs inputs #:allow-other-keys)
+             ;; Make installed package available for running the tests
+             (add-installed-pythonpath inputs outputs)
+             (with-directory-excursion "/tmp"
+               (zero? (system* "python" "-c"
+                               "import numpy; numpy.test(verbose=2)"))))))))
     (home-page "http://www.numpy.org/")
     (synopsis "Fundamental package for scientific computing with Python")
     (description "NumPy is the fundamental package for scientific computing
@@ -2690,6 +2742,49 @@ capabilities.")
 
 (define-public python2-numpy-next
   (package-with-python2 python-numpy-next))
+
+;; NOTE: NumPy 1.8 is packaged only for Python 2 because it is of
+;; interest only for legacy code going back to NumPy's predecessor
+;; Numeric.
+(define-public python2-numpy-1.8
+  (package (inherit python2-numpy)
+    (version "1.8.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/numpy/numpy/archive/v" version ".tar.gz"))
+       (file-name (string-append "python2-numpy-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0sc20gz1b17xnyrkp5frca3ql5qfalpv916hfg2kqxpwr6jg0f1g"))))
+    (arguments
+     (substitute-keyword-arguments (package-arguments python2-numpy)
+       ((#:phases phases)
+        `(modify-phases ,phases
+           (replace 'configure-blas-lapack
+             (lambda* (#:key inputs #:allow-other-keys)
+               (call-with-output-file "site.cfg"
+                 (lambda (port)
+                   (format port
+                           "[openblas]
+libraries = openblas,lapack
+library_dirs = ~a/lib:~a/lib
+include_dirs = ~a/include:~a/include
+"
+                           (assoc-ref inputs "openblas")
+                           (assoc-ref inputs "lapack")
+                           (assoc-ref inputs "openblas")
+                           (assoc-ref inputs "lapack"))))
+               #t))))))
+    (description "NumPy is the fundamental package for scientific computing
+with Python.  It contains among other things: a powerful N-dimensional array
+object, sophisticated (broadcasting) functions, tools for integrating C/C++
+and Fortran code, useful linear algebra, Fourier transform, and random number
+capabilities.  Version 1.8 is the last one to contain the numpy.oldnumeric API
+that includes the compatibility layer numpy.oldnumeric with NumPy's predecessor
+Numeric.")
+    (license license:bsd-3)))
 
 (define-public python-munch
   (package
@@ -2758,7 +2853,7 @@ objects.")
      `(("python-colormath" ,python-colormath)))
     (native-inputs
      `(("python-nose" ,python-nose)))
-    (home-page "http://github.com/jsvine/spectra")
+    (home-page "https://github.com/jsvine/spectra")
     (synopsis "Color scales and color conversion")
     (description
      "This package provides a Python library intended to make color math,
@@ -3166,6 +3261,7 @@ convert between colorspaces like sRGB, XYZ, CIEL*a*b*, CIECAM02, CAM02-UCS, etc.
        ;; object. For this reason we need to import both libraries.
        ;; https://pythonhosted.org/cairocffi/cffi_api.html#converting-pycairo
        ("python-pycairo" ,python-pycairo)
+       ("python-pyqt" ,python-pyqt)
        ("python-cairocffi" ,python-cairocffi)))
     (inputs
      `(("libpng" ,libpng)
@@ -3175,7 +3271,6 @@ convert between colorspaces like sRGB, XYZ, CIEL*a*b*, CIECAM02, CAM02-UCS, etc.
        ("glib" ,glib)
        ;; FIXME: Add backends when available.
        ;("python-wxpython" ,python-wxpython)
-       ("python-pyqt" ,python-pyqt)
        ("tcl" ,tcl)
        ("tk" ,tk)))
     (native-inputs
@@ -3479,7 +3574,7 @@ atlas_libs = openblas
                (zero? (system* "python" "-c"
                                "import scipy; scipy.test('full')")))
              #t)))))
-    (home-page "http://www.scipy.org/")
+    (home-page "https://www.scipy.org/")
     (synopsis "The Scipy library provides efficient numerical routines")
     (description "The SciPy library is one of the core packages that make up
 the SciPy stack.  It provides many user-friendly and efficient numerical
@@ -3657,18 +3752,45 @@ Python's distutils.")
 services for your Python modules and applications.")
     (license license:lgpl3+)))
 
+(define-public python-olefile
+  (package
+    (name "python-olefile")
+    (version "0.44")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/decalage2/olefile/archive/v"
+                           version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1wmxbrhyqjry2000zx0zdhqdqxhgi06nz7sbzjlh222q2zjv1gpj"))))
+    (build-system python-build-system)
+    (home-page
+     "https://www.decalage.info/python/olefileio")
+    (synopsis "Read and write Microsoft OLE2 files.")
+    (description
+     "@code{olefile} can parse, read and write Microsoft OLE2 files (Structured
+Storage or Compound Document, Microsoft Office).  It is an improved version of
+the OleFileIO module from PIL, the Python Image Library.")
+    (license license:bsd-3)))
+
+(define-public python2-olefile
+  (package-with-python2 python-olefile))
+
 (define-public python-pillow
   (package
     (name "python-pillow")
-    (version "3.3.3")
+    (version "4.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "Pillow" version))
-       (patches (search-patches "python-pillow-freetype-2.7-test-failure.patch"))
        (sha256
         (base32
-         "0xkv0p1d73gz0a1qaasf0ai4262g8f334j07vd60bjrxs2wr3nmj"))))
+         "09xmn7rl6840sli2iz1k3fgxfgmri2nqz6vkinmb9mgg8ifp2z59"))
+       (patch-flags '("-p1" "--binary"))
+       (patches (search-patches "python-pillow-fix-failing-tests.patch"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-nose"       ,python-nose)))
@@ -3680,6 +3802,8 @@ services for your Python modules and applications.")
        ("openjpeg" ,openjpeg)
        ("libtiff"  ,libtiff)
        ("libwebp"  ,libwebp)))
+    (propagated-inputs
+     `(("python-olefile" ,python-olefile)))
     (arguments
      `(#:phases (modify-phases %standard-phases
                   (add-after
@@ -4179,7 +4303,7 @@ standard library.")
        (base32 "19l2pp1c64ansr89l3cqh19jdi2ixhssdzx0vz4n6r52a6i281is"))))
     (build-system python-build-system)
     (arguments `(#:tests? #f)) ; no tests
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "Vestigial utilities from IPython")
     (description
      "This package provides retired utilities from IPython.  No packages
@@ -4216,7 +4340,7 @@ away.")
     (native-inputs
      `(("python-mock" ,python-mock)
        ("python-nose" ,python-nose)))
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "Configuration system for Python applications")
     (description
      "Traitlets is a framework that lets Python classes have attributes with
@@ -4304,7 +4428,7 @@ installing @code{kernelspec}s for use with Jupyter frontends.")
     (propagated-inputs
      ;; imported at runtime during connect
      `(("python-jupyter-client" ,python-jupyter-client)))
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "IPython Kernel for Jupyter")
     (description
      "This package provides the IPython kernel for Jupyter.")
@@ -4450,7 +4574,7 @@ installing @code{kernelspec}s for use with Jupyter frontends.")
             (substitute* "./IPython/core/tests/test_magic.py"
               (("def test_dirops\\(\\):" all)
                (string-append "@dec.skipif(True)\n" all))))))))
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "IPython is a tool for interactive computing in Python")
     (description
      "IPython provides a rich architecture for interactive computing with:
@@ -4647,7 +4771,7 @@ libxml2 and libxslt.")
          (replace 'check
            (lambda _ (zero? (system* "./convert-py3k")))))))
     (home-page
-     "http://www.crummy.com/software/BeautifulSoup/bs4/")
+     "https://www.crummy.com/software/BeautifulSoup/bs4/")
     (synopsis
      "Python screen-scraping library")
     (description
@@ -4740,13 +4864,13 @@ of the structure, dynamics, and functions of complex networks.")
 (define-public snakemake
   (package
     (name "snakemake")
-    (version "4.2.0")
+    (version "4.4.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "snakemake" version))
        (sha256
-        (base32 "0mgl44q152ws40zj2vicqark5szyd73vqy9pf26g6hk6dk0y0c79"))))
+        (base32 "0g0paia4z7w3srnqdmavq3hrb2x7qnpf81jx50njl0p7y4y0j8jv"))))
     (build-system python-build-system)
     (arguments
      ;; TODO: Package missing test dependencies.
@@ -5306,14 +5430,14 @@ plugins that intend to support Flake8 2.x and 3.x simultaneously.")
 (define-public python-mistune
   (package
     (name "python-mistune")
-    (version "0.7.3")
+    (version "0.8.3")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "mistune" version))
        (sha256
         (base32
-         "04xpk1zvslhq3xpnf01g3ag0dy9wfv4z28p093r8k49vvxlyil11"))))
+         "06b662p6kf46wh2jsabaqhaq4bz1srh2zxkrnx4yg96azlxw645w"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-nose" ,python-nose)
@@ -5897,14 +6021,14 @@ versions of Python.")
 (define-public python-idna
   (package
     (name "python-idna")
-    (version "2.5")
+    (version "2.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "idna" version))
        (sha256
         (base32
-         "1ara12a7k2zc69msa0arrvw00gn61a6i6by01xb3lkkc0h4cxd9w"))))
+         "13qaab6d0s15gknz8v3zbcfmbj6v86hn9pjxgkdf62ch13imssic"))))
     (build-system python-build-system)
     (home-page "https://github.com/kjd/idna")
     (synopsis "Internationalized domain names in applications")
@@ -6030,7 +6154,7 @@ a hash value.")
     (arguments
      ;; There are no tests.
      `(#:tests? #f))
-    (home-page "http://pypi.python.org/pypi/termcolor")
+    (home-page "https://pypi.python.org/pypi/termcolor")
     (synopsis "ANSII Color formatting for terminal output")
     (description
      "This package provides ANSII Color formatting for output in terminals.")
@@ -6361,7 +6485,7 @@ interactive computing.")
     (native-inputs
      `(("python-certifi" ,python-certifi)
        ("python-nose" ,python-nose)))
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "IPython HTML widgets for Jupyter")
     (description "This package provides interactive HTML widgets for Jupyter
 notebooks.")
@@ -6389,7 +6513,7 @@ notebooks.")
        ("python-ipython" ,python-ipython)
        ("python-traitlets" ,python-traitlets)
        ("python-widgetsnbextension" ,python-widgetsnbextension)))
-    (home-page "http://ipython.org")
+    (home-page "https://ipython.org")
     (synopsis "IPython HTML widgets for Jupyter")
     (description "Ipywidgets are interactive HTML widgets for Jupyter
 notebooks and the IPython kernel.  Notebooks come alive when interactive
@@ -6436,6 +6560,7 @@ Jupyter kernels such as IJulia and IRKernel.")
 (define python-jupyter-console-minimal
   (package
     (inherit python-jupyter-console)
+    (name "python-jupyter-console-minimal")
     (arguments
      (substitute-keyword-arguments
          (package-arguments python-jupyter-console)
@@ -6732,13 +6857,13 @@ for atomic file system operations.")
 (define-public python-click-threading
   (package
     (name "python-click-threading")
-    (version "0.4.3")
+    (version "0.4.4")
     (source (origin
              (method url-fetch)
              (uri (pypi-uri "click-threading" version))
              (sha256
               (base32
-               "0xs4bg2ws0zgyiplk312l049hi23c2zqf1g771rjhh5vr2msk4cg"))))
+               "1rsxc2fbkxlhwhlmxsdjzq3spn284l6rvjfcz9mbb17ibgdgmc5j"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-click" ,python-click)))
@@ -6751,13 +6876,13 @@ applications.")
 (define-public python-click-log
   (package
     (name "python-click-log")
-    (version "0.2.0")
+    (version "0.2.1")
     (source (origin
              (method url-fetch)
              (uri (pypi-uri "click-log" version))
              (sha256
               (base32
-               "1bjrfxji1yv4fj0g78ri2yfgn2wbivn8g69fxfinxvxpmighhshp"))))
+               "1r1x85023cslb2pwldd089jjk573mk3w78cnashs77wrx7yz8fj9"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-click" ,python-click)))
@@ -7160,7 +7285,7 @@ text.")
 encryption and decryption, signing and verifying signatures, and key
 generation according to PKCS#1 version 1.5.  It can be used as a Python
 library as well as on the command line.")
-   (home-page "http://stuvel.eu/rsa")
+   (home-page "https://stuvel.eu/rsa")
    (license license:asl2.0)))
 
 (define-public python2-rsa
@@ -7419,7 +7544,7 @@ fast xml and html manipulation.")
        ;; but it could be annoying/difficult.
        ;; We can enable tests for the Python 2 version, though, and do below.
        #:tests? #f))
-    (home-page "http://bitbucket.org/runeh/anyjson/")
+    (home-page "https://bitbucket.org/runeh/anyjson/")
     (synopsis
      "Wraps best available JSON implementation in a common interface")
     (description
@@ -7473,6 +7598,35 @@ alternative when librabbitmq is not available.")
                    ;; version?
                    #:tests? #f
                    ,@(package-arguments amqp))))))
+
+(define-public python-txamqp
+  (package
+    (name "python-txamqp")
+    (version "0.8.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "txAMQP" version))
+       (sha256
+        (base32
+         "1r43a66dd547mz40ikymm8y3d480cidy560fj81qc0jk4lncgmmr"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-six" ,python-six)
+       ("python-twisted" ,python-twisted)))
+    (home-page "https://github.com/txamqp/txamqp")
+    (synopsis "Communicate with AMQP peers and brokers using Twisted")
+    (description
+     "This package provides a Python library for communicating with AMQP peers
+and brokers using the asynchronous networking framework Twisted.  It contains
+all the necessary code to connect, send and receive messages to/from an
+AMQP-compliant peer or broker (Qpid, OpenAMQ, RabbitMQ) using Twisted.  It
+also includes support for using Thrift RPC over AMQP in Twisted
+applications.")
+    (license license:asl2.0)))
+
+(define-public python2-txamqp
+  (package-with-python2 python-txamqp))
 
 (define-public python-kombu
   (package
@@ -7764,7 +7918,7 @@ useful for solving the Assignment Problem.")
     (build-system python-build-system)
     (native-inputs
      `(("python-pytest" ,python-pytest)))
-    (home-page "http://bitbucket.org/mchaput/whoosh")
+    (home-page "https://bitbucket.org/mchaput/whoosh")
     (synopsis "Full text indexing, search, and spell checking library")
     (description
      "Whoosh is a fast, pure-Python full text indexing, search, and spell
@@ -7834,7 +7988,7 @@ anymore.")
      `(#:python ,python-2))
     (native-inputs
      `(("python2-six" ,python2-six)))
-    (home-page "http://pypi.python.org/pypi/pathlib2/")
+    (home-page "https://pypi.python.org/pypi/pathlib2/")
     (synopsis "Object-oriented file system paths - backport of standard
 pathlib module")
     (description "The goal of pathlib2 is to provide a backport of standard
@@ -7940,15 +8094,14 @@ is made as zipfile like as possible.")
 (define-public python-magic
   (package
     (name "python-magic")
-    (version "0.4.3")
+    (version "0.4.15")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/ahupp/python-magic/archive/"
-                           version ".tar.gz"))
+       (uri (pypi-uri "python-magic" version))
        (sha256
         (base32
-         "17bgy92i7sb021f2s4mw1dcvpm6p1mi9jihridwy1pyn8mzvpjgk"))
+         "1mgwig9pnzgkf86q9ji9pnc99bngms15lfszq5rgqb9db07mqxpk"))
        (file-name (string-append name "-" version "-checkout"))))
     (build-system python-build-system)
     (arguments
@@ -7966,31 +8119,33 @@ is made as zipfile like as possible.")
      ;; expected.
      '(#:tests? #f
        #:phases (modify-phases %standard-phases
-         ;; Replace a specific method call with a hard-coded
-         ;; path to the necessary libmagic.so file in the
-         ;; store.  If we don't do this, then the method call
-         ;; will fail to find the libmagic.so file, which in
-         ;; turn will cause any application using
-         ;; python-magic to fail.
-         (add-before 'build 'hard-code-path-to-libmagic
-           (lambda* (#:key inputs #:allow-other-keys)
-             (let ((file (assoc-ref inputs "file")))
-               (substitute* "magic.py"
-                 (("ctypes.util.find_library\\('magic'\\)")
-                  (string-append "'" file "/lib/libmagic.so'")))
-           #t)))
-         (add-before 'install 'disable-egg-compression
-           (lambda _
-             (let ((port (open-file "setup.cfg" "a")))
-               (display "\n[easy_install]\nzip_ok = 0\n"
-                        port)
-               (close-port port)
-               #t))))))
+                  ;; Replace a specific method call with a hard-coded
+                  ;; path to the necessary libmagic.so file in the
+                  ;; store.  If we don't do this, then the method call
+                  ;; will fail to find the libmagic.so file, which in
+                  ;; turn will cause any application using
+                  ;; python-magic to fail.
+                  (add-before 'build 'hard-code-path-to-libmagic
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (let ((file (assoc-ref inputs "file")))
+                        (substitute* "magic.py"
+                          (("ctypes.util.find_library\\('magic'\\)")
+                           (string-append "'" file "/lib/libmagic.so'")))
+                        #t)))
+                  (add-before 'install 'disable-egg-compression
+                    (lambda _
+                      (let ((port (open-file "setup.cfg" "a")))
+                        (display "\n[easy_install]\nzip_ok = 0\n"
+                                 port)
+                        (close-port port)
+                        #t))))))
     (inputs
      ;; python-magic needs to be able to find libmagic.so.
      `(("file" ,file)))
-    (home-page "https://github.com/ahupp/python-magic")
-    (synopsis "File type identification using libmagic")
+    (home-page
+     "https://github.com/ahupp/python-magic")
+    (synopsis
+     "File type identification using libmagic")
     (description
      "This module uses ctypes to access the libmagic file type
 identification library.  It makes use of the local magic database and
@@ -8477,14 +8632,14 @@ network support library.")
 (define-public python-ply
   (package
     (name "python-ply")
-    (version "3.9")
+    (version "3.10")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "ply" version))
         (sha256
           (base32
-            "0gpl0yli3w03ipyqfrp3w5nf0iawhsq65anf5wwm2wf5p502jzhd"))))
+            "1jxsr1d2f732r6ljhvm827113dckwl6qwakfvpbdhcbhvpvlmscn"))))
     (build-system python-build-system)
     (home-page "http://www.dabeaz.com/ply/")
     (synopsis "Python Lex & Yacc")
@@ -9079,21 +9234,20 @@ and/or Xon/Xoff.  The port is accessed in RAW mode.")
 (define-public python-kivy
   (package
     (name "python-kivy")
-    (version "1.9.1")
+    (version "1.10.0")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "kivy" version))
+       (uri (pypi-uri "Kivy" version))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0zk3g1j1z0lzcm9d0k1lprrs95zr8n8k5pdg3p5qlsn26jz4bg19"))))
+         "1394zh6kvf7k5d8vlzxcsfcailr3q59xwg9b1n7qaf25bvyq1h98"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f              ; Tests require many optional packages
        #:phases
        (modify-phases %standard-phases
-         (replace 'build (lambda _ (zero? (system* "make" "force"))))
          (add-after 'patch-generated-file-shebangs 'set-sdl-paths
            (lambda* (#:key inputs #:allow-other-keys)
              (setenv "KIVY_SDL2_PATH"
@@ -9101,7 +9255,8 @@ and/or Xon/Xoff.  The port is accessed in RAW mode.")
                                     "/include/SDL2"))
              #t)))))
     (native-inputs
-     `(("pkg-config" ,pkg-config)
+     `(("git" ,git)
+       ("pkg-config" ,pkg-config)
        ("python-cython" ,python-cython)))
     (inputs
      `(("gstreamer" ,gstreamer)
@@ -9964,7 +10119,7 @@ protocols written in pure Python.")
              (zero? (system* "python" "test/test_pbkdf2.py")))))))
     (propagated-inputs
      `(("python-pycrypto" ,python-pycrypto)))  ; optional
-    (home-page "http://www.dlitz.net/software/python-pbkdf2/")
+    (home-page "https://www.dlitz.net/software/python-pbkdf2/")
     (synopsis "Password-based key derivation")
     (description "This module implements the password-based key derivation
 function, PBKDF2, specified in RSA PKCS#5 v2.0.
@@ -10050,7 +10205,7 @@ to ansi-escaped strings suitable for display in a terminal.")
        ("python-nose" ,python-nose)))
     (propagated-inputs
      `(("python-six" ,python-six)))
-    (home-page "http://github.com/ralphbean/ansi2html")
+    (home-page "https://github.com/ralphbean/ansi2html")
     (synopsis "Convert ANSI-decorated console output to HTML")
     (description
      "@command{ansi2html} is a Python library and command line utility for
@@ -10963,18 +11118,20 @@ information.")
 (define-public python-relatorio
   (package
     (name "python-relatorio")
-    (version "0.6.4")
+    (version "0.8.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "relatorio" version))
        (sha256
         (base32
-         "0lincq79mzgazwd9gh41dybjh9c3n87r83pl8nk3j79aihyfk84z"))))
+         "1na6hlhz1awi1hbjg1gyclq0khz42iz90wvdjw7mmj655788bpxx"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-lxml" ,python-lxml)
        ("python-genshi" ,python-genshi)))
+    (native-inputs
+     `(("python-magic" ,python-magic)))
     (home-page "https://relatorio.tryton.org/")
     (synopsis "Templating library able to output ODT and PDF files")
     (description "Relatorio is a templating library which provides a way to
@@ -11221,7 +11378,7 @@ applying JSON Patches according to RFC 6902.")
        (base32
         "192pclzs2y0yaywqkrlvd0x73740q310kvqvm6jldhi619mq59wi"))))
     (build-system python-build-system)
-    (home-page "http://pypi.python.org/pypi/rfc3987")
+    (home-page "https://pypi.python.org/pypi/rfc3987")
     (synopsis "Parsing and validation of URIs (RFC 3986) and IRIs (RFC 3987)")
     (description "@code{rfc3987} provides routines for parsing and
 validation of URIs (see RFC 3986) and IRIs (see RFC 3987).")
@@ -11242,7 +11399,7 @@ validation of URIs (see RFC 3986) and IRIs (see RFC 3987).")
        (base32
         "1bxffaf5yz2cph8ki55vdvdypbwkvn2xr1firlcy62vqbzf1jivq"))))
     (build-system python-build-system)
-    (home-page "http://github.com/syrusakbary/validate_email")
+    (home-page "https://github.com/syrusakbary/validate_email")
     (synopsis "Verifies if an email address is valid and really exists")
     (description "@code{validate_email} can be used to verify if an email
 address is valid and really exists.")
@@ -11405,7 +11562,7 @@ from your Flask project.  It is a fork of Flask-Swagger.")
      `(("python-jsonschema" ,python-jsonschema)
        ("python-six" ,python-six)))
     (home-page
-     "http://github.com/Yelp/swagger_spec_validator")
+     "https://github.com/Yelp/swagger_spec_validator")
     (synopsis "Validation of Swagger specifications")
     (description "@code{swagger_spec_validator} provides a library for
 validating Swagger API specifications.")
@@ -12001,3 +12158,262 @@ particularly convenient for use in tests.")
 (define-public python2-tempdir
   (package-with-python2 python-tempdir))
 
+(define-public python-activepapers
+  (package
+    (name "python-activepapers")
+    (version "0.2.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "ActivePapers.Py" version))
+       (sha256
+        (base32
+         "12wkhjh90ffipjzv10swndp2xv9hd7xrxvg6v0n4n3i411pj4xb8"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:modules ((ice-9 ftw)
+                  (srfi srfi-1)
+                  (guix build utils)
+                  (guix build python-build-system))
+
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'delete-python2-code
+           (lambda _
+             (for-each delete-file
+                       '("lib/activepapers/builtins2.py"
+                         "lib/activepapers/standardlib2.py"
+                         "lib/activepapers/utility2.py"))))
+         (replace 'check
+           (lambda _
+             ;; Deactivate the test cases that download files
+             (setenv "NO_NETWORK_ACCESS" "1")
+             ;; For some strange reason, some tests fail if nosetests runs all
+             ;; test modules in a single execution. They pass if each test
+             ;; module is run individually.
+             (for-each (lambda (filename)
+                         (invoke "nosetests"
+                                 (string-append "tests/" filename)))
+                       (scandir "tests"
+                                (lambda (filename)
+                                  (string-suffix? ".py" filename)))))))))
+    (native-inputs
+     `(("python-tempdir" ,python-tempdir)
+       ("python-nose" ,python-nose)))
+    (propagated-inputs
+     `(("python-h5py" ,python-h5py)))
+    (home-page "http://www.activepapers.org/")
+    (synopsis "Executable papers for scientific computing")
+    (description
+     "ActivePapers is a tool for working with executable papers, which
+combine data, code, and documentation in single-file packages,
+suitable for publication as supplementary material or on repositories
+such as figshare or Zenodo.")
+    (properties `((python2-variant . ,(delay python2-activepapers))))
+    (license license:bsd-3)))
+
+(define-public python2-activepapers
+  (let ((base (package-with-python2
+               (strip-python2-variant python-activepapers))))
+    (package
+      (inherit base)
+      (arguments
+       (substitute-keyword-arguments (package-arguments base)
+         ((#:phases phases)
+          `(modify-phases ,phases
+             (delete 'delete-python2-code)
+             (add-after 'unpack 'delete-python3-code
+               (lambda _
+                 (for-each delete-file
+                           '("lib/activepapers/builtins3.py"
+                             "lib/activepapers/standardlib3.py"
+                             "lib/activepapers/utility3.py")))))))))))
+
+(define-public python-semver
+  (package
+    (name "python-semver")
+    (version "2.7.9")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "semver" version))
+        (sha256
+          (base32
+            "0hhgqppchv59rqj0yzi1prdg2nfsywqmjsqy2rycyxm0hvxmbyqz"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-test-requirements
+           (lambda _
+             (substitute* "setup.py"
+               ;; Our Python is new enough.
+               (("'virtualenv<14\\.0\\.0'") "'virtualenv'"))
+             #t)))))
+    (native-inputs
+     `(("python-tox" ,python-tox)
+       ("python-virtualenv" ,python-virtualenv)))
+    (home-page "https://github.com/k-bx/python-semver")
+    (synopsis "Python helper for Semantic Versioning")
+    (description "This package provides a Python library for
+@url{Semantic Versioning, http://semver.org/}.")
+    (license license:bsd-3)))
+
+(define-public python2-semver
+  (package-with-python2 python-semver))
+
+(define-public python2-pyro
+  (package
+    (name "python2-pyro")
+    (version "3.16")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "Pyro" version))
+       (file-name (string-append "Pyro-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0y75wzdqbjy565rpxaxscav4j8xg060sa90lnmb7aypgaf251v8v"))))
+    (build-system python-build-system)
+    (arguments
+     ;; Pyro is not compatible with Python 3
+     `(#:python ,python-2
+       ;; Pyro has no test cases for automatic execution
+       #:tests? #f))
+    (home-page "http://pythonhosted.org/Pyro/")
+    (synopsis "Distributed object manager for Python")
+    (description "Pyro is a Distributed Object Technology system
+written in Python that is designed to be easy to use.  It resembles
+Java's Remote Method Invocation (RMI).  It has less similarity to CORBA,
+which is a system and language independent Distributed Object Technology
+and has much more to offer than Pyro or RMI.  Pyro 3.x is no
+longer maintained.  New projects should use Pyro4 instead, which
+is the new Pyro version that is actively developed.")
+    (license license:expat)))
+
+(define-public python2-scientific
+  (package
+    (name "python2-scientific")
+    (version "2.9.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://bitbucket.org/khinsen/"
+                           "scientificpython/downloads/ScientificPython-"
+                           version ".tar.gz"))
+       (file-name (string-append "ScientificPython-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0fc69zhlsn9d2jvbzyjl9ah53vj598h84nkq230c83ahfvgzx5y3"))))
+    (build-system python-build-system)
+    (inputs
+     `(("netcdf" ,netcdf)))
+    (propagated-inputs
+     `(("python-numpy" ,python2-numpy-1.8)
+       ("python-pyro", python2-pyro)))
+    (arguments
+     ;; ScientificPython is not compatible with Python 3
+     `(#:python ,python-2
+       #:tests? #f ; No test suite
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'build
+           (lambda* (#:key inputs #:allow-other-keys)
+             (zero? (system* "python" "setup.py" "build"
+                             (string-append "--netcdf_prefix="
+                                            (assoc-ref inputs "netcdf")))))))))
+    (home-page "https://bitbucket.org/khinsen/scientificpython")
+    (synopsis "Python modules for scientific computing")
+    (description "ScientificPython is a collection of Python modules that are
+useful for scientific computing.  Most modules are rather general (Geometry,
+physical units, automatic derivatives, ...) whereas others are more
+domain-specific (e.g. netCDF and PDB support).  The library is currently
+not actively maintained and works only with Python 2 and NumPy < 1.9.")
+    (license license:cecill-c)))
+
+(define-public python2-mmtk
+  (package
+    (name "python2-mmtk")
+    (version "2.7.11")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://bitbucket.org/khinsen/"
+                           "mmtk/downloads/MMTK-" version ".tar.gz"))
+       (file-name (string-append "MMTK-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1d0nnjx4lwsvh8f99vv1r6gi50d93yba0adkz8b4zgv4za4c5862"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("netcdf" ,netcdf)))
+    (propagated-inputs
+     `(("python-scientific" ,python2-scientific)
+       ("python-tkinter" ,python-2 "tk")))
+    (arguments
+     `(#:python ,python-2
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'includes-from-scientific
+           (lambda* (#:key inputs #:allow-other-keys)
+             (mkdir-p "Include/Scientific")
+             (copy-recursively
+                     (string-append
+                      (assoc-ref inputs "python-scientific")
+                      "/include/python2.7/Scientific")
+                     "Include/Scientific"))))))
+    (home-page "http://dirac.cnrs-orleans.fr/MMTK")
+    (synopsis "Python library for molecular simulation")
+    (description "MMTK is a library for molecular simulations with an emphasis
+on biomolecules.  It provides widely used methods such as Molecular Dynamics
+and normal mode analysis, but also basic routines for implementing new methods
+for simulation and analysis.  The library is currently not actively maintained
+and works only with Python 2 and NumPy < 1.9.")
+    (license license:cecill-c)))
+
+(define-public python-phonenumbers
+  (package
+    (name "python-phonenumbers")
+    (version "8.8.9")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "phonenumbers" version))
+       (sha256
+        (base32
+         "1lhhxmx3hk0b5891nc0p82dl5bq2w9cqbawmh8j5zy587af2j6fq"))))
+    (build-system python-build-system)
+    (home-page
+     "https://github.com/daviddrysdale/python-phonenumbers")
+    (synopsis
+     "Python library for dealing with international phone numbers")
+    (description
+     "This package provides a Python port of Google's libphonenumber library.")
+    (license license:asl2.0)))
+
+(define-public python2-phonenumbers
+  (package-with-python2 python-phonenumbers))
+
+(define-public python-yapf
+  (package
+    (name "python-yapf")
+    (version "0.20.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "yapf" version))
+       (sha256
+        (base32
+         "0s7l6afzxvpx39kzd0lwshlaxw8m4fwh4iy0rlmav4vipr3g46dx"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/google/yapf")
+    (synopsis "Formatter for Python code")
+    (description "YAPF is a formatter for Python code.  It's based off of
+@dfn{clang-format}, developed by Daniel Jasper.  In essence, the algorithm
+takes the code and reformats it to the best formatting that conforms to the
+style guide, even if the original code didn't violate the style guide.")
+    (license license:asl2.0)))
+
+(define-public python2-yapf
+  (package-with-python2 python-yapf))

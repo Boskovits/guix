@@ -58,7 +58,9 @@
   #:use-module (gnu packages tcl)
   #:use-module (gnu packages time)
   #:use-module (gnu packages tls)
-  #:use-module (gnu packages web))
+  #:use-module (gnu packages web)
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-26))
 
 (define-public quassel
   (package
@@ -113,7 +115,7 @@ irssi, but graphical.")
 (define-public irssi
   (package
     (name "irssi")
-    (version "1.0.5")
+    (version "1.0.6")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://github.com/irssi/irssi/"
@@ -121,7 +123,7 @@ irssi, but graphical.")
                                  version ".tar.xz"))
              (sha256
               (base32
-               "055r9fhbfcfkzinsnprnlqd8psspdyn3j26lzsmnrc1fw4kn8mf2"))))
+               "11c5vrwz525ld3478p81hngnv9aw0cd4xvfqcrr7ycxz7r7qi7h2"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -182,6 +184,11 @@ SILC and ICB protocols via plugins.")
     (arguments
      `(#:configure-flags
        (list "-DENABLE_TESTS=ON")       ; ‘make test’ fails otherwise
+       ;; Tests hang indefinately on non-Intel platforms.
+       #:tests? ,(if (any (cute string-prefix? <> (or (%current-target-system)
+                                                      (%current-system)))
+                          '("i686" "x86_64"))
+                   '#t '#f)
        #:phases
        (modify-phases %standard-phases
          (add-after 'unpack 'disable-failing-tests

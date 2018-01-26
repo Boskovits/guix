@@ -6,6 +6,7 @@
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
+;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -46,6 +47,7 @@
 (define-public libsndfile
   (package
     (name "libsndfile")
+    (replacement libsndfile/fixed)
     (version "1.0.28")
     (source (origin
              (method url-fetch)
@@ -78,6 +80,15 @@ as big-endian processor systems such as Motorola 68k, Power PC, MIPS and
 SPARC.  Hopefully the design of the library will also make it easy to extend
 for reading and writing new sound file formats.")
     (license l:gpl2+)))
+
+(define libsndfile/fixed
+  (package
+    (inherit libsndfile)
+    (source (origin
+              (inherit (package-source libsndfile))
+              (patches (append
+                         (origin-patches (package-source libsndfile))
+                         (search-patches "libsndfile-CVE-2017-12562.patch")))))))
 
 (define-public libsamplerate
   (package
@@ -264,14 +275,14 @@ sinks.")
 (define-public pulsemixer
   (package
     (name "pulsemixer")
-    (version "1.3.0")
+    (version "1.4.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/GeorgeFilipkin/"
                                   "pulsemixer/archive/" version ".tar.gz"))
               (sha256
                (base32
-                "03c94313fhxd5sbkl2ajzb2gmmm4hpv7m5rkbxmahwg9s8ih824r"))))
+                "1lpad90ifr2xfldyf39sbwx1v85rif2gm9w774gwwpjv53zfgk1g"))))
     (build-system python-build-system)
     (arguments
      `(#:phases

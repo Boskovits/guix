@@ -3,6 +3,7 @@
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -52,24 +53,22 @@
 (define-public libsvm
   (package
     (name "libsvm")
-    (version "3.20")
+    (version "3.22")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "https://github.com/cjlin1/libsvm/archive/v"
-             (string-delete #\. version) ".tar.gz"))
-       (file-name (string-append name "-" version ".tar.gz"))
+       (uri (string-append "https://www.csie.ntu.edu.tw/~cjlin/libsvm/"
+                           name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1jpjlql3frjza7zxzrqqr2firh44fjb8fqsdmvz6bjz7sb47zgp4"))))
+         "0zd7s19y5vb7agczl6456bn45cj1y64739sslaskw1qk7dywd0bd"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ;no "check" target
        #:phases (modify-phases %standard-phases
                   (delete 'configure)
                   (replace
-                   'install
+                   'install             ; no ‘install’ target
                    (lambda* (#:key outputs #:allow-other-keys)
                      (let* ((out (assoc-ref outputs "out"))
                             (bin (string-append out "/bin/")))
@@ -100,7 +99,7 @@ classification.")
        (modify-phases %standard-phases
          (delete 'configure)
          (replace
-          'install
+          'install                      ; no ‘install’ target
           (lambda* (#:key inputs outputs #:allow-other-keys)
             (let ((site (string-append (assoc-ref outputs "out")
                                        "/lib/python"
@@ -492,7 +491,7 @@ in terms of new algorithms.")
        ("r-rcpparmadillo" ,r-rcpparmadillo)))
     (inputs
      `(("armadillo" ,armadillo)))
-    (home-page "http://cran.r-project.org/web/packages/AdaptiveSparsity")
+    (home-page "https://cran.r-project.org/web/packages/AdaptiveSparsity")
     (synopsis "Adaptive sparsity models")
     (description
      "This package implements the Figueiredo machine learning algorithm for
@@ -512,7 +511,7 @@ geometric models.")
         (base32
          "0qnaq9x3j2xc6jrmmd98wc6hkzch487s4p3a9lnc00xvahkhgpmr"))))
     (build-system r-build-system)
-    (home-page "http://cran.r-project.org/web/packages/kernlab")
+    (home-page "https://cran.r-project.org/web/packages/kernlab")
     (synopsis "Kernel-based machine learning tools")
     (description
      "This package provides kernel-based machine learning methods for

@@ -3,11 +3,11 @@
 ;;; Copyright © 2014, 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2014 Kevin Lemonnier <lemonnierk@ulrar.net>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
-;;; Copyright © 2016 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
-;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2017, 2018 ng0 <ng0@n0.is>
+;;; Copyright © 2017, 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -88,7 +88,7 @@ direct descendant of NetBSD's Almquist Shell (@command{ash}).")
 (define-public fish
   (package
     (name "fish")
-    (version "2.7.0")
+    (version "2.7.1")
     (source (origin
               (method url-fetch)
               (uri
@@ -100,7 +100,7 @@ direct descendant of NetBSD's Almquist Shell (@command{ash}).")
                                name "-" version ".tar.gz")))
               (sha256
                (base32
-                "1jvvm27hp46w0cia14lfz6161dkz8b935j1m7j38i7rgx75bfxis"))
+                "0nhc3yc5lnnan7zmxqqxm07rdpwjww5ijy45ll2njdc6fnfb2az4"))
               (modules '((guix build utils)))
               ;; Don't try to install /etc/fish/config.fish.
               (snippet
@@ -139,38 +139,12 @@ direct descendant of NetBSD's Almquist Shell (@command{ash}).")
 discoverability, and friendliness.  Fish has very user-friendly and powerful
 tab-completion, including descriptions of every completion, completion of
 strings with wildcards, and many completions for specific commands.  It also
-has extensive and discoverable help.  A special help command gives access to
-all the fish documentation in your web browser.  Other features include smart
-terminal handling based on terminfo, an easy to search history, and syntax
-highlighting.")
+has extensive and discoverable help.  A special @command{help} command gives
+access to all the fish documentation in your web browser.  Other features
+include smart terminal handling based on terminfo, an easy to search history,
+and syntax highlighting.")
     (home-page "https://fishshell.com/")
     (license gpl2)))
-
-(define-public fish-guix
-  (package
-    (name "fish-guix")
-    (version "0.1.2.1")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (string-append "https://d.n0.is/releases/fish-guix/"
-                           name "-" version ".tar.xz"))
-       (sha256
-        (base32
-         "0k71hcn7nr523w74jw2i68x52s9hv6vmasnvnn7yr3xxvzn4kqgf"))))
-    (build-system gnu-build-system)
-    (arguments
-     `(#:tests? #f ; No checks.
-       #:make-flags (list
-                     (string-append "PREFIX=" %output))
-       #:phases
-       (modify-phases %standard-phases
-         (delete 'configure)))) ; No configure script.
-    (home-page "https://n0.is/s/fish-guix/")
-    (synopsis "Fish completions for Guix")
-    (description
-     "Fish-guix provides completions for Guix for users of the fish shell.")
-    (license bsd-3)))
 
 (define-public rc
   (package
@@ -381,14 +355,14 @@ ksh, and tcsh.")
 (define-public xonsh
   (package
     (name "xonsh")
-    (version "0.5.12")
+    (version "0.6.0")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "xonsh" version))
         (sha256
           (base32
-            "1yz595hx5bni524m73cx8a08vcr6vfksfci14nx2ylz53igzva2c"))
+            "1ikd1xg4iyjqp51y8g8n6c4y39bgx85xnb4bdd3zibkqac3lrahr"))
         (modules '((guix build utils)))
         (snippet
          `(begin
@@ -670,3 +644,49 @@ Korn Shell programming language and a successor to the Public Domain Korn
 Shell (pdksh).")
     (license (list miros
                    isc)))) ; strlcpy.c
+
+(define-public oil-shell
+  (package
+    (name "oil-shell")
+    (version "0.3.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://www.oilshell.org/download/oil-"
+                                  version ".tar.xz"))
+              (sha256
+               (base32
+                "0j4fyn6xjaf29xqyzm09ahazmq9v1hkxv4kps7n3lzdfr32a4kk9"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f ; the tests are not distributed in the tarballs
+       #:strip-binaries? #f ; the binaries cannot be stripped
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-compiler-invocation
+           (lambda _
+             (substitute* "configure"
+               ((" cc ") " gcc "))
+             #t))
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (setenv "CC" "gcc")
+               ;; The configure script doesn't recognize CONFIG_SHELL.
+               (setenv "CONFIG_SHELL" (which "sh"))
+               (invoke "./configure" (string-append "--prefix=" out)
+                       "--with-readline"))))
+         (add-before 'install 'make-destination
+           (lambda _
+             ;; The build scripts don't create the destination directory.
+             (mkdir-p (string-append (assoc-ref %outputs "out") "/bin")))))))
+    (inputs
+     `(("readline" ,readline)))
+    (synopsis "Bash-compatible Unix shell")
+    (description "Oil is a Unix / POSIX shell, compatible with Bash.  It
+implements the Oil language, which is a new shell language to which Bash can be
+automatically translated.  The Oil language is a superset of Bash.  It also
+implements the OSH language, a statically-parseable language based on Bash as it
+is commonly written.")
+    (home-page "https://www.oilshell.org/")
+    (license (list psfl ; The Oil sources include a patched Python 2 source tree
+                   asl2.0))))

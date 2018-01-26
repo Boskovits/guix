@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
+;;; Copyright © 2015, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -25,6 +26,7 @@
   #:use-module (gnu services configuration)
   #:use-module (gnu system shadow)
   #:use-module (guix gexp)
+  #:use-module (guix modules)
   #:use-module (guix records)
   #:use-module (guix packages)
   #:use-module (srfi srfi-1)
@@ -42,7 +44,12 @@
             ssl-configuration
 
             %default-modules-enabled
-            prosody-configuration-pidfile))
+            prosody-configuration-pidfile
+
+            bitlbee-configuration
+            bitlbee-configuration?
+            bitlbee-service
+            bitlbee-service-type))
 
 ;;; Commentary:
 ;;;
@@ -320,13 +327,13 @@ can create such a file with:
     (data-path
      (file-name "/var/lib/prosody")
      "Location of the Prosody data storage directory.  See
-@url{http://prosody.im/doc/configure}."
+@url{https://prosody.im/doc/configure}."
      global)
 
     (plugin-paths
      (file-name-list '())
      "Additional plugin directories.  They are searched in all the specified
-paths in order.  See @url{http://prosody.im/doc/plugins_directory}."
+paths in order.  See @url{https://prosody.im/doc/plugins_directory}."
      global)
 
     (certificates
@@ -339,15 +346,15 @@ certificates/keys from the directory specified here."
     (admins
      (string-list '())
      "This is a list of accounts that are admins for the server.  Note that you
-must create the accounts separately.  See @url{http://prosody.im/doc/admins} and
-@url{http://prosody.im/doc/creating_accounts}.
+must create the accounts separately.  See @url{https://prosody.im/doc/admins} and
+@url{https://prosody.im/doc/creating_accounts}.
 Example: @code{(admins '(\"user1@@example.com\" \"user2@@example.net\"))}"
      common)
 
     (use-libevent?
      (boolean #f)
      "Enable use of libevent for better performance under high load.  See
-@url{http://prosody.im/doc/libevent}."
+@url{https://prosody.im/doc/libevent}."
      common)
 
     (modules-enabled
@@ -355,7 +362,7 @@ Example: @code{(admins '(\"user1@@example.com\" \"user2@@example.net\"))}"
      "This is the list of modules Prosody will load on startup.  It looks for
 @code{mod_modulename.lua} in the plugins folder, so make sure that exists too.
 Documentation on modules can be found at:
-@url{http://prosody.im/doc/modules}."
+@url{https://prosody.im/doc/modules}."
      common)
 
     (modules-disabled
@@ -368,13 +375,13 @@ should you want to disable them then add them to this list."
      (file-name "/var/lib/prosody/sharedgroups.txt")
      "Path to a text file where the shared groups are defined.  If this path is
 empty then @samp{mod_groups} does nothing.  See
-@url{http://prosody.im/doc/modules/mod_groups}."
+@url{https://prosody.im/doc/modules/mod_groups}."
      common)
 
     (allow-registration?
      (boolean #f)
      "Disable account creation by default, for security.  See
-@url{http://prosody.im/doc/creating_accounts}."
+@url{https://prosody.im/doc/creating_accounts}."
      common)
 
     (ssl
@@ -382,13 +389,13 @@ empty then @samp{mod_groups} does nothing.  See
      "These are the SSL/TLS-related settings.  Most of them are disabled so to
 use Prosody's defaults.  If you do not completely understand these options, do
 not add them to your config, it is easy to lower the security of your server
-using them.  See @url{http://prosody.im/doc/advanced_ssl_config}."
+using them.  See @url{https://prosody.im/doc/advanced_ssl_config}."
      common)
 
     (c2s-require-encryption?
      (boolean #f)
      "Whether to force all client-to-server connections to be encrypted or not.
-See @url{http://prosody.im/doc/modules/mod_tls}."
+See @url{https://prosody.im/doc/modules/mod_tls}."
      common)
 
     (disable-sasl-mechanisms
@@ -400,7 +407,7 @@ See @url{http://prosody.im/doc/modules/mod_tls}."
     (s2s-require-encryption?
      (boolean #f)
      "Whether to force all server-to-server connections to be encrypted or not.
-See @url{http://prosody.im/doc/modules/mod_tls}."
+See @url{https://prosody.im/doc/modules/mod_tls}."
      common)
 
     (s2s-secure-auth?
@@ -408,7 +415,7 @@ See @url{http://prosody.im/doc/modules/mod_tls}."
      "Whether to require encryption and certificate authentication.  This
 provides ideal security, but requires servers you communicate with to support
 encryption AND present valid, trusted certificates.  See
-@url{http://prosody.im/doc/s2s#security}."
+@url{https://prosody.im/doc/s2s#security}."
      common)
 
     (s2s-insecure-domains
@@ -416,14 +423,14 @@ encryption AND present valid, trusted certificates.  See
      "Many servers don't support encryption or have invalid or self-signed
 certificates.  You can list domains here that will not be required to
 authenticate using certificates.  They will be authenticated using DNS.  See
-@url{http://prosody.im/doc/s2s#security}."
+@url{https://prosody.im/doc/s2s#security}."
      common)
 
     (s2s-secure-domains
      (string-list '())
      "Even if you leave @code{s2s-secure-auth?} disabled, you can still require
 valid certificates for some domains by specifying a list here.  See
-@url{http://prosody.im/doc/s2s#security}."
+@url{https://prosody.im/doc/s2s#security}."
      common)
 
     (authentication
@@ -431,21 +438,21 @@ valid certificates for some domains by specifying a list here.  See
      "Select the authentication backend to use.  The default provider stores
 passwords in plaintext and uses Prosody's configured data storage to store the
 authentication data.  If you do not trust your server please see
-@url{http://prosody.im/doc/modules/mod_auth_internal_hashed} for information
+@url{https://prosody.im/doc/modules/mod_auth_internal_hashed} for information
 about using the hashed backend.  See also
-@url{http://prosody.im/doc/authentication}"
+@url{https://prosody.im/doc/authentication}"
      common)
 
     ;; TODO: Handle more complicated log structures.
     (log
      (maybe-string "*syslog")
      "Set logging options.  Advanced logging configuration is not yet supported
-by the GuixSD Prosody Service.  See @url{http://prosody.im/doc/logging}."
+by the GuixSD Prosody Service.  See @url{https://prosody.im/doc/logging}."
      common)
 
     (pidfile
      (file-name "/var/run/prosody/prosody.pid")
-     "File to write pid in.  See @url{http://prosody.im/doc/modules/mod_posix}."
+     "File to write pid in.  See @url{https://prosody.im/doc/modules/mod_posix}."
      global)
 
     (http-max-content-size
@@ -476,7 +483,7 @@ instance can serve many domains, each one defined as a VirtualHost entry in
 Prosody's configuration.  Conversely a server that hosts a single domain would
 have just one VirtualHost entry.
 
-See @url{http://prosody.im/doc/configure#virtual_host_settings}."
+See @url{https://prosody.im/doc/configure#virtual_host_settings}."
      global)
 
     (int-components
@@ -490,14 +497,14 @@ Internal components are implemented with Prosody-specific plugins.  To add an
 internal component, you simply fill the hostname field, and the plugin you wish
 to use for the component.
 
-See @url{http://prosody.im/doc/components}."
+See @url{https://prosody.im/doc/components}."
      global)
 
     (ext-components
      (ext-component-configuration-list '())
      "External components use XEP-0114, which most standalone components
 support.  To add an external component, you simply fill the hostname field.  See
-@url{http://prosody.im/doc/components}."
+@url{https://prosody.im/doc/components}."
      global)
 
     (component-secret
@@ -536,10 +543,10 @@ support.  To add an external component, you simply fill the hostname field.  See
 hosted chatrooms/conferences for XMPP users.
 
 General information on setting up and using multi-user chatrooms can be found
-in the \"Chatrooms\" documentation (@url{http://prosody.im/doc/chatrooms}),
+in the \"Chatrooms\" documentation (@url{https://prosody.im/doc/chatrooms}),
 which you should read if you are new to XMPP chatrooms.
 
-See also @url{http://prosody.im/doc/modules/mod_muc}."
+See also @url{https://prosody.im/doc/modules/mod_muc}."
      int-component)
 
     (hostname
@@ -751,3 +758,111 @@ string, you could instantiate a prosody service like this:
          (opaque-prosody-configuration
           (prosody.cfg.lua \"\")))
 @end example"))
+
+
+;;;
+;;; BitlBee.
+;;;
+
+(define-record-type* <bitlbee-configuration>
+  bitlbee-configuration make-bitlbee-configuration
+  bitlbee-configuration?
+  (bitlbee bitlbee-configuration-bitlbee
+           (default bitlbee))
+  (interface bitlbee-configuration-interface
+             (default "127.0.0.1"))
+  (port bitlbee-configuration-port
+        (default 6667))
+  (extra-settings bitlbee-configuration-extra-settings
+                  (default "")))
+
+(define bitlbee-shepherd-service
+  (match-lambda
+    (($ <bitlbee-configuration> bitlbee interface port extra-settings)
+     (let ((conf (plain-file "bitlbee.conf"
+                             (string-append "
+  [settings]
+  User = bitlbee
+  ConfigDir = /var/lib/bitlbee
+  DaemonInterface = " interface "
+  DaemonPort = " (number->string port) "
+" extra-settings))))
+
+       (with-imported-modules (source-module-closure
+                               '((gnu build shepherd)
+                                 (gnu system file-systems)))
+         (list (shepherd-service
+                (provision '(bitlbee))
+
+                ;; Note: If networking is not up, then /etc/resolv.conf
+                ;; doesn't get mapped in the container, hence the dependency
+                ;; on 'networking'.
+                (requirement '(user-processes networking))
+
+                (modules '((gnu build shepherd)
+                           (gnu system file-systems)))
+                (start #~(make-forkexec-constructor/container
+                          (list #$(file-append bitlbee "/sbin/bitlbee")
+                                "-n" "-F" "-u" "bitlbee" "-c" #$conf)
+
+                          #:pid-file "/var/run/bitlbee.pid"
+                          #:mappings (list (file-system-mapping
+                                            (source "/var/lib/bitlbee")
+                                            (target source)
+                                            (writable? #t)))))
+                (stop  #~(make-kill-destructor)))))))))
+
+(define %bitlbee-accounts
+  ;; User group and account to run BitlBee.
+  (list (user-group (name "bitlbee") (system? #t))
+        (user-account
+         (name "bitlbee")
+         (group "bitlbee")
+         (system? #t)
+         (comment "BitlBee daemon user")
+         (home-directory "/var/empty")
+         (shell (file-append shadow "/sbin/nologin")))))
+
+(define %bitlbee-activation
+  ;; Activation gexp for BitlBee.
+  #~(begin
+      (use-modules (guix build utils))
+
+      ;; This directory is used to store OTR data.
+      (mkdir-p "/var/lib/bitlbee")
+      (let ((user (getpwnam "bitlbee")))
+        (chown "/var/lib/bitlbee"
+               (passwd:uid user) (passwd:gid user)))))
+
+(define bitlbee-service-type
+  (service-type (name 'bitlbee)
+                (extensions
+                 (list (service-extension shepherd-root-service-type
+                                          bitlbee-shepherd-service)
+                       (service-extension account-service-type
+                                          (const %bitlbee-accounts))
+                       (service-extension activation-service-type
+                                          (const %bitlbee-activation))))
+                (default-value (bitlbee-configuration))
+                (description
+                 "Run @url{http://bitlbee.org,BitlBee}, a daemon that acts as
+a gateway between IRC and chat networks.")))
+
+(define* (bitlbee-service #:key (bitlbee bitlbee) ;deprecated
+                          (interface "127.0.0.1") (port 6667)
+                          (extra-settings ""))
+  "Return a service that runs @url{http://bitlbee.org,BitlBee}, a daemon that
+acts as a gateway between IRC and chat networks.
+
+The daemon will listen to the interface corresponding to the IP address
+specified in @var{interface}, on @var{port}.  @code{127.0.0.1} means that only
+local clients can connect, whereas @code{0.0.0.0} means that connections can
+come from any networking interface.
+
+In addition, @var{extra-settings} specifies a string to append to the
+configuration file."
+  (service bitlbee-service-type
+           (bitlbee-configuration
+            (bitlbee bitlbee)
+            (interface interface) (port port)
+            (extra-settings extra-settings))))

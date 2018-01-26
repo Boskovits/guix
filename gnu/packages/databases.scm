@@ -10,7 +10,7 @@
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
 ;;; Copyright © 2016, 2017 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
@@ -30,6 +30,7 @@
 ;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Kristofer Buffington <kristoferbuffington@gmail.com>
+;;; Copyright © 2018 Amirouche Boubekki <amirouche@hypermove.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -111,7 +112,7 @@
     (version "1.1.6")
     (source (origin
       (method url-fetch)
-      (uri (string-append "https://github.com/garlik/4store/archive/v"
+      (uri (string-append "https://github.com/4store/4store/archive/v"
                           version ".tar.gz"))
       (file-name (string-append name "-" version ".tar.gz"))
       (sha256
@@ -144,7 +145,7 @@
            (lambda _
              (zero? (system* "sh" "autogen.sh")))))))
     ;; http://www.4store.org has been down for a while now.
-    (home-page "https://github.com/garlik/4store")
+    (home-page "https://github.com/4store/4store")
     (synopsis "Clustered RDF storage and query engine")
     (description "4store is a RDF/SPARQL store written in C, supporting
 either single machines or networked clusters.")
@@ -290,18 +291,7 @@ SQL, Key/Value, XML/XQuery or Java Object storage for their data model.")
          "020yk7f1hw48clmf5501z3xv9shsdchyymcv0y2cci2c1xvr1mim"))))
     (build-system ruby-build-system)
     (arguments
-     '(#:tests? #f ;; No testsuite.
-       #:phases
-       (modify-phases %standard-phases
-         (add-after 'install 'wrap-bin-es_dump_restore
-           (lambda* (#:key outputs #:allow-other-keys)
-             (wrap-program (string-append (assoc-ref outputs "out")
-                                          "/bin/es_dump_restore")
-               `("GEM_PATH" ":" prefix (,(string-append
-                                          (getenv "GEM_PATH")
-                                          ":"
-                                          (getenv "GEM_HOME")))))
-             #t)))))
+     '(#:tests? #f)) ;; No testsuite.
     (propagated-inputs
      `(("ruby-httpclient" ,ruby-httpclient)
        ("ruby-multi-json" ,ruby-multi-json)
@@ -412,7 +402,11 @@ applications.")
        ("snappy" ,snappy)))
     (native-inputs
      `(("valgrind" ,valgrind)
-       ("perl" ,perl)))
+       ("perl" ,perl)
+       ("python" ,python2-minimal)
+       ("python2-pymongo" ,python2-pymongo)
+       ("python2-pyyaml" ,python2-pyyaml)
+       ("tzdata" ,tzdata)))
     (arguments
      `(#:scons ,scons-python2
        #:phases
@@ -460,12 +454,29 @@ applications.")
                                ,@common-options
                                "mongod" "mongo" "mongos")))))
            (replace 'check
-             (lambda* (#:key tests? #:allow-other-keys)
+             (lambda* (#:key tests? inputs #:allow-other-keys)
+               (setenv "TZDIR"
+                       (string-append (assoc-ref inputs "tzdata")
+                                      "/share/zoneinfo"))
                (or (not tests?)
-                   (zero? (apply system*
-                                 `("scons"
-                                   ,@common-options
-                                   "dbtest" "unittests"))))))
+                   ;; Note that with the tests, especially the unittests, the
+                   ;; build can take up to ~45GB of space, as many tests are
+                   ;; individual executable files, with some being hundreds of
+                   ;; megabytes in size.
+                   (begin
+                     (apply
+                       invoke `("scons" ,@common-options "dbtest" "unittests"))
+                     (substitute* "build/unittests.txt"
+                       ;; TODO: Don't run the async_stream_test, as it hangs
+                       (("^build\\/opt\\/mongo\\/executor\\/async\\_stream\\_test\n$")
+                        "")
+                       ;; TODO: This test fails
+                       ;; Expected 0UL != disks.size() (0 != 0) @src/mongo/util/procparser_test.cpp:476
+                       (("^build\\/opt\\/mongo\\/util\\/procparser\\_test\n$")
+                        ""))
+                     (invoke "python" "buildscripts/resmoke.py"
+                             "--suites=dbtest,unittests"
+                             (format #f  "--jobs=~a" (parallel-job-count)))))))
            (replace 'install
              (lambda _
                (let ((bin  (string-append (assoc-ref %outputs "out") "/bin")))
@@ -487,7 +498,7 @@ RDBMS systems (which are deep in functionality).")
 (define-public mysql
   (package
     (name "mysql")
-    (version "5.7.20")
+    (version "5.7.21")
     (source (origin
              (method url-fetch)
              (uri (list (string-append
@@ -499,7 +510,7 @@ RDBMS systems (which are deep in functionality).")
                           name "-" version ".tar.gz")))
              (sha256
               (base32
-               "11v4g3igigv3zvknv67qml8in6fjrbs2vnr3q6bg6f62nydm95sk"))))
+               "1dq9bgnajf7cq3mrjkwv6w5nwslhs26lkrw56i7w4fbsq9wm087s"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -562,7 +573,7 @@ Language.")
 (define-public mariadb
   (package
     (name "mariadb")
-    (version "10.1.26")
+    (version "10.1.29")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://downloads.mariadb.org/f/"
@@ -570,7 +581,7 @@ Language.")
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0ggpdcal0if9y6h9hp1yv2q65cbkjfl4p8rqk68a5pk7k75v325s"))))
+                "1m3ya6c3snnsyscd0waklayqfv0vhws52iizv2j5masj5xhdbfvk"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags
@@ -1500,7 +1511,7 @@ organized in hash table, B+ tree, or fixed-length array.")
                 "0krwnb2zfbhvjaskwl875qzd3y626s84zcciq2mxr5c5riw3yh6s"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags '("--enable-lz4" "--enable-zlib")
+     '(#:configure-flags '("--enable-lz4" "--with-builtins=snappy,zlib")
        #:phases
        (modify-phases %standard-phases
          (add-before 'check 'disable-test/fops
@@ -1511,7 +1522,8 @@ organized in hash table, B+ tree, or fixed-length array.")
              #t)))))
     (inputs
      `(("lz4" ,lz4)
-       ("zlib" ,zlib)))
+       ("zlib" ,zlib)
+       ("snappy" ,snappy)))
     (home-page "http://source.wiredtiger.com/")
     (synopsis "NoSQL data engine")
     (description
@@ -1527,19 +1539,19 @@ trees (LSM), for sustained throughput under random insert workloads.")
 (define-public guile-wiredtiger
   (package
     (name "guile-wiredtiger")
-    (version "20171113.6cbc51da")
+    (version "0.6.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://framagit.org/a-guile-mind/guile-wiredtiger.git")
-                    (commit "6cbc51dab95d28fe31ae025fbdd88f3ecbf2111b")))
+                    (commit "070ed68139d99c279f058a6c293f00292d35dbd7")))
               (file-name (string-append name "-" version "-checkout"))
               (sha256
                (base32
-                "0x3qwpgch5pg0k21kc792h4y6b36a8xd1zkfq8ar2l2mqmpzkzyd"))))
+                "14rna97wsylajzxfif95wnblq85csgcfc666gh5dl0ssgd7x8llh"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f
+     '(#:parallel-tests? #f  ;; tests can't be run in parallel, yet.
        #:configure-flags
        (list (string-append "--with-libwiredtiger-prefix="
                             (assoc-ref %build-inputs "wiredtiger")))
@@ -1548,15 +1560,9 @@ trees (LSM), for sustained throughput under random insert workloads.")
        (modify-phases %standard-phases
          (add-after 'unpack 'bootstrap
            (lambda _
-             (zero? (system* "sh" "bootstrap"))))
-         (add-before 'bootstrap 'remove-bundled-dependencies
-           (lambda _
-             ;; TODO: Remove microkanren.scm when we have a separate package
-             ;; for it.
-             (delete-file "htmlprag.scm")
-             (substitute* "Makefile.am"
-               (("htmlprag\\.scm") ""))
-             #t)))))
+             (invoke "sh" "bootstrap"))))))
+    ;; TODO: Remove microkanren.scm when we have a separate package
+    ;; for it.
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
@@ -1566,10 +1572,10 @@ trees (LSM), for sustained throughput under random insert workloads.")
        ("guile" ,guile-2.2)))
     (propagated-inputs
      `(("guile-lib" ,guile-lib)))                 ;for (htmlprag)
-    (synopsis "Wired Tiger bindings for GNU Guile")
+    (synopsis "WiredTiger bindings for GNU Guile")
     (description
      "This package provides Guile bindings to the WiredTiger ``NoSQL''
-database.")
+database.  Various higher level database abstractions.")
     (home-page "https://framagit.org/a-guile-mind/guile-wiredtiger")
     (license license:gpl3+)))
 
@@ -2095,14 +2101,14 @@ simple and Pythonic domain language.")
 (define-public python-sqlalchemy-utils
   (package
     (name "python-sqlalchemy-utils")
-    (version "0.32.13")
+    (version "0.32.21")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "SQLAlchemy-Utils" version))
         (sha256
          (base32
-          "0vsib7gidjamzsz6w4s5pdhxzxsrkghjnm4sqwk94igjrl3i5ixj"))))
+          "1myn71dn8j74xglyh46f12sh8ywb7j0j732rzwq70kvwwnq32m73"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f)) ; FIXME: Many tests require a running database server.
@@ -2145,14 +2151,14 @@ You might also want to install the following optional dependencies:
 (define-public python-alembic
   (package
     (name "python-alembic")
-    (version "0.9.5")
+    (version "0.9.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "alembic" version))
        (sha256
         (base32
-         "01gx2syqbaxh4hr9pf7pxhlb6p36qaf99140dy19lsx1paxb9p4b"))))
+         "0cm73vabrqj92v7a0wwvldj8j7bc7dwv358kvkk7p87gx7mm2a04"))))
     (build-system python-build-system)
     (native-inputs
      `(("python-mock" ,python-mock)
@@ -2162,7 +2168,7 @@ You might also want to install the following optional dependencies:
        ("python-sqlalchemy" ,python-sqlalchemy)
        ("python-mako" ,python-mako)
        ("python-editor" ,python-editor)))
-    (home-page "http://bitbucket.org/zzzeek/alembic")
+    (home-page "https://bitbucket.org/zzzeek/alembic")
     (synopsis
      "Database migration tool for SQLAlchemy")
     (description
@@ -2317,18 +2323,19 @@ designed to be easy and intuitive to use.")
 (define-public python-sadisplay
   (package
     (name "python-sadisplay")
-    (version "0.4.6")
+    (version "0.4.8")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "sadisplay" version))
       (sha256
         (base32
-          "0zqad2fl7q26p090qmqgmxbm6iwgf9zij1w8da1g3wdgjj72ql05"))))
+          "01d9lxhmgpb68gy8rd6zj6fcwp84n2qq210n1qsk3qbsir79bzh4"))))
     (build-system python-build-system)
     (propagated-inputs
       `(("python-sqlalchemy" ,python-sqlalchemy)))
     (native-inputs
+     ;; For tests.
       `(("python-nose" ,python-nose)))
     (home-page "https://bitbucket.org/estin/sadisplay")
     (synopsis "SQLAlchemy schema displayer")
@@ -2430,13 +2437,13 @@ substitute for redis.")
 (define-public python-redis
   (package
     (name "python-redis")
-    (version "2.10.5")
+    (version "2.10.6")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "redis" version))
        (sha256
-        (base32 "0csmrkxb29x7xs9b51zplwkkq2hwnbh9jns1g85dykn5rxmaxysx"))))
+        (base32 "03vcgklykny0g0wpvqmy8p6azi2s078317wgb2xjv5m2rs9sjb52"))))
     (build-system python-build-system)
     ;; Tests require a running Redis server
     (arguments '(#:tests? #f))
