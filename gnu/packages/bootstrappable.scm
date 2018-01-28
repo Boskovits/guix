@@ -262,7 +262,8 @@
                         (search-patches "gcc-5-reproducibility-drop-profile.patch"
                                         ;;"gcc-4-compile-with-gcc-5.patch"
                                         "gcc-4-build-path-prefix-map.patch"
-					"gcc-4-reproducibility-wrapper.patch")))))
+					"gcc-4-reproducibility-wrapper.patch"
+                                        "gcc-4-fix-checksum.patch")))))
     (name "repro-gcc-wrapped")
     (version "4.7.4")
     (arguments

@@ -1,0 +1,32 @@
+From 652ab20f652522d4c257f75a22b5081e88641b2e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?G=C3=A1bor=20Boskovits?= <boskovits@gmail.com>
+Date: Sun, 28 Jan 2018 21:51:17 +0100
+Subject: [PATCH] Fix checksum.
+
+---
+ gcc/genchecksum.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gcc/genchecksum.c b/gcc/genchecksum.c
+index e0c71f4..123cfb0 100644
+--- a/gcc/genchecksum.c
++++ b/gcc/genchecksum.c
+@@ -21,6 +21,7 @@ along with GCC; see the file COPYING3.  If not see
+ #include "bconfig.h"
+ #include "system.h"
+ #include "md5.h"
++#include "string.h"
+ 
+ static void
+ usage (void)
+@@ -110,6 +111,7 @@ main (int argc, char ** argv)
+   for (i = 1; i < argc; i++) 
+     dosum (&ctx, argv[i]);
+   md5_finish_ctx (&ctx, result);
++  memcpy(result,"guix_gcc_4_ddc\000",16);/*fix the checksum*/
+ 
+   puts ("#include \"config.h\"");
+   puts ("#include \"system.h\"");
+-- 
+2.15.1
+
