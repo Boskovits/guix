@@ -568,6 +568,8 @@ both gcc's are bit-for-bit identical and fails if they differ.")
            ;; ?? xxd not available in path. Falling back to Python hexlify.
            ;; diffoscope.presenters.formats: Console is unable to print Unicode characters. Set e.g. PYTHONIOENCODING=utf-8
            (setenv "PYTHONIOENCODING" "utf-8")
+           ;;create the output path to avoid errors
+           (mkdir (assoc-ref %outputs "out"))
            ;; for starters, only check the gcc binary
            (zero? (system* "diffoscope" gcc clang-gcc))
            ;;(zero? (system* "diffoscope" gcc clang-gcc))
