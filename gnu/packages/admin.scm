@@ -1,8 +1,8 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
-;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2014, 2015, 2016, 2017 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2014, 2015, 2016, 2018 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Alex Sassmannshausen <alex.sassmannshausen@gmail.com>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
@@ -12,12 +12,14 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Peter Feigl <peter.feigl@nexoid.at>
 ;;; Copyright © 2016 John J. Foerch <jjfoerch@earthlink.net>
-;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Ben Sturmfels <ben@sturm.com.au>
 ;;; Copyright © 2017 Ethan R. Jones <doubleplusgood23@gmail.com>
 ;;; Copyright © 2017 Christopher Allan Webber <cwebber@dustycloud.org>
+;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2018 Arun Isaac <arunisaac@systemreboot.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -42,6 +44,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial)
   #:use-module (gnu packages)
@@ -72,6 +75,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
+  #:use-module (gnu packages terminals)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages groff)
   #:use-module (gnu packages pciutils)
@@ -163,7 +167,8 @@ and provides a \"top-like\" mode (monitoring).")
               (sha256
                (base32
                 "174q1qg7yg6w1hfvlfv720hr6hid4h5xzw15y3ycfpspllzldhcb"))
-              (patches (search-patches "shepherd-close-fds.patch"))))
+              (patches (search-patches "shepherd-close-fds.patch"
+                                       "shepherd-herd-status-sorted.patch"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags '("--localstatedir=/var")))
@@ -174,7 +179,11 @@ and provides a \"top-like\" mode (monitoring).")
        ("guile" ,guile-2.2)))
     (inputs
      ;; ... and this is the one that appears in shebangs when cross-compiling.
-     `(("guile" ,guile-2.2)))
+     `(("guile" ,guile-2.2)
+
+       ;; The 'shepherd' command uses Readline when used interactively.  It's
+       ;; an unusual use case though, so we don't propagate it.
+       ("guile-readline" ,guile-readline)))
     (synopsis "System service manager")
     (description
      "The GNU Shepherd is a daemon-managing daemon, meaning that it supervises
@@ -184,6 +193,49 @@ interface and is based on GNU Guile.")
     (license license:gpl3+)
     (home-page "https://www.gnu.org/software/shepherd/")
     (properties '((ftp-server . "alpha.gnu.org")))))
+
+(define-public daemontools
+  (package
+    (name "daemontools")
+    (version "0.76")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://cr.yp.to/" name "/"
+                    name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "07scvw88faxkscxi91031pjkpccql6wspk4yrlnsbrrb5c0kamd5"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ;; No tests as far as I can tell.
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'chdir
+           (lambda _
+             (chdir ,(string-append  name "-" version))))
+         (delete 'configure)
+         (add-before 'build 'patch
+           (lambda _
+             (substitute* "src/error.h"
+               (("extern int errno;")
+                "#include <errno.h>"))))
+         (replace 'build
+           (lambda _
+             (invoke "package/compile")))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin")))
+               (for-each (lambda (file)
+                           (install-file file bin))
+                         (find-files "command"))))))))
+    (synopsis "Tools for managing UNIX style services")
+    (description
+     "@code{daemontools} is a collection of tools for managing UNIX
+services.")
+    (license license:public-domain)
+    (home-page "https://cr.yp.to/daemontools.html")))
 
 (define-public dfc
   (package
@@ -211,18 +263,21 @@ graphs and can export its output to different formats.")
 (define-public htop
   (package
    (name "htop")
-   (version "2.0.2")
+   (version "2.1.0")
    (source (origin
             (method url-fetch)
             (uri (string-append "http://hisham.hm/htop/releases/"
                   version "/htop-" version ".tar.gz"))
             (sha256
              (base32
-              "11zlwadm6dpkrlfvf3z3xll26yyffa7qrxd1w72y1kl0rgffk6qp"))))
+              "0j07z0xm2gj1vzvbgh4323k4db9mr7drd7gw95mmpqi61ncvwq1j"))
+            (patches (search-patches "htop-fix-process-tree.patch"))))
    (build-system gnu-build-system)
    (inputs
     `(("ncurses" ,ncurses)))
-   (home-page "http://htop.sourceforge.net/")
+   (native-inputs
+    `(("python" ,python-minimal-wrapper))) ; for scripts/MakeHeader.py
+   (home-page "https://hisham.hm/htop/")
    (synopsis "Interactive process viewer")
    (description
     "This is htop, an interactive process viewer.  It is a text-mode
@@ -305,6 +360,7 @@ hostname.")
               (uri (string-append
                     "https://github.com/shadow-maint/shadow/releases/"
                     "download/" version "/shadow-" version ".tar.xz"))
+              (patches (search-patches "shadow-CVE-2018-7169.patch"))
               (sha256
                (base32
                 "0hdpai78n63l3v3fgr3kkiqzhd0awrpfnnzz4mf7lmxdh61qb37w"))))
@@ -475,6 +531,50 @@ and exploration tool, since it can create almost any kind of connection you
 would need and has several interesting built-in capabilities.")
     (license license:gpl2+)))
 
+(define-public sipcalc
+  (package
+    (name "sipcalc")
+    (version "1.1.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.routemeister.net/projects"
+                           "/sipcalc/files/sipcalc" "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0mv3wndj4z2bsshh2k8d5sy3j8wxzgf8mzmmkvj1k8gpcz37dm6g"))))
+    (build-system gnu-build-system)
+    (home-page "http://www.routemeister.net/projects/sipcalc/")
+    (synopsis "Command-line IP subnet calculator")
+    (description
+     "Sipcalc is an advanced command-line IP subnet calculator.  It can take
+multiple forms of input (IPv4/IPv6/interface/hostname) and output a multitude
+of information about a given subnet.
+
+Features include:
+
+@itemize @bullet
+@item IPv4
+@itemize
+@item Retrieving of address information from interfaces.
+@item Classfull and CIDR output.
+@item Multiple address and netmask input and output formats (dotted quad, hex,
+number of bits).
+@item Output of broadcast address, network class, Cisco wildcard,
+hosts/range, network range.
+@item The ability to split a network based on a smaller netmask, now also with
+recursive runs on the generated subnets.  (also IPv6)
+@end itemize
+@item IPv6
+@itemize
+@item Compressed and expanded input and output addresses.
+@item Standard IPv6 network output.
+@item v4 in v6 output.
+@item Reverse DNS address generation.
+@end itemize
+@end itemize\n")
+    (license license:bsd-3)))
+
 (define-public alive
   (package
     (name "alive")
@@ -500,9 +600,9 @@ connection alive.")
 (define-public isc-dhcp
   (let* ((bind-major-version "9")
          (bind-minor-version "9")
-         (bind-patch-version "10")
+         (bind-patch-version "11")
          (bind-release-type "-P")         ; for patch release, use "-P"
-         (bind-release-version "3")      ; for patch release, e.g. "6"
+         (bind-release-version "1")      ; for patch release, e.g. "6"
          (bind-version (string-append bind-major-version
                                       "."
                                       bind-minor-version
@@ -512,14 +612,14 @@ connection alive.")
                                       bind-release-version)))
     (package
       (name "isc-dhcp")
-      (version "4.3.5")
+      (version "4.3.6-P1")
       (source (origin
                 (method url-fetch)
                 (uri (string-append "http://ftp.isc.org/isc/dhcp/"
                                     version "/dhcp-" version ".tar.gz"))
                 (sha256
                  (base32
-                  "0m7rwxvpb7xrmfl9ynpckhl0hi0xgm9bq1fmbp2r68sxy5mr75gb"))))
+                  "1hx3az6ckvgvybr1ag4k9kqr8zfcpzcww4vpw5gz0mi8y2z7gl9g"))))
       (build-system gnu-build-system)
       (arguments
        `(#:parallel-build? #f
@@ -618,7 +718,7 @@ connection alive.")
                                         "/bind-" bind-version ".tar.gz"))
                     (sha256
                      (base32
-                      "00yh1d5shrq7y0kfwacax4f8dc0akaa2fha430j92n7mshms65m1"))))
+                      "1a4g6nzzrbmhngdgvgv1jjq4fm06m8fwc2a0gskkchplxl7dva20"))))
 
                 ;; When cross-compiling, we need the cross Coreutils and sed.
                 ;; Otherwise just use those from %FINAL-INPUTS.
@@ -756,6 +856,31 @@ console window to allow commands to be interactively run on multiple servers
 over ssh connections.")
     (license license:gpl2+)))
 
+(define-public rename
+  (package
+    (name "rename")
+    (version "0.20")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "mirror://cpan/authors/id/R/RM/RMBARKER/File-Rename-"
+                    version ".tar.gz"))
+              (sha256
+               (base32
+                "1cf6xx2hiy1xalp35fh8g73j67r0w0g66jpcbc6971x9jbm7bvjy"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-module-build" ,perl-module-build)
+       ("perl-test-pod" ,perl-test-pod)
+       ("perl-test-pod-coverage" ,perl-test-pod-coverage)))
+    (home-page "https://metacpan.org/pod/distribution/File-Rename/rename.PL")
+    (synopsis "Perl extension for renaming multiple files")
+    (description
+     "This package provides a Perl interface (@code{Perl::Rename}) as well
+as a command-line utility (@command{rename}) that can rename multiple files
+at once based on a Perl regular expression.")
+    (license license:perl-license)))
+
 (define-public rottlog
   (package
     (name "rottlog")
@@ -826,7 +951,7 @@ system administrator.")
 (define-public sudo
   (package
     (name "sudo")
-    (version "1.8.21p2")
+    (version "1.8.22")
     (source (origin
               (method url-fetch)
               (uri
@@ -836,7 +961,7 @@ system administrator.")
                                     version ".tar.gz")))
               (sha256
                (base32
-                "0s33szq6q59v5s377l4v6ybsdy7pfq6sz7y364j4x09ssdn79ibl"))
+                "00pxp74xkwdcmrjwy55j0k8p684jk1zx3nzdc11v30q8q8kwnmkj"))
               (modules '((guix build utils)))
               (snippet
                '(delete-file-recursively "lib/zlib"))))
@@ -1051,7 +1176,7 @@ network, which causes enabled computers to power on.")
 (define-public dmidecode
   (package
     (name "dmidecode")
-    (version "3.0")
+    (version "3.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1059,14 +1184,14 @@ network, which causes enabled computers to power on.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0iby0xfk5x3cdr0x0gxj5888jjyjhafvaq0l79civ73jjfqmphvy"))))
+                "1h0sg0lxa15nzf8s7884p6q7p6md9idm0c79wyqmk32l4ndwwrnp"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases (delete 'configure))
        #:tests? #f                                ; no 'check' target
        #:make-flags (list (string-append "prefix="
                                          (assoc-ref %outputs "out")))))
-    (home-page "http://www.nongnu.org/dmidecode/")
+    (home-page "https://www.nongnu.org/dmidecode/")
     (synopsis "Read hardware information from the BIOS")
     (description
      "Dmidecode reports information about your system's hardware as described
@@ -1081,7 +1206,7 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
 (define-public acpica
   (package
     (name "acpica")
-    (version "20171110")
+    (version "20180313")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1089,7 +1214,7 @@ module slots, and the list of I/O ports (e.g. serial, parallel, USB).")
                     version ".tar.gz"))
               (sha256
                (base32
-                "08g83qvhfx04vzb3f3pfpkp0w601v6csjzdv7z1vjzz1k71h7yml"))))
+                "16galaadmr37q2pvk2gyxrm8d1xldzk31djfxfq9v1c9yq4i425h"))))
     (build-system gnu-build-system)
     (native-inputs `(("flex" ,flex)
                      ("bison" ,bison)))
@@ -1115,16 +1240,16 @@ development, not the kernel implementation of ACPI.")
 (define-public stress
   (package
     (name "stress")
-    (version "1.0.1")
+    (version "1.0.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://debian/pool/main/s/stress/stress_"
                                   version ".orig.tar.gz"))
               (sha256
                (base32
-                "1v9vnzlihqfjsxa93hdbrq72pqqk00dkylmlg8jpxhm7s1w9qfl1"))))
+                "0nw210jajk38m3y7h8s130ps2qsbz7j75wab07hi2r3hlz14yzh5"))))
     (build-system gnu-build-system)
-    (home-page "http://packages.debian.org/wheezy/stress")
+    (home-page "https://packages.debian.org/sid/stress")
     (synopsis "Impose load on and stress test a computer system")
     (description
      "Stress is a tool that imposes a configurable amount of CPU, memory, I/O,
@@ -1189,7 +1314,7 @@ characters can be replaced as well, as can UTF-8 characters.")
        ("e2fsprogs" ,e2fsprogs)
        ("libjpeg" ,libjpeg)
        ("ncurses" ,ncurses)))
-    (home-page "http://www.cgsecurity.org/wiki/TestDisk")
+    (home-page "https://www.cgsecurity.org/wiki/TestDisk")
     (synopsis "Data recovery tool")
     (description
      "TestDisk is a program for data recovery, primarily designed to help
@@ -1270,7 +1395,7 @@ track changes in important system configuration files.")
 (define-public libcap-ng
   (package
     (name "libcap-ng")
-    (version "0.7.4")
+    (version "0.7.9")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1278,10 +1403,12 @@ track changes in important system configuration files.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0ssvnh4cvhya0c1j6k6192zvqcq7nc0x01fb5nwhr0prfqr0i8j8"))))
+                "0a0k484kwv0zilry2mbl9k56cnpdhsjxdxin17jas6kkyfy345aa"))))
     (build-system gnu-build-system)
-    (inputs `(("python" ,python)))
-    (home-page "http://people.redhat.com/sgrubb/libcap-ng/")
+    (arguments
+     `(#:configure-flags
+       (list "--without-python")))
+    (home-page "https://people.redhat.com/sgrubb/libcap-ng/")
     (synopsis "Library for more easily working with POSIX capabilities")
     (description
      "The libcap-ng library is intended to make programming with POSIX
@@ -1730,7 +1857,7 @@ throughput (in the same interval).")
 (define-public thefuck
   (package
     (name "thefuck")
-    (version "3.19")
+    (version "3.25")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/nvbn/thefuck/archive/"
@@ -1738,7 +1865,7 @@ throughput (in the same interval).")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "191zbvkyc02h0wwd46xwj4zzg7jhlr8xv0ji6knqkgjnk0nvqq01"))
+                "088bn2l1376qlndbpnjya4q1x3913nj3yj3wc7s2w3bz66d23skk"))
               (patches (search-patches "thefuck-test-environ.patch"))))
     (build-system python-build-system)
     (arguments
@@ -1756,14 +1883,12 @@ throughput (in the same interval).")
      `(("python-colorama" ,python-colorama)
        ("python-decorator" ,python-decorator)
        ("python-psutil" ,python-psutil)
+       ("python-pyte" ,python-pyte)
        ("python-six" ,python-six)))
     (native-inputs
      `(("python-mock" ,python-mock)
        ("python-pytest" ,python-pytest)
-       ("python-pytest-mock" ,python-pytest-mock)
-       ;; Requires setuptools >= 17.1 due to some features used, while our
-       ;; python currently only includes 12.0. TODO: Remove this input.
-       ("python-setuptools" ,python-setuptools)))
+       ("python-pytest-mock" ,python-pytest-mock)))
     (home-page "https://github.com/nvbn/thefuck")
     (synopsis "Correct mistyped console command")
     (description
@@ -1868,12 +1993,10 @@ shortcut syntax and completion options.")
       (home-page "https://github.com/TrilbyWhite/interrobang")
       (license license:gpl3+))))
 
-
-
 (define-public pam-krb5
   (package
     (name "pam-krb5")
-    (version "4.7")
+    (version "4.8")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1881,7 +2004,7 @@ shortcut syntax and completion options.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0abf8cfpkprmhw5ca8iyqgrggh65lgqvmfllc1y6qz7zw1gas894"))))
+                "1qjp8i1s9bz7g6kiqrkzzkxn5pfspa4sy53b6z40fqmdf9przdfb"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -1907,8 +2030,8 @@ It supports ticket refreshing by screen savers, configurable
 authorization handling, authentication of non-local accounts for network
 services, password changing, and password expiration, as well as all the
 standard expected PAM features.  It works correctly with OpenSSH, even
-with ChallengeResponseAuthentication and PrivilegeSeparation enabled,
-and supports extensive configuration either by PAM options or in
+with @code{ChallengeResponseAuthentication} and @code{PrivilegeSeparation}
+enabled, and supports extensive configuration either by PAM options or in
 krb5.conf or both.  PKINIT is supported with recent versions of both MIT
 Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
     (home-page "http://www.eyrie.org/~eagle/software/pam-krb5")
@@ -1917,8 +2040,6 @@ Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
     ;; we put one in, we cannot distribute it under GPL without violating
     ;; clause requiring us to give all recipients a copy.
     (license license:gpl1+)))
-
-;;http://archives.eyrie.org/software/kerberos/pam-krb5-4.7.tar.xz
 
 (define-public sunxi-tools
   (package
@@ -1942,7 +2063,8 @@ Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
        ("cross-gcc" ,(cross-gcc "arm-linux-gnueabihf"
                                 #:xbinutils (cross-binutils "arm-linux-gnueabihf")
                                 #:libc (cross-libc "arm-linux-gnueabihf")))
-       ("cross-libc" ,(cross-libc "arm-linux-gnueabihf"))))
+       ("cross-libc" ,(cross-libc "arm-linux-gnueabihf")) ; header files
+       ("cross-libc-static" ,(cross-libc "arm-linux-gnueabihf") "static")))
     (inputs
      `(("libusb" ,libusb)))
     (build-system gnu-build-system)
@@ -1960,25 +2082,34 @@ Kerberos and Heimdal and FAST is supported with recent MIT Kerberos.")
            (lambda* (#:key make-flags #:allow-other-keys)
              (define (cross? x)
                (string-contains x "cross-arm-linux"))
+             (define (filter-environment! filter-predicate
+                                          environment-variable-names)
+               (for-each
+                (lambda (env-name)
+                  (let* ((env-value (getenv env-name))
+                         (search-path (search-path-as-string->list env-value))
+                         (new-search-path (filter filter-predicate
+                                                  search-path))
+                         (new-env-value (list->search-path-as-string
+                                         new-search-path ":")))
+                    (setenv env-name new-env-value)))
+                environment-variable-names))
              (setenv "CROSS_C_INCLUDE_PATH" (getenv "C_INCLUDE_PATH"))
              (setenv "CROSS_CPLUS_INCLUDE_PATH" (getenv "CPLUS_INCLUDE_PATH"))
              (setenv "CROSS_LIBRARY_PATH" (getenv "LIBRARY_PATH"))
-             (for-each
-              (lambda (env-name)
-                (let* ((env-value (getenv env-name))
-                       (search-path (search-path-as-string->list env-value))
-                       (new-search-path (filter (lambda (e) (not (cross? e)))
-                                                search-path))
-                       (new-env-value (list->search-path-as-string
-                                       new-search-path ":")))
-                  (setenv env-name new-env-value)))
-              '("C_INCLUDE_PATH" "CPLUS_INCLUDE_PATH" "LIBRARY_PATH"))
+             (filter-environment! cross?
+              '("CROSS_C_INCLUDE_PATH" "CROSS_CPLUS_INCLUDE_PATH"
+                "CROSS_LIBRARY_PATH"))
+             (filter-environment! (lambda (e) (not (cross? e)))
+              '("C_INCLUDE_PATH" "CPLUS_INCLUDE_PATH"
+                "LIBRARY_PATH"))
              #t))
          (replace 'build
            (lambda* (#:key make-flags #:allow-other-keys)
              (zero? (apply system* "make" "tools" "misc" make-flags))))
          (add-after 'build 'build-armhf
            (lambda* (#:key make-flags #:allow-other-keys)
+             (setenv "LIBRARY_PATH" #f)
              (zero? (apply system* "make" "target-tools" make-flags))))
          (replace 'install
            (lambda* (#:key make-flags #:allow-other-keys)
@@ -2068,7 +2199,7 @@ buffers.")
 (define-public intel-gpu-tools
   (package
     (name "intel-gpu-tools")
-    (version "1.18")
+    (version "1.22")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://cgit.freedesktop.org/xorg/app/"
@@ -2076,7 +2207,7 @@ buffers.")
                                   "intel-gpu-tools-" version ".tar.gz"))
               (sha256
                (base32
-                "0w7djk0y5w76hzn1b3cm39zd5c6w9za1wfn80wd857h0v313rzq3"))))
+                "1jx5w5fr6jp67rcrlp5v79cn8kp9n0wgd5pbfgzamlah5cx6j3yd"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; many of the tests try to load kernel modules
@@ -2084,11 +2215,12 @@ buffers.")
        (modify-phases %standard-phases
          (add-after 'unpack 'autogen
            (lambda _
-             ;; Don't run configure in this phase
+             ;; Don't run configure in this phase.
              (setenv "NOCONFIGURE" "1")
-             (zero? (system* "sh" "autogen.sh")))))))
+             (invoke "sh" "autogen.sh"))))))
     (inputs
-     `(("util-macros" ,util-macros)
+     `(("eudev" ,eudev)
+       ("util-macros" ,util-macros)
        ("libdrm" ,libdrm)
        ("libpciaccess" ,libpciaccess)
        ("kmod" ,kmod)
@@ -2112,6 +2244,7 @@ changes, and many require complicated build procedures or specific testing
 environments to get useful results.  Therefore, Intel GPU Tools includes
 low-level tools and tests specifically for development and testing of the
 Intel DRM Driver.")
+    (supported-systems '("i686-linux" "x86_64-linux"))
     (license license:expat)))
 
 (define-public fabric
@@ -2248,7 +2381,7 @@ make it a perfect utility on modern distros.")
 (define-public thermald
   (package
     (name "thermald")
-    (version "1.6")
+    (version "1.7.1")
     (source
      (origin
       (method url-fetch)
@@ -2256,7 +2389,7 @@ make it a perfect utility on modern distros.")
                           version ".tar.gz"))
       (file-name (string-append name "-" version ".tar.gz"))
       (sha256 (base32
-               "14klz9fnvi9jdlaqwrp61xa5nh051n8ykrs1fh1wxd7j66qf2fn6"))))
+               "0isgmav3z3nb5bsdya8m3haqhzj1lyfjx7i812cqfjrh2a9msin4"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -2264,6 +2397,7 @@ make it a perfect utility on modern distros.")
                    'unpack 'autogen.sh-and-fix-paths
                    (lambda* (#:key outputs #:allow-other-keys)
                      (let ((out (assoc-ref outputs "out")))
+                       ;; XXX this can probably be removed after version 1.7.1.
                        ;; upstartconfir is hardcoded to /etc/init and the build
                        ;; system tries to mkdir that.  We don't even need upstart
                        ;; files at all; this is a fast and kludgy workaround
@@ -2272,7 +2406,8 @@ make it a perfect utility on modern distros.")
                           (string-append "upstartconfdir = "
                                          out "/etc/init")))
                        ;; Now run autogen
-                       (zero? (system* "sh" "autogen.sh"))))))
+                       (invoke "sh" "autogen.sh")
+                       #t))))
        #:configure-flags
        (let ((out      (assoc-ref %outputs "out")))
          (list (string-append "--sysconfdir="
@@ -2301,23 +2436,26 @@ on systems running the Linux kernel.")
 (define-public masscan
   (package
     (name "masscan")
-    (version "1.0.4")
+    (version "1.0.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/robertdavidgraham/masscan"
                                   "/archive/" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1y9af345g00z83rliv6bmlqg37xwc7xpnx5xqdgmjikzcxgk9pji"))))
+                "0wxddsgyx27z45906icdhdbfsvfj8ij805208qpqjx46i0lnjs50"))))
     (build-system gnu-build-system)
     (inputs
      `(("libpcap" ,libpcap)))
     (arguments
      '(#:test-target "regress"
-       #:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out")))
+       #:make-flags
+       (list "CC=gcc"
+             (string-append "PREFIX=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure) ; There is no ./configure script
+         (delete 'configure)            ; no ./configure script
          (add-after 'unpack 'patch-path
            (lambda* (#:key outputs inputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -2330,8 +2468,8 @@ on systems running the Linux kernel.")
 open ports, and also complete the TCP connection and interact with the remote
 application, collecting the information received.")
     (home-page "https://github.com/robertdavidgraham/masscan")
-        ;; 'src/siphash24.c' is the SipHash reference implementation, which
-        ;; bears a CC0 Public Domain Dedication.
+    ;; 'src/siphash24.c' is the SipHash reference implementation, which
+    ;; bears a CC0 Public Domain Dedication.
     (license license:agpl3+)))
 
 (define-public hungrycat

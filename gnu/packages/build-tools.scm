@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Corentin Bocquillon <corentin@nybble.fr>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -71,7 +71,7 @@ makes a few sacrifices to acquire fast full and incremental build times.")
 (define-public meson
   (package
     (name "meson")
-    (version "0.44.0")
+    (version "0.45.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/mesonbuild/meson/"
@@ -79,9 +79,18 @@ makes a few sacrifices to acquire fast full and incremental build times.")
                                   version ".tar.gz"))
               (sha256
                (base32
-                "06r8limj38mv884s5riiz6lpzw37cvhbf9jd0smzcbi7fwmv3yah"))))
+                "1r3wlimllakrswx2rb4mbdk1iricqk6myvdvib6dkyx362yanm9l"))))
     (build-system python-build-system)
-    (inputs `(("ninja", ninja)))
+    (arguments
+     `(;; FIXME: Tests require many additional inputs, a fix for the RUNPATH
+       ;; patch in meson-for-build, and patching many hard-coded file system
+       ;; locations in "run_unittests.py".
+       #:tests? #f
+       #:phases (modify-phases %standard-phases
+                  ;; Meson calls the various executables in out/bin through the
+                  ;; Python interpreter, so we cannot use the shell wrapper.
+                  (delete 'wrap))))
+    (inputs `(("ninja" ,ninja)))
     (propagated-inputs `(("python" ,python)))
     (home-page "https://mesonbuild.com/")
     (synopsis "Build system designed to be fast and user-friendly")
@@ -90,23 +99,16 @@ makes a few sacrifices to acquire fast full and incremental build times.")
 It can compile code written in C, C++, Fortran, Java, Rust, and other
 languages.  Meson provides features comparable to those of the
 Autoconf/Automake/make combo.  Build specifications, also known as @dfn{Meson
-files}, are written in a custom domain-specific language (DSL) that resembles
-Python.")
+files}, are written in a custom domain-specific language (@dfn{DSL}) that
+resembles Python.")
     (license license:asl2.0)))
 
 (define-public meson-for-build
   (package
     (inherit meson)
     (name "meson-for-build")
-    (version "0.42.1")
     (source (origin
-              (method url-fetch)
-              (uri (string-append "https://github.com/mesonbuild/meson/"
-                                  "archive/" version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
-              (sha256
-               (base32
-                "1494hdnd40g2v6pky34j0f2iwc6kwn51vck37qwz7nl2xr17b18q"))
+              (inherit (package-source meson))
               (patches (search-patches "meson-for-build-rpath.patch"))))
 
     ;; People should probably install "meson", not "meson-for-build".

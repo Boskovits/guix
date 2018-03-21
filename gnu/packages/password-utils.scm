@@ -8,13 +8,15 @@
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Clément Lassieur <clement@lassieur.org>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2018 Konrad Hinsen <konrad.hinsen@fastmail.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -43,6 +45,8 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages crypto)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnupg)
@@ -68,14 +72,14 @@
 (define-public pwgen
   (package
     (name "pwgen")
-    (version "2.07")
+    (version "2.08")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/pwgen/pwgen/" version
                            "/pwgen-" version ".tar.gz"))
        (sha256
-        (base32 "0mhmw700kkh238fzivcwnwi94bj9f3h36yfh3k3j2v19b0zmjx7b"))))
+        (base32 "0yy90pqrr2pszzhb5hxjishq9qc7dqd290amiibqx9fm1b9kvc6s"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f)) ; no test suite
@@ -88,7 +92,7 @@ human.")
 (define-public keepassxc
   (package
     (name "keepassxc")
-    (version "2.2.4")
+    (version "2.3.1")
     (source
      (origin
        (method url-fetch)
@@ -97,10 +101,17 @@ human.")
                            version "-src.tar.xz"))
        (sha256
         (base32
-         "1pfkq1m5vb90kx67vyw70s1hc4ivjsvq2535vm6wdwwsncna6bz5"))))
+         "1gdrbpzwbs56anc3k5vklvcackcn214pc8gm5xh5zcymsi8q4zff"))))
     (build-system cmake-build-system)
+    (arguments
+     '(#:configure-flags '("-DWITH_XC_NETWORKING=YES"
+                           "-DWITH_XC_BROWSER=YES"
+                           "-DWITH_XC_SSHAGENT=YES")))
     (inputs
-     `(("libgcrypt" ,libgcrypt)
+     `(("argon2" ,argon2)
+       ("curl" ,curl) ; XC_NETWORKING
+       ("libgcrypt" ,libgcrypt)
+       ("libsodium" ,libsodium) ; XC_BROWSER
        ("libxi" ,libxi)
        ("libxtst" ,libxtst)
        ("qtbase" ,qtbase)
@@ -189,7 +200,7 @@ applications, there is xclip integration." )
 (define-public yapet
   (package
     (name "yapet")
-    (version "1.0")
+    (version "1.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.guengel.ch/myapps/yapet/downloads/yapet-"
@@ -197,7 +208,7 @@ applications, there is xclip integration." )
                                   ".tar.bz2"))
               (sha256
                (base32
-                "0ydbnqw6icdh07pnv2w6dhvq501bdfvrklv4xmyr8znca9d753if"))))
+                "1lq46mpxdsbl6qw4cj58hp9q7jckmyvbsi08p5zr77rjgqadxyyy"))))
     (build-system gnu-build-system)
     (inputs
      `(("ncurses" ,ncurses)
@@ -270,7 +281,7 @@ random passwords that pass the checks.")
 (define-public assword
   (package
     (name "assword")
-    (version "0.10")
+    (version "0.11")
     (source (origin
               (method url-fetch)
               (uri (list
@@ -279,7 +290,7 @@ random passwords that pass the checks.")
                      "assword_" version ".orig.tar.gz")))
               (sha256
                (base32
-                "0l6170y6my1gprqkazvzabgjkrkr9v2q7z48vjflna4r323yqira"))))
+                "03gkb6kvsghznbcw5l7nmrc6mn3ixkjd5jcs96ni4zs9l47jf7yp"))))
     (arguments
      `(;; irritatingly, tests do run but not there are two problems:
        ;;  - "import gtk" fails for unknown reasons here despite it the
@@ -341,7 +352,8 @@ any X11 window.")
                               name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0scqkpll2q8jhzcgcsh9kqz0gwdpvynivqjmmbzax2irjfaiklpn"))))
+                "0scqkpll2q8jhzcgcsh9kqz0gwdpvynivqjmmbzax2irjfaiklpn"))
+              (patches (search-patches "password-store-gnupg-compat.patch"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -410,7 +422,7 @@ through the pass command.")
 (define-public argon2
   (package
     (name "argon2")
-    (version "20161029")
+    (version "20171227")
     (source
      (origin
        (method url-fetch)
@@ -420,39 +432,40 @@ through the pass command.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1rymikbysasdadm325jx69i0q19d9srqkny69jwmhswlidr4j07y"))))
+         "1n6w5y3va7lrcym7cxr0nikapldqm80wxjdns584bvplq5r03spa"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
-       #:make-flags '("CC=gcc")
+       #:make-flags '("CC=gcc"
+                      "OPTTEST=1")     ;disable CPU optimization
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
-         (replace 'install
-           (lambda _
-             (let ((out (assoc-ref %outputs "out")))
-               (install-file "argon2" (string-append out "/bin"))
-               (install-file "libargon2.a" (string-append out "/lib"))
-               (install-file "libargon2.so" (string-append out "/lib"))
-               (copy-recursively "include"
-                                 (string-append out "/include"))))))))
+         (add-after 'unpack 'patch-Makefile
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (substitute* "Makefile"
+                 (("PREFIX = /usr") (string-append "PREFIX = " out)))
+               #t)))
+         (delete 'configure))))
     (home-page "https://www.argon2.com/")
     (synopsis "Password hashing library")
     (description "Argon2 provides a key derivation function that was declared
 winner of the 2015 Password Hashing Competition.")
-    (license license:cc0)))
+    ;; Argon2 is dual licensed under CC0 and ASL 2.0.  Some of the source
+    ;; files are CC0 only; see README.md and LICENSE for details.
+    (license (list license:cc0 license:asl2.0))))
 
 (define-public python-bcrypt
   (package
     (name "python-bcrypt")
-    (version "3.1.0")
+    (version "3.1.4")
     (source
       (origin
         (method url-fetch)
         (uri (pypi-uri "bcrypt" version))
         (sha256
          (base32
-          "1giy0dvd8gvq6flxh44np1v2nqwsji5qsnrz038mgwzgp7c20j75"))))
+          "13cyrnqwkhc70rs6dg65z4yrrr3dc42fhk11804fqmci9hvimvb7"))))
         (build-system python-build-system)
     (native-inputs
      `(("python-pycparser" ,python-pycparser)
@@ -600,3 +613,31 @@ password hash types most commonly found on various Unix systems, supported out
 of the box are Windows LM hashes, plus lots of other hashes and ciphers.  This
 is the community-enhanced, \"jumbo\" version of John the Ripper.")
       (license license:gpl2+))))
+
+(define-public sala
+  (package
+    (name "sala")
+    (version "1.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "sala" version))
+       (sha256
+        (base32
+         "13qgmc3i2a0cqp8jqrfl93lnphfagb32pgfikc1gza2a14asxzi8"))))
+    (build-system python-build-system)
+    (arguments
+     ;; Sala is supposed to work with Python 3.2 or higher,
+     ;; but it doesn't work with Python 3.6. Better stick
+     ;; to Python 2, which works fine.
+     `(#:python ,python-2))
+    (propagated-inputs
+     `(("gnupg" ,gnupg)
+       ("pwgen" ,pwgen)))
+    (home-page "http://www.digip.org/sala/")
+    (synopsis "Encrypted plaintext password store")
+    (description
+     "Store passwords and other bits of sensitive plain-text information
+to encrypted files on a directory hierarchy.  The information is protected
+by GnuPG's symmetrical encryption.")
+    (license license:expat)))

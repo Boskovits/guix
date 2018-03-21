@@ -3,12 +3,13 @@
 ;;; Copyright © 2013 Joshua Grant <tadni@riseup.net>
 ;;; Copyright © 2014, 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2014, 2015, 2016, 2017 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016 ng0 <ng0@we.make.ritual.n0.is>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 David Thompson <davet@gnu.org>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2017, 2018 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -221,7 +222,7 @@ also known as DXTn or DXTC) for Mesa.")
 (define-public mesa
   (package
     (name "mesa")
-    (version "17.3.1")
+    (version "17.3.6")
     (source
       (origin
         (method url-fetch)
@@ -233,7 +234,7 @@ also known as DXTn or DXTC) for Mesa.")
                                   version "/mesa-" version ".tar.xz")))
         (sha256
          (base32
-          "1h94m2nkxa1y4n415d5idk2x2lkgbvjcikv6r2r6yn4ak7h0grls"))
+          "1y7vawz2sbpzdqk4b60w8kfrxb2rfkdjkifyxxfx1jaasj05d4g5"))
         (patches
          (search-patches "mesa-wayland-egl-symbols-check-mips.patch"
                          "mesa-skip-disk-cache-test.patch"))))
@@ -427,14 +428,14 @@ from software emulation to complete hardware acceleration for modern GPUs.")
 (define (mesa-demos-source version)
   (origin
     (method url-fetch)
-    (uri (string-append "ftp://ftp.freedesktop.org/pub/mesa/demos/" version
+    (uri (string-append "ftp://ftp.freedesktop.org/pub/mesa/demos"
                         "/mesa-demos-" version ".tar.bz2"))
-    (sha256 (base32 "1vqb7s5m3fcg2csbiz45mha1pys2xx6rhw94fcyvapqdpm5iawy1"))))
+    (sha256 (base32 "0zgzbz55a14hz83gbmm0n9gpjnf5zadzi2kjjvkn6khql2a9rs81"))))
 
 (define-public mesa-utils
   (package
     (name "mesa-utils")
-    (version "8.3.0")
+    (version "8.4.0")
     (source (mesa-demos-source version))
     (build-system gnu-build-system)
     (inputs
@@ -555,7 +556,7 @@ OpenGL graphics API.")
 (define-public libepoxy
   (package
     (name "libepoxy")
-    (version "1.4.1")
+    (version "1.5.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -563,7 +564,7 @@ OpenGL graphics API.")
                     version "/libepoxy-" version ".tar.xz"))
               (sha256
                (base32
-                "19hsyap2p0sflj75ycf4af9bsp453bamymbcgnmrphigabsspil8"))))
+                "1md58amxyp34yjnw4xa185hw5jm0hnb2xnhdc28zdsx6k19rk52c"))))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -574,10 +575,6 @@ OpenGL graphics API.")
                    (mesa (assoc-ref inputs "mesa")))
                (substitute* "src/gen_dispatch.py"
                  (("/usr/bin/env python") python))
-               ;; Add support for aarch64, see upstream:
-               ;; https://github.com/anholt/libepoxy/pull/114
-               (substitute* "test/dlwrap.c"
-                 (("GLIBC_2.4") "GLIBC_2.17\", \"GLIBC_2.4"))
                (substitute* (find-files "." "\\.[ch]$")
                  (("libGL.so.1") (string-append mesa "/lib/libGL.so.1"))
                  (("libEGL.so.1") (string-append mesa "/lib/libEGL.so.1")))
@@ -701,7 +698,7 @@ and visualizations.")
 (define-public gl2ps
   (package
     (name "gl2ps")
-    (version "1.3.9")
+    (version "1.4.0")
     (source
      (origin
        (method url-fetch)
@@ -710,7 +707,7 @@ and visualizations.")
              version ".tgz"))
        (sha256
         (base32
-         "0h1nrhmkc4qjw2ninwpj2zbgwhc0qg6pdhpsibbvry0d2bzhns4a"))))
+         "1qpidkz8x3bxqf69hlhyz1m0jmfi9kq24fxsp7rq6wfqzinmxjq3"))))
     (build-system cmake-build-system)
     (inputs
      `(("libpng" ,libpng)
@@ -726,6 +723,7 @@ capable of handling intersecting and stretched polygons, as well as
 non-manifold objects.  GL2PS provides many features including advanced
 smooth shading and text rendering, culling of invisible primitives and
 mixed vector/bitmap output.")
+    ;; GL2PS is dual-licenced and can be used under the terms of either.
     (license (list license:lgpl2.0+
                    (license:fsf-free "http://www.geuz.org/gl2ps/COPYING.GL2PS"
                                      "GPL-incompatible copyleft license")))))
@@ -745,13 +743,16 @@ mixed vector/bitmap output.")
          "0rnid3hwrry9d5d4m7sygq00xxx976rgk00a3557m9r5kxbmy476"))))
     (arguments
      `(#:tests? #f ;; no tests are available
-       #:configure-flags (list "-DVGL_USESSL=1"))) ;; use OpenSSL
+       #:configure-flags (list
+                           (string-append "-DCMAKE_INSTALL_LIBDIR="
+                                          (assoc-ref %outputs "out") "/lib")
+                           "-DVGL_USESSL=1"))) ;; use OpenSSL
     (build-system cmake-build-system)
     (inputs `(("glu" ,glu)
               ("libjpeg-turbo" ,libjpeg-turbo)
               ("mesa" ,mesa)
               ("openssl" ,openssl)))
-    (native-inputs `(("pkg-config", pkg-config)))
+    (native-inputs `(("pkg-config" ,pkg-config)))
     (home-page "https://www.virtualgl.org")
     (synopsis "Redirects 3D commands from an OpenGL application onto a 3D
 graphics card")

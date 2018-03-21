@@ -16,17 +16,18 @@
 ;;; Copyright © 2016 Troy Sankey <sankeytms@gmail.com>
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017 Frederick M. Muriithi <fredmanglis@gmail.com>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2018 Fis Trivial <ybbs.daans@hotmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,6 +49,8 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bash)
   #:use-module (gnu packages compression)
+  #:use-module (gnu packages llvm)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages time)
@@ -58,6 +61,7 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system python)
   #:use-module (guix build-system trivial))
 
@@ -140,6 +144,23 @@ unit testing.  Test output is in XML for automatic testing and GUI based for
 supervised tests.")
     (license license:lgpl2.1))) ; no copyright notices. LGPL2.1 is in the tarball
 
+;; Some packages require this newer version of cppunit.  However, it needs
+;; C++11 support, which is not enabled by default in our current GCC, and
+;; updating in-place would require adding CXXFLAGS to many dependent packages.
+;; Thus, keep as a separate variable for now.
+;; TODO: Remove this when our default GCC is updated to 6 or higher.
+(define-public cppunit-1.14
+  (package
+    (inherit cppunit)
+    (version "1.14.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://dev-www.libreoffice.org/src/"
+                                  "cppunit-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1027cyfx5gsjkdkaf6c2wnjh68882grw8n672018cj3vs9lrhmix"))))))
+
 (define-public catch-framework
   (package
     (name "catch")
@@ -181,14 +202,14 @@ multi-paradigm automated test framework for C++ and Objective-C.")
 (define-public cmdtest
   (package
     (name "cmdtest")
-    (version "0.29")
+    (version "0.32")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://git.liw.fi/cmdtest/snapshot/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1i6gi4yp4qqx1liax098c7nwdb24pghh11xqlrcs7lnhh079rqhb"))))
+                "1jmfiyrrqmpvwdb273bkb8hjaf4rwx9njblx29pmr7giyahskwi5"))))
     (build-system python-build-system)
     (arguments
      `(#:python ,python-2
@@ -250,13 +271,13 @@ format.")
 (define-public cppcheck
   (package
     (name "cppcheck")
-    (version "1.81")
+    (version "1.82")
     (source (origin
       (method url-fetch)
       (uri (string-append "https://github.com/danmar/cppcheck/archive/"
                           version ".tar.gz"))
       (sha256
-       (base32 "0miamqk7pa2dzmnmi5wb6hjp2a3zya1x8afnlcxby8jb6gp6wf8j"))
+       (base32 "0zywpd9hbsx23aj33pk5mbr0fz1ijhqzxlnqgwjfwgg6g2k48i2j"))
       (file-name (string-append name "-" version ".tar.gz"))))
     (build-system cmake-build-system)
     (home-page "http://cppcheck.sourceforge.net")
@@ -267,6 +288,111 @@ in the code.  Cppcheck primarily detects the types of bugs that the compilers
 normally do not detect.  The goal is to detect only real errors in the code
 (i.e. have zero false positives).")
     (license license:gpl3+)))
+
+(define-public go-gopkg.in-check.v1
+  (let ((commit "20d25e2804050c1cd24a7eea1e7a6447dd0e74ec")
+        (revision "0"))
+    (package
+      (name "go-gopkg.in-check.v1")
+      (version (git-version "0.0.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/go-check/check.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0k1m83ji9l1a7ng8a7v40psbymxasmssbrrhpdv2wl4rhs0nc3np"))))
+      (build-system go-build-system)
+      (arguments
+       '(#:import-path "gopkg.in/check.v1"))
+      (synopsis "Rich testing extension for Go's testing package")
+      (description
+       "@code{check} is a rich testing extension for Go's testing package.")
+      (home-page "https://github.com/go-check/check")
+      (license license:bsd-2))))
+
+(define-public go-github.com-smartystreets-gunit
+  (package
+    (name "go-github.com-smartystreets-gunit")
+    (version "1.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/smartystreets/gunit")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "00m4zg0kdj49mnpmf9klb44ba71p966xsk6zknrzqgfc8119f35z"))))
+    (build-system go-build-system)
+    (arguments
+     '(;; TODO: This package depends on go-github.com-smartystreets-assertions
+       ;; for running the tests, but go-github.com-smartystreets-assertions
+       ;; depends on this package, so break this loop by not running the tests
+       ;; for this package.
+       #:tests? #f
+       #:import-path "github.com/smartystreets/gunit"))
+    (synopsis "Testing tool for Go, in the style of xUnit")
+    (description
+     "@code{gunit} allows the test author to use a struct as the scope for a
+group of related test cases, in the style of xUnit fixtures.  This makes
+extraction of setup/teardown behavior (as well as invoking the system under
+test) much simpler.")
+    (home-page "https://github.com/smartystreets/gunit")
+    (license license:expat)))
+
+(define-public go-github.com-smartystreets-assertions
+  (package
+    (name "go-github.com-smartystreets-assertions")
+    (version "1.8.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/smartystreets/assertions")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1j0adgbykl55rf2945g0n5bmqdsnjcqlx5dcmpfh4chki43hiwg9"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/smartystreets/assertions"))
+    (native-inputs
+     `(("go-github.com-smartystreets-gunit" ,go-github.com-smartystreets-gunit)))
+    (synopsis "Assertions for testing with Go")
+    (description
+     "The @code{assertions} package provides convinient assertion functions
+for writing tests in Go.")
+    (home-page "https://github.com/smartystreets/assertions")
+    (license license:expat)))
+
+(define-public go-github.com-smartystreets-goconvey
+  (package
+    (name "go-github.com-smartystreets-goconvey")
+    (version "1.6.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/smartystreets/goconvey")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "1ph18rkl3ns3fgin5i4j54w5a69grrmf3apcsmnpdn1wlrbs3dxh"))))
+    (build-system go-build-system)
+    (arguments
+     '(#:import-path "github.com/smartystreets/goconvey"))
+    (propagated-inputs
+     `(("go-github.com-jtolds-gls" ,go-github.com-jtolds-gls)
+       ("go-github.com-smartystreets-assertions" ,go-github.com-smartystreets-assertions)))
+    (synopsis "Go testing tool with both a web and terminal user interface")
+    (description
+     "GoConvey is a testing tool for Go. It integrates with go test, can show
+test coverage and has a web user interface that will refresh automatically.")
+    (home-page "https://github.com/smartystreets/goconvey")
+    (license license:expat)))
 
 (define-public googletest
   (package
@@ -598,17 +724,17 @@ supports coverage of subprocesses.")
 (define-public python-pytest-mock
   (package
     (name "python-pytest-mock")
-    (version "1.2")
+    (version "1.6.3")
     (source
       (origin
         (method url-fetch)
-        (uri (pypi-uri "pytest-mock" version ".zip"))
+        (uri (pypi-uri "pytest-mock" version))
         (sha256
          (base32
-          "03zxar5drzm7ksqyrwypjaza3cri6wqvpr6iam92djvg6znp32gp"))))
+          "075v7b2wm5f839r1a30n21wfk5rfqp3d05q7zb9jlb2wmxki23cj"))))
     (build-system python-build-system)
     (native-inputs
-     `(("unzip" ,unzip)))
+     `(("python-setuptools-scm" ,python-setuptools-scm)))
     (propagated-inputs
      `(("python-pytest" ,python-pytest)))
     (home-page "https://github.com/pytest-dev/pytest-mock/")
@@ -708,146 +834,231 @@ subprocess and see the output as well as any file modifications.")
 (define-public python2-scripttest
   (package-with-python2 python-scripttest))
 
-(define-public python-testtools
+(define-public python-testtools-bootstrap
   (package
-    (name "python-testtools")
-    (version "1.4.0")
+    (name "python-testtools-bootstrap")
+    (version "2.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "testtools" version))
        (sha256
         (base32
-         "1vw8yljnd75d396hhw6s2hrf4cclzy845ifd5am0lxsl235z3i8c"))))
+         "0n8519lk8aaa91vymz842831181wf7fss98hyllhygi3z1nfq9sq"))))
     (build-system python-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'fix-module-imports
-           (lambda _
-             (substitute* "setup.py"
-               (("'unittest2>=0.8.0',") ""))
-             (substitute* '("testtools/testcase.py"
-                            "testtools/testsuite.py"
-                            "testtools/run.py"
-                            "testtools/tests/test_run.py"
-                            "testtools/tests/test_testsuite.py"
-                            "testtools/tests/test_deferredruntest.py")
-               ;; unittest2 is a backport of Python2.7 features to Python 2.4.
-               (("import unittest2 as unittest") "import unittest")
-               (("import unittest2") "import unittest as unittest2")
-               (("from unittest2 import") "from unittest import"))
-             (substitute* "testtools/tests/test_testresult.py"
-               ;; NUL in source code is not allowed (raises ValueError).
-               (("\\x00\\x04") "\\x04"))
-             #t)))))
+    (arguments '(#:tests? #f))
     (propagated-inputs
-     `(("python-mimeparse" ,python-mimeparse)
-       ("python-extras" ,python-extras)))
+     `(("python-extras" ,python-extras)
+       ("python-fixtures" ,python-fixtures-bootstrap)
+       ("python-mimeparse" ,python-mimeparse)
+       ("python-pbr" ,python-pbr-minimal)
+       ("python-six" ,python-six)
+       ("python-traceback2" ,python-traceback2)
+       ("python-unittest2" ,python-unittest2)))
     (home-page "https://github.com/testing-cabal/testtools")
     (synopsis
      "Extensions to the Python standard library unit testing framework")
     (description
+     "This package is only for bootstrapping.  Do not use this.")
+    (license license:psfl)))
+
+(define-public python2-testtools-bootstrap
+  (package-with-python2 python-testtools-bootstrap))
+
+(define-public python-testtools
+  (package
+    (inherit python-testtools-bootstrap)
+    (name "python-testtools")
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda _
+                      (invoke "python" "-m" "testtools.run"
+                              "testtools.tests.test_suite"))))))
+    (propagated-inputs
+     `(("python-extras" ,python-extras)
+       ("python-fixtures" ,python-fixtures)
+       ("python-mimeparse" ,python-mimeparse)
+       ("python-pbr" ,python-pbr)
+       ("python-six" ,python-six)
+       ("python-traceback2" ,python-traceback2)
+       ("python-unittest2" ,python-unittest2)))
+    (native-inputs
+     `(("python-testscenarios" ,python-testscenarios-bootstrap)))
+    (description
      "Testtools extends the Python standard library unit testing framework to
 provide matchers, more debugging information, and cross-Python
-compatibility.")
-    (license license:psfl)))
+compatibility.")))
 
 (define-public python2-testtools
   (package-with-python2 python-testtools))
 
-(define-public python-testscenarios
+(define-public python-testscenarios-bootstrap
   (package
-    (name "python-testscenarios")
-    (version "0.4")
+    (name "python-testscenarios-bootstrap")
+    (version "0.5.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "https://pypi.python.org/packages/source/t/testscenarios/testscenarios-"
-             version ".tar.gz"))
+       (uri (pypi-uri "testscenarios" version))
        (sha256
         (base32
-         "1671jvrvqlmbnc42j7pc5y6vc37q44aiwrq0zic652pxyy2fxvjg"))))
+         "1dm2aydqpv76vnsk1pw7k8n42hq58cfi4n1ixy7nyzpaj1mwnmy2"))))
     (build-system python-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda _
+                      (invoke "python" "-m" "testtools.run"
+                              "testscenarios.test_suite"))))))
     (propagated-inputs
-     `(("python-testtools" ,python-testtools)))
+     `(("python-pbr" ,python-pbr-minimal)
+       ("python-testtools" ,python-testtools-bootstrap)))
     (home-page "https://launchpad.net/testscenarios")
     (synopsis "Pyunit extension for dependency injection")
     (description
-     "Testscenarios provides clean dependency injection for Python unittest
-style tests.")
+     "This package is only for bootstrapping.  Don't use this.")
     (license (list license:bsd-3 license:asl2.0)))) ; at the user's option
+
+(define-public python2-testscenarios-bootstrap
+  (package-with-python2 python-testscenarios-bootstrap))
+
+(define-public python-testscenarios
+  (package
+    (inherit python-testscenarios-bootstrap)
+    (name "python-testscenarios")
+    (propagated-inputs
+     `(("python-pbr" ,python-pbr)
+       ("python-testtools" ,python-testtools)))
+    (description
+     "Testscenarios provides clean dependency injection for Python unittest
+style tests.")))
 
 (define-public python2-testscenarios
   (package-with-python2 python-testscenarios))
 
-(define-public python-testresources
+;; Testresources requires python-pbr at runtime, but pbr needs it for its
+;; own tests.  Hence this bootstrap variant.
+(define-public python-testresources-bootstrap
   (package
-    (name "python-testresources")
-    (version "0.2.7")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (string-append
-             "https://pypi.python.org/packages/source/t/testresources/testresources-"
-             version ".tar.gz"))
-       (sha256
-        (base32
-         "0cbj3plbllyz42c4b5xxgwaa7mml54lakslrn4kkhinxhdri22md"))))
+    (name "python-testresources-bootstrap")
+    (version "2.0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "testresources" version))
+              (sha256
+               (base32
+                "05s4dsli9g17m1r3b1gvwicbbgq011hnpb2b9qnj27ja2n11k7gf"))))
     (build-system python-build-system)
+    (arguments '(#:tests? #f))
+    (propagated-inputs
+     `(("python-pbr" ,python-pbr-minimal)))
     (home-page "https://launchpad.net/testresources")
     (synopsis
      "Pyunit extension for managing test resources")
     (description
-     "Testresources is an extension to Python's unittest to allow declarative
-use of resources by test cases.")
+     "This package is only here for bootstrapping purposes.  Use the regular
+testresources package instead.")
     (license (list license:bsd-3 license:asl2.0)))) ; at the user's option
+
+(define-public python2-testresources-bootstrap
+  (package-with-python2 python-testresources-bootstrap))
+
+(define-public python-testresources
+  (package
+    (inherit python-testresources-bootstrap)
+    (name "python-testresources")
+    (propagated-inputs
+     `(("python-pbr" ,python-pbr)))
+    (arguments '())
+    (native-inputs
+     `(("python-fixtures" ,python-fixtures)
+       ("python-testtols" ,python-testtools)))
+    (description
+     "Testresources is an extension to Python's unittest to allow declarative
+use of resources by test cases.")))
 
 (define-public python2-testresources
   (package-with-python2 python-testresources))
 
-(define-public python-subunit
+(define-public python-subunit-bootstrap
   (package
-    (name "python-subunit")
-    (version "0.0.21")
+    (name "python-subunit-bootstrap")
+    (version "1.2.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "https://pypi.python.org/packages/source/p/python-subunit/python-subunit-"
-             version ".tar.gz"))
+       (uri (pypi-uri "python-subunit" version))
        (sha256
         (base32
-         "1nkw9wfbvizmpajbj3in8ns07g7lwkiv8hip14jjlwk3cacls6jv"))))
+         "1yii2gx3z6323as3iraj1yphj76dy7i3h6kj63pnc5y0hwjs5sgx"))))
     (build-system python-build-system)
     (propagated-inputs
      `(("python-extras" ,python-extras)
-       ("python-mimeparse" ,python-mimeparse)))
+       ("python-testtools" ,python-testtools-bootstrap)))
     (native-inputs
-     `(("python-testscenarios" ,python-testscenarios)))
+     `(("python-fixtures" ,python-fixtures-bootstrap)
+       ("python-hypothesis" ,python-hypothesis)
+       ("python-testscenarios" ,python-testscenarios-bootstrap)))
     (home-page "http://launchpad.net/subunit")
     (synopsis "Python implementation of the subunit protocol")
     (description
-     "Python-subunit is a Python implementation of the subunit test streaming
-protocol.")
+     "This package is here for bootstrapping purposes only.  Use the regular
+python-subunit package instead.")
     (license (list license:bsd-3 license:asl2.0)))) ; at the user's option
+
+(define-public python2-subunit-bootstrap
+  (package-with-python2 python-subunit-bootstrap))
+
+(define-public python-subunit
+  (package
+    (inherit python-subunit-bootstrap)
+    (name "python-subunit")
+    (propagated-inputs
+     `(("python-extras" ,python-extras)
+       ("python-testtools" ,python-testtools)))
+    (native-inputs
+     `(("python-fixtures" ,python-fixtures)
+       ("python-hypothesis" ,python-hypothesis)
+       ("python-testscenarios" ,python-testscenarios)))
+    (description
+     "Python-subunit is a Python implementation of the subunit test streaming
+protocol.")))
 
 (define-public python2-subunit
   (package-with-python2 python-subunit))
 
+;; Fixtures requires python-pbr at runtime, but pbr uses fixtures for its
+;; own tests.  Hence this bootstrap variant.
+(define-public python-fixtures-bootstrap
+  (package
+    (name "python-fixtures-bootstrap")
+    (version "3.0.0")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "fixtures" version))
+              (sha256
+               (base32
+                "1vxj29bzz3rd4pcy51d05wng9q9dh4jq6wx92yklsm7i6h1ddw7w"))))
+    (build-system python-build-system)
+    (arguments `(#:tests? #f))
+    (propagated-inputs
+     `(("python-pbr-minimal" ,python-pbr-minimal)
+       ("python-six" ,python-six)))
+    (home-page "https://launchpad.net/python-fixtures")
+    (synopsis "Python test fixture library")
+    (description
+     "This package is only used for bootstrapping.  Use the regular
+python-fixtures package instead.")
+    (license (list license:bsd-3 license:asl2.0)))) ; at user's option
+
+(define-public python2-fixtures-bootstrap
+  (package-with-python2 python-fixtures-bootstrap))
+
 (define-public python-fixtures
   (package
+    (inherit python-fixtures-bootstrap)
     (name "python-fixtures")
-    (version "1.4.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "fixtures" version))
-       (sha256
-        (base32
-         "0djxvdwm8s60dbfn7bhf40x6g818p3b3mlwijm1c3bqg7msn271y"))))
-    (build-system python-build-system)
     (arguments
      '(#:phases
        (modify-phases %standard-phases
@@ -856,25 +1067,23 @@ protocol.")
              (zero? (system* "python" "-m" "testtools.run"
                              "fixtures.test_suite")))))))
     (propagated-inputs
-     `(("python-six" ,python-six)))
+     ;; Fixtures uses pbr at runtime to check versions, etc.
+     `(("python-pbr" ,python-pbr)
+       ("python-six" ,python-six)))
     (native-inputs
      `(("python-mock" ,python-mock)
-       ("python-pbr-minimal" ,python-pbr-minimal)
-       ("python-testtools" ,python-testtools)))
-    (home-page "https://launchpad.net/python-fixtures")
-    (synopsis "Python test fixture library")
+       ("python-testtools" ,python-testtools-bootstrap)))
     (description
      "Fixtures provides a way to create reusable state, useful when writing
-Python tests.")
-    (license (list license:bsd-3 license:asl2.0)))) ; at user's option
+Python tests.")))
 
 (define-public python2-fixtures
   (package-with-python2 python-fixtures))
 
-(define-public python-testrepository
+(define-public python-testrepository-bootstrap
   (package
-    (name "python-testrepository")
-    (version "0.0.20")
+    (name "python-testrepository-bootstrap")
+     (version "0.0.20")
     (source
      (origin
        (method url-fetch)
@@ -885,6 +1094,26 @@ Python tests.")
         (base32
          "1ssqb07c277010i6gzzkbdd46gd9mrj0bi0i8vn560n2k2y4j93m"))))
     (build-system python-build-system)
+    (arguments '(#:tests? #f))
+    (propagated-inputs
+     `(("python-fixtures" ,python-fixtures-bootstrap)
+       ("python-subunit" ,python-subunit-bootstrap)
+       ("python-testtools" ,python-testtools-bootstrap)))
+    (native-inputs
+     `(("python-mimeparse" ,python-mimeparse)))
+    (home-page "https://launchpad.net/testrepository")
+    (synopsis "Database for Python test results")
+    (description
+     "Bootstrap package for python-testrepository.  Don't use this.")
+    (license (list license:bsd-3 license:asl2.0)))) ; at user's option
+
+(define-public python2-testrepository-bootstrap
+  (package-with-python2 python-testrepository-bootstrap))
+
+(define-public python-testrepository
+  (package
+    (inherit python-testrepository-bootstrap)
+    (name "python-testrepository")
     (arguments
      ;; FIXME: Many tests are failing.
      '(#:tests? #f))
@@ -893,14 +1122,10 @@ Python tests.")
        ("python-subunit" ,python-subunit)
        ("python-testtools" ,python-testtools)))
     (native-inputs
-     `(("python-pbr-minimal" ,python-pbr-minimal) ;; same as for building fixture
-       ("python-mimeparse" ,python-mimeparse)))
-    (home-page "https://launchpad.net/testrepository")
-    (synopsis "Database for Python test results")
+     `(("python-mimeparse" ,python-mimeparse)))
     (description "Testrepository provides a database of test results which can
 be used as part of a developer's workflow to check things such as what tests
-have failed since the last commit or what tests are currently failing.")
-    (license (list license:bsd-3 license:asl2.0)))) ; at user's option
+have failed since the last commit or what tests are currently failing.")))
 
 (define-public python2-testrepository
   (package-with-python2 python-testrepository))
@@ -997,7 +1222,7 @@ testing frameworks.")
     (synopsis "Test utilities for code working with files and commands")
     (description
      "Testpath is a collection of utilities for Python code working with files
-and commands.  It contains functions to check things on the filesystem, and
+and commands.  It contains functions to check things on the file system, and
 tools for mocking system commands and recording calls to those.")
     (license license:expat)))
 
@@ -1176,9 +1401,9 @@ seamlessly into your existing Python unit testing work flow.")
        (modify-phases %standard-phases
          (replace 'check
            (lambda _
-             (invoke "py.test"))))))
+             (invoke "python" "lit.py" "tests"))))))
     (native-inputs
-     `(("python-pytest" ,python-pytest)))
+     `(("llvm" ,llvm)))
     (home-page "https://llvm.org/")
     (synopsis "LLVM Software Testing Tool")
     (description "@code{lit} is a portable tool for executing LLVM and Clang
@@ -1389,10 +1614,15 @@ recognize TestCases.")
     (description
      "Python-pytest-warnings is a pytest plugin to list Python warnings in
 pytest report.")
-    (license license:expat)))
+    (license license:expat)
+    (properties `((python2-variant . ,(delay python2-pytest-warnings))
+                  ;; This package is part of pytest as of version 3.1.0.
+                  (superseded . ,python-pytest)))))
 
 (define-public python2-pytest-warnings
-  (package-with-python2 python-pytest-warnings))
+  (package (inherit (package-with-python2
+                     (strip-python2-variant python-pytest-warnings)))
+           (properties `((superseded . ,python2-pytest)))))
 
 (define-public python-pytest-capturelog
   (package
@@ -1498,20 +1728,26 @@ backported from Python 2.7 for Python 2.4+.")
 (define-public behave
   (package
     (name "behave")
-    (version "1.2.5")
+    (version "1.2.6")
     (source (origin
              (method url-fetch)
-             (uri (pypi-uri "behave" version ".tar.bz2"))
+             (uri (pypi-uri "behave" version))
              (sha256
               (base32
-               "1iypp6z46r19n4xmgx6m1lwmlpfjh8vapq8izigrqlaarvp2y64c"))))
+               "11hsz365qglvpp1m1w16239c3kiw15lw7adha49lqaakm8kj6rmr"))))
     (build-system python-build-system)
+    (native-inputs
+     `(("python-mock" ,python-mock)
+       ("python-nose" ,python-nose)
+       ("python-pathpy" ,python-pathpy)
+       ("python-pyhamcrest" ,python-pyhamcrest)
+       ("python-pytest" ,python-pytest)))
     (propagated-inputs
      `(("python-six" ,python-six)
        ("python-parse" ,python-parse)
        ("python-parse-type" ,python-parse-type)))
-    (arguments `(#:tests? #f))          ;TODO: tests require nose>=1.3 and
-                                        ;PyHamcrest>=1.8
+    (arguments
+     '(#:test-target "behave_test"))
     (home-page "https://github.com/behave/behave")
     (synopsis "Python behavior-driven development")
     (description
@@ -1566,6 +1802,15 @@ JSON APIs with Behave.")
           (base32
             "11x5nx5b4wdq04s7vj1gcdl07jvvkfb37p0r5lg773gr5rr8mj6h"))))
     (build-system python-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'patch-setup.py
+                    (lambda _
+                      ;; Six is only required for tests and later versions
+                      ;; work fine.
+                      (substitute* "setup.py"
+                        (("six==1.10.0") "six"))
+                      #t)))))
     (propagated-inputs
      `(("python-colorama" ,python-colorama)
        ("python-termstyle" ,python-termstyle)))
@@ -1724,3 +1969,37 @@ retried.")
 
 (define-public python2-flaky
   (package-with-python2 python-flaky))
+
+(define-public python-pyhamcrest
+  (package
+    (name "python-pyhamcrest")
+    (version "1.9.0")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append
+                "https://github.com/hamcrest/PyHamcrest/archive/V"
+                version
+                ".tar.gz"))
+              (file-name
+               (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1lqjajhwf7x7igvvnj5p1cm31y9njy07qby94w18kl6zwbdjqrwy"))))
+    (native-inputs                      ; All native inputs are for tests
+     `(("python-pytest-cov" ,python-pytest-cov)
+       ("python-mock" ,python-mock)
+       ("python-pytest" ,python-pytest)
+       ("python-hypothesis" ,python-hypothesis)))
+    (propagated-inputs
+     `(("python-six" ,python-six)))
+    (build-system python-build-system)
+    (home-page "http://hamcrest.org/")
+    (synopsis "Hamcrest matchers for Python")
+    (description
+     "PyHamcrest is a framework for writing matcher objects,
+ allowing you to declaratively define \"match\" rules.")
+    (license license:bsd-3)))
+
+(define-public python2-pyhamcrest
+  (package-with-python2 python-pyhamcrest))

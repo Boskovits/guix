@@ -1,8 +1,9 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -35,16 +36,19 @@
 (define-public python-django
   (package
     (name "python-django")
-    (version "1.10.8")
+    (version "1.11.11")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "Django" version))
               (sha256
                (base32
-                "1fwqqh2zbcy9dy0lnvk338s11llnnfz2k56bf84w0wv56ayq7vyl"))))
+                "1p0fk0dszci9gx76hyhay3n8n0k8r4sznbdcrpd9g2xl15rps1vl"))))
     (build-system python-build-system)
     (arguments
-     '(#:phases
+     '(#:modules ((srfi srfi-1)
+                  (guix build python-build-system)
+                  (guix build utils))
+       #:phases
        (modify-phases %standard-phases
          (add-before 'check 'set-tzdir
            (lambda* (#:key inputs #:allow-other-keys)
@@ -55,13 +59,23 @@
                                     "/share/zoneinfo"))
              #t))
          (replace 'check
-           (lambda _
+           (lambda* (#:key inputs #:allow-other-keys)
              (setenv "PYTHONPATH"
                      (string-append ".:" (getenv "PYTHONPATH")))
+             (substitute* "tests/admin_scripts/tests.py"
+               (("python_path = \\[")
+                (string-append "python_path = ['"
+                               (find (lambda (entry)
+                                       (string-prefix?
+                                        (assoc-ref inputs "python-pytz")
+                                        entry))
+                                     (string-split (getenv "PYTHONPATH")
+                                                   #\:))
+                               "', ")))
              (zero? (system* "python" "tests/runtests.py")))))))
     ;; TODO: Install extras/django_bash_completion.
     (native-inputs
-     `(("tzdata", tzdata)
+     `(("tzdata" ,tzdata-for-tests)
        ;; bcrypt and argon2-cffi are extra requirements not yet in guix
        ;;("python-argon2-cffi" ,python-argon2-cffi) ; >= 16.1.0
        ;;("python-bcrypt" ,python-bcrypt) ; not py-bcrypt!
@@ -74,10 +88,11 @@
        ("python-numpy" ,python-numpy)
        ("python-pillow" ,python-pillow)
        ("python-pyyaml" ,python-pyyaml)
-       ("python-pytz" ,python-pytz)
        ;; optional for tests: ("python-selenium" ,python-selenium)
        ("python-sqlparse" ,python-sqlparse)
        ("python-tblib" ,python-tblib)))
+    (propagated-inputs
+     `(("python-pytz" ,python-pytz)))
     (home-page "http://www.djangoproject.com/")
     (synopsis "High-level Python Web framework")
     (description
@@ -167,13 +182,13 @@ useful tools for testing Django applications and projects.")
 (define-public python-django-filter
   (package
     (name "python-django-filter")
-    (version "0.14.0")
+    (version "1.1.0")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "django-filter" version))
               (sha256
                (base32
-                "0f78hmk8c903zwfzlsiw7ivgag81ymmb5hi73rzxbhnlg2v0l3fx"))))
+                "0slpfqfhnjrzlrb6vmswyhrzn01p84s16j2x1xib35gg4fxg23pc"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -183,6 +198,8 @@ useful tools for testing Django applications and projects.")
              (zero? (system* "python" "runtests.py")))))))
     (native-inputs
      `(("python-django" ,python-django)
+       ("python-djangorestframework" ,python-djangorestframework)
+       ("python-django-crispy-forms" ,python-django-crispy-forms)
        ("python-mock" ,python-mock)))
     (home-page "https://django-filter.readthedocs.io/en/latest/")
     (synopsis "Reusable Django application to filter querysets dynamically")
@@ -250,15 +267,18 @@ account authentication.")
 (define-public python-django-gravatar2
   (package
     (name "python-django-gravatar2")
-    (version "1.4.0")
+    (version "1.4.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "django-gravatar2" version))
        (sha256
         (base32
-         "1v4qyj6kms321yw0z2g1kch6b2dskmv6fjd6sfxzwr4xshq9mccl"))))
+         "1qsv40xywbqsf4mkrmsswrpzqd7nfljxpfiim9an2z3dykn5rka6"))))
     (build-system python-build-system)
+    (arguments
+     '(;; TODO: The django project for the tests is missing from the release.
+       #:tests? #f))
     (inputs
      `(("python-django" ,python-django)))
     (home-page "https://github.com/twaddington/django-gravatar")
@@ -706,7 +726,7 @@ static files.")
        ("stemming" ,python2-stemming)
        ("translate-toolkit" ,python2-translate-toolkit)))
     (native-inputs
-     `(("python2-pytest-warnings" ,python2-pytest-warnings)
+     `(("python2-pytest" ,python2-pytest)
        ("python2-pytest-django" ,python2-pytest-django)
        ("python2-pytest-catchlog" ,python2-pytest-catchlog)
        ("python2-pytest-cov" ,python2-pytest-cov)
@@ -718,3 +738,74 @@ static files.")
 lower the barrier of entry, providing tools to enable teams to work towards
 higher quality while welcoming newcomers.")
     (license license:gpl3+)))
+
+(define-public python-django-tagging
+  (package
+    (name "python-django-tagging")
+    (version "0.4.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "django-tagging" version))
+       (sha256
+        (base32
+         "0s7b4v45j783yaxs7rni10k24san0ya77nqz4s7zdf3jhfpk42r1"))))
+    (build-system python-build-system)
+    (home-page "https://github.com/Fantomas42/django-tagging")
+    (synopsis "Generic tagging application for Django")
+    (description "This package provides a generic tagging application for
+Django projects, which allows association of a number of tags with any
+@code{Model} instance and makes retrieval of tags simple.")
+    (license license:bsd-3)))
+
+(define-public python2-django-tagging
+  (package-with-python2 python-django-tagging))
+
+(define-public python-djangorestframework
+  (package
+    (name "python-djangorestframework")
+    (version "3.7.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "djangorestframework" version))
+       (sha256
+        (base32
+         "11qv117gqwswxjljs7wafxg1hyzzlx3qrviwlk9hw41bsbl997lz"))))
+    (build-system python-build-system)
+    (arguments
+     '(;; No included tests
+       #:tests? #f))
+    (propagated-inputs
+     `(("python-django" ,python-django)))
+    (home-page "https://www.django-rest-framework.org")
+    (synopsis "Toolkit for building Web APIs with Django")
+    (description
+     "The Django REST framework is for building Web APIs with Django.  It
+provides features like a web browseable API and authentication policies.")
+    (license license:bsd-2)))
+
+(define-public python-django-crispy-forms
+  (package
+    (name "python-django-crispy-forms")
+    (version "1.7.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "django-crispy-forms" version))
+       (sha256
+        (base32
+         "16s05jx86jmimlvnwpq73kl0mqw1v9lryc8zi61a9qwl25krm6mj"))))
+    (build-system python-build-system)
+    (arguments
+     '(;; No included tests
+       #:tests? #f))
+    (propagated-inputs
+     `(("python-django" ,python-django)))
+    (home-page
+     "http://github.com/maraujop/django-crispy-forms")
+    (synopsis "Tool to control Django forms without custom templates")
+    (description
+     "@code{django-crispy-forms} lets you easily build, customize and reuse
+forms using your favorite CSS framework, without writing template code.")
+    (license license:expat)))

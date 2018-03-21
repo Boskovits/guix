@@ -6,6 +6,7 @@
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Jonathan Brielmaier <jonathan.brielmaier@web.de>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -123,6 +124,7 @@ version of libusb to run with newer libusb.")
                 (uri (git-reference
                       (url "https://github.com/usb4java/libusb4java.git")
                       (commit commit)))
+                (file-name (git-file-name name version))
                 (sha256
                  (base32
                   "0wqgapalhfh9v38ycbl6i2f5lh1wpr6fzwn5dwd0rdacypkd1gml"))))
@@ -251,14 +253,14 @@ implementing @code{javax.usb} (JSR-80).")
 (define-public libmtp
   (package
     (name "libmtp")
-    (version "1.1.13")
+    (version "1.1.14")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://sourceforge/libmtp/libmtp/" version
                                  "/libmtp-" version ".tar.gz"))
              (sha256
               (base32
-               "0h3dv9py5mmvxhfxmkr8ky4s80hgq3d66cmrfnnnlcdwpwpy0kj9"))))
+               "1s0jyhypxmj0j8s003ba1n74x63h1rw8am9q4z2ip3xyjvid65rq"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -287,14 +289,14 @@ proposed for standardization.")
 (define-public gmtp
   (package
     (name "gmtp")
-    (version "1.3.10")
+    (version "1.3.11")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gmtp/gMTP-" version
                                   "/gmtp-" version ".tar.gz"))
               (sha256
                (base32
-                "0fyi3pdl2g57vr0p46ip2wwzyap3l0by7iqaqygv0yxfcs79l6xj"))))
+                "04q6byyq002fhzkc2rkkahwh5b6272xakaj4m3vwm8la8jf0r0ss"))))
     (build-system glib-or-gtk-build-system)
     (arguments
      '(#:configure-flags

@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -49,10 +50,19 @@
   #:use-module (guix build-system gnu)
   #:use-module ((guix licenses) #:prefix license:))
 
+(define gd-for-php
+  (package
+    (inherit gd)
+    (source (origin
+             (inherit (package-source gd))
+             (patches (search-patches "gd-fix-tests-on-i686.patch"
+                                      "gd-freetype-test-failure.patch"
+                                      "gd-CVE-2018-5711.patch"))))))
+
 (define-public php
   (package
     (name "php")
-    (version "7.1.12")
+    (version "7.2.3")
     (home-page "https://secure.php.net/")
     (source (origin
               (method url-fetch)
@@ -60,7 +70,7 @@
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "1czflr5wb2f7pmgdc1vxy1kcln5rlkkly2z3skrb2wa5fx88h4d0"))
+                "07v5bq5b97zdqwmig6sxqsdb50vdf04w6jzmjq5kqh9gaqdlzadk"))
               (modules '((guix build utils)))
               (snippet
                '(with-directory-excursion "ext"
@@ -271,12 +281,21 @@
                          ;; ("ISO-8859-1"=>"UTF-8") unknown error.
                          "ext/standard/tests/file/bug43008.phpt"
                          ;; Table data not created in sqlite(?).
-                         "ext/pdo_sqlite/tests/bug_42589.phpt"))
+                         "ext/pdo_sqlite/tests/bug_42589.phpt"
+
+                         ;; Small variation in output.
+                         "ext/mbstring/tests/mb_ereg_variation3.phpt"
+                         "ext/mbstring/tests/mb_ereg_replace_variation1.phpt"
+                         "ext/mbstring/tests/bug72994.phpt"
+                         "ext/ldap/tests/ldap_set_option_error.phpt"))
 
              ;; Skip tests requiring network access.
              (setenv "SKIP_ONLINE_TESTS" "1")
              ;; Without this variable, 'make test' passes regardless of failures.
              (setenv "REPORT_EXIT_STATUS" "1")
+             ;; Skip tests requiring I/O facilities that are unavailable in the
+             ;; build environment
+             (setenv "SKIP_IO_CAPTURE_TESTS" "1")
              #t)))
        #:test-target "test"))
     (inputs
@@ -285,7 +304,7 @@
        ("curl" ,curl)
        ("cyrus-sasl" ,cyrus-sasl)
        ("freetype" ,freetype)
-       ("gd" ,gd)
+       ("gd" ,gd-for-php)
        ("gdbm" ,gdbm)
        ("glibc" ,glibc)
        ("gmp" ,gmp)

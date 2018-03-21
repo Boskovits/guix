@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +45,27 @@
                (base32
                 "0wzghjgy65pkn31rgl14fngizw7nbkzbxsfa670xmrndpmd4sr81"))))
     (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'install-xsession
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (xsessions (string-append out "/share/xsessions")))
+               (mkdir-p xsessions)
+               (with-output-to-file
+                   (string-append xsessions "/fvwm2.desktop")
+                 (lambda _
+                   (format #t
+                           "[Desktop Entry]~@
+                    Name=FVWM~@
+                    Comment=FVWM~@
+                    Exec=~a/bin/fvwm~@
+                    TryExec=~@*~a/bin/fvwm~@
+                    Icon=~@
+                    Type=Application~%"
+                           out))))
+             #t)))))
     (native-inputs
      `(("perl" ,perl)
        ("pkg-config" ,pkg-config)

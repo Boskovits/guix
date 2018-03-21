@@ -2,10 +2,10 @@
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014 Kevin Lemonnier <lemonnierk@ulrar.net>
 ;;; Copyright © 2015, 2017 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016 ng0 <ng0@infotropique.org>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -100,7 +100,7 @@
        ("qttools" ,qttools)))
     (inputs
      `(("qca" ,qca)
-       ("qtbase", qtbase)
+       ("qtbase" ,qtbase)
        ("qtscript" ,qtscript)
        ("snorenotify" ,snorenotify)
        ("zlib" ,zlib)))
@@ -115,7 +115,7 @@ irssi, but graphical.")
 (define-public irssi
   (package
     (name "irssi")
-    (version "1.0.5")
+    (version "1.1.1")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://github.com/irssi/irssi/"
@@ -123,7 +123,7 @@ irssi, but graphical.")
                                  version ".tar.xz"))
              (sha256
               (base32
-               "055r9fhbfcfkzinsnprnlqd8psspdyn3j26lzsmnrc1fw4kn8mf2"))))
+               "1gx1flfh4a09nb3b5pvf0ygnbl7rry3l4gph8wij29dsl7khfj3q"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -155,14 +155,14 @@ SILC and ICB protocols via plugins.")
 (define-public weechat
   (package
     (name "weechat")
-    (version "2.0.1")
+    (version "2.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://weechat.org/files/src/weechat-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "1l854dramvn9vfba7jpazkjwm4k4i5pshq58vjv6z2mxmcp5hhv9"))
+                "0f7d2vdbxc5kgjl7lkamnbxvidgxwa8f9j3nr9fd4gr4z0gzi86d"))
               (patches (search-patches "weechat-python.patch"))))
     (build-system cmake-build-system)
     (native-inputs
@@ -272,23 +272,23 @@ using a mouse.  It is customizable and extensible with plugins and scripts.")
 (define-public ii
   (package
     (name "ii")
-    (version "1.7")
+    (version "1.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://dl.suckless.org/tools/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "176cqwnn6h7w4kbfd66hzqa243l26pqp2b06bii0nmnm0rkaqwis"))))
+                "1lk8vjl7i8dcjh4jkg8h8bkapcbs465sy8g9c0chfqsywbmf3ndr"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f ; no tests
+     `(#:tests? #f                      ; no tests
        #:make-flags (list (string-append "PREFIX=" %output)
                           "CC=gcc")
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)))) ; no configure
-    (home-page "http://tools.suckless.org/ii/")
+         (delete 'configure))))         ; no configure
+    (home-page "https://tools.suckless.org/ii/")
     (synopsis "FIFO and file system based IRC client")
     (description
      "ii (Irc it) is a minimalist FIFO and file system based IRC client.")
@@ -313,7 +313,7 @@ using a mouse.  It is customizable and extensible with plugins and scripts.")
        #:phases
        (modify-phases %standard-phases
          (delete 'configure)))) ; no configure
-    (home-page "http://tools.suckless.org/sic/")
+    (home-page "https://tools.suckless.org/sic/")
     (synopsis "Simple IRC client")
     (description
      "sic is a simple IRC client, even more minimalistic than ii.")

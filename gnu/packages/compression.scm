@@ -5,7 +5,7 @@
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015, 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2015, 2017 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2015, 2017, 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2015 Jeff Mickey <j@codemac.net>
 ;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
@@ -14,13 +14,15 @@
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
+;;; Copyright © 2018 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -53,6 +55,7 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages backup)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages file)
@@ -98,7 +101,7 @@
                (zero?
                 (system* "./configure"
                          (string-append "--prefix=" out)))))))))
-    (home-page "http://zlib.net/")
+    (home-page "https://zlib.net/")
     (synopsis "Compression library")
     (description
      "zlib is designed to be a free, general-purpose, legally unencumbered --
@@ -152,7 +155,7 @@ the @code{zlib} source.")
                "0iginbz2m15hcsa3x4y7v3mhk54gr1r7m3ghx0pg4n46vv2snmpi"))))
    (build-system gnu-build-system)
    (inputs `(("zlib" ,zlib)))
-   (home-page "http://savannah.nongnu.org/projects/fastjar")
+   (home-page "https://savannah.nongnu.org/projects/fastjar")
    (synopsis "Replacement for Sun's 'jar' utility")
    (description
     "FastJar is an attempt to create a much faster replacement for Sun's 'jar'
@@ -329,7 +332,7 @@ compatible with bzip2 – both at file format and command line level.")
 (define-public pbzip2
   (package
     (name "pbzip2")
-    (version "1.1.12")
+    (version "1.1.13")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://launchpad.net/pbzip2/"
@@ -337,14 +340,14 @@ compatible with bzip2 – both at file format and command line level.")
                                  "/+download/" name "-" version ".tar.gz"))
              (sha256
               (base32
-               "1vk6065dv3a47p86vmp8hv3n1ygd9hraz0gq89gvzlx7lmcb6fsp"))))
+               "1rnvgcdixjzbrmcr1nv9b6ccrjfrhryaj7jwz28yxxv6lam3xlcg"))))
     (build-system gnu-build-system)
     (inputs
      `(("bzip2" ,bzip2)))
     (arguments
-     `(#:tests? #f ; no tests
+     `(#:tests? #f                      ; no tests
        #:phases (modify-phases %standard-phases
-                  (delete 'configure))
+                  (delete 'configure))  ; no configure script
        #:make-flags (list (string-append "PREFIX=" %output))))
     (home-page "http://compression.ca/pbzip2/")
     (synopsis "Parallel bzip2 implementation")
@@ -451,7 +454,7 @@ Python strings.")
 (define-public lzop
   (package
     (name "lzop")
-    (version "1.03")
+    (version "1.04")
     (source
      (origin
        (method url-fetch)
@@ -459,10 +462,10 @@ Python strings.")
                            version ".tar.gz"))
        (sha256
         (base32
-         "1jdjvc4yjndf7ihmlcsyln2rbnbaxa86q4jskmkmm7ylfy65nhn1"))))
+         "0h9gb8q7y54m9mvy3jvsmxf21yx8fc3ylzh418hgbbv0i8mbcwky"))))
     (build-system gnu-build-system)
     (inputs `(("lzo" ,lzo)))
-    (home-page "http://www.lzop.org/")
+    (home-page "https://www.lzop.org/")
     (synopsis "Compress or expand files")
     (description
      "Lzop is a file compressor which is very similar to gzip.  Lzop uses the
@@ -483,7 +486,7 @@ some compression ratio).")
               (base32
                "1abbch762gv8rjr579q3qyyk6c80plklbv2mw4x0vg71dgsw9bgz"))))
     (build-system gnu-build-system)
-    (home-page "http://www.nongnu.org/lzip/lzip.html")
+    (home-page "https://www.nongnu.org/lzip/lzip.html")
     (synopsis "Lossless data compressor based on the LZMA algorithm")
     (description
      "Lzip is a lossless data compressor with a user interface similar to the
@@ -495,16 +498,16 @@ archiving.  Lzip is a clean implementation of the LZMA algorithm.")
 (define-public lziprecover
   (package
     (name "lziprecover")
-    (version "1.19")
+    (version "1.20")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/lzip/" name "/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0z5fbkm0qprypjf7kxkqganniibj0zml13zvfkrchnjafcmmzyld"))))
+                "0fpnmdxayvd1ff0rk9606dvr431ji6b1v71km4ww244rih1rmmzz"))))
     (build-system gnu-build-system)
-    (home-page "http://www.nongnu.org/lzip/lziprecover.html")
+    (home-page "https://www.nongnu.org/lzip/lziprecover.html")
     (synopsis "Recover and decompress data from damaged lzip files")
     (description
      "Lziprecover is a data recovery tool and decompressor for files in the lzip
@@ -599,6 +602,7 @@ with the sfArk algorithm.")
               (uri (git-reference
                     (url "https://github.com/raboof/sfarkxtc.git")
                     (commit commit)))
+              (file-name (git-file-name name version))
               (sha256
                (base32
                 "0f5x6i46qfl6ry21s7g2p4sd4b2r1g4fb03yqi2vv4kq3saryhvj"))))
@@ -720,7 +724,7 @@ writing of compressed data created with the zlib and bzip2 libraries.")
 (define-public lz4
   (package
     (name "lz4")
-    (version "1.8.0")
+    (version "1.8.1.2")
     (source
      (origin
        (method url-fetch)
@@ -728,15 +732,14 @@ writing of compressed data created with the zlib and bzip2 libraries.")
                            "v" version ".tar.gz"))
        (sha256
         (base32
-         "1xnckwwah74gl98gylf1b00vk4km1d8sgd8865h07ccvgbm8591c"))
+         "1y93h6dyi3026gvpzdv310ldcylnnhwf32n75mdjf8x9fvkskwqj"))
        (file-name (string-append name "-" version ".tar.gz"))))
     (build-system gnu-build-system)
     (native-inputs `(("valgrind" ,valgrind)))   ; for tests
     (arguments
      `(#:test-target "test"
-       #:parallel-tests? #f ; tests fail if run in parallel
        #:make-flags (list "CC=gcc"
-                          (string-append "PREFIX=" (assoc-ref %outputs "out")))
+                          (string-append "prefix=" (assoc-ref %outputs "out")))
        #:phases (modify-phases %standard-phases
                   (delete 'configure))))        ; no configure script
     (home-page "http://www.lz4.org")
@@ -843,14 +846,14 @@ extract such file systems.")
 (define-public pigz
   (package
     (name "pigz")
-    (version "2.3.3")
+    (version "2.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://zlib.net/pigz/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "172hdf26k4zmm7z8md7nl0dph2a7mhf3x7slb9bhfyff6as6g2sf"))))
+                "0wsgw5vwl23jrnpsvd8v3xcp5k4waw5mk0164fynjhkv58i1dy54"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -868,7 +871,7 @@ extract such file systems.")
        #:make-flags (list "CC=gcc")
        #:test-target "tests"))
     (inputs `(("zlib" ,zlib)))
-    (home-page "http://zlib.net/pigz/")
+    (home-page "https://zlib.net/pigz/")
     (synopsis "Parallel implementation of gzip")
     (description
      "This package provides a parallel implementation of gzip that exploits
@@ -1016,7 +1019,8 @@ human-readable output.")
              "http://ck.kolivas.org/apps/lrzip/lrzip-" version ".tar.bz2"))
        (sha256
         (base32
-         "0mb449vmmwpkalq732jdyginvql57nxyd31sszb108yps1lf448d"))))
+         "0mb449vmmwpkalq732jdyginvql57nxyd31sszb108yps1lf448d"))
+       (patches (search-patches "lrzip-CVE-2017-8842.patch"))))
     (build-system gnu-build-system)
     (native-inputs
      `(;; nasm is only required when building for 32-bit x86 platforms
@@ -1070,21 +1074,23 @@ algorithm within the Numpy framework.")
 (define-public snappy
   (package
     (name "snappy")
-    (version "1.1.3")
+    (version "1.1.7")
     (source (origin
               (method url-fetch)
-              (uri (string-append
-                    "https://github.com/google/snappy/releases/download/"
-                    version "/" name "-" version ".tar.gz"))
+              (uri (string-append "https://github.com/google/snappy/archive/"
+                                  version ".tar.gz"))
+              (file-name (string-append "snappy-" version ".tar.gz"))
               (sha256
                (base32
-                "1wzf8yif5ym2gj52db6v5m1pxnmn258i38x7llk9x346y2nq47ig"))))
-    (build-system gnu-build-system)
+                "1m7rcdqzkys5lspj8jcsaah8w33zh28s771bw0ga2lgzfgl05yix"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags '("-DBUILD_SHARED_LIBS=ON")))
     (home-page "https://github.com/google/snappy")
     (synopsis "Fast compressor/decompressor")
-    (description "Snappy is a compression/decompression library. It does not
+    (description "Snappy is a compression/decompression library.  It does not
 aim for maximum compression, or compatibility with any other compression library;
-instead, it aims for very high speeds and reasonable compression. For instance,
+instead, it aims for very high speeds and reasonable compression.  For instance,
 compared to the fastest mode of zlib, Snappy is an order of magnitude faster
 for most inputs, but the resulting compressed files are anywhere from 20% to
 100% bigger.")
@@ -1130,7 +1136,7 @@ install: libbitshuffle.so
 (define-public java-snappy
   (package
     (name "java-snappy")
-    (version "1.1.4")
+    (version "1.1.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/xerial/snappy-java/archive/"
@@ -1138,7 +1144,7 @@ install: libbitshuffle.so
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1w58diryma7qz7aa24yv8shf3flxcbbw8jgcn2lih14wgmww58ww"))))
+                "0q4kxz2n97czf6g5gzq0d8yz22cgiaj7wp51rzsswh3bi99bpgg5"))))
     (build-system ant-build-system)
     (arguments
      `(#:jar-name "snappy.jar"
@@ -1178,7 +1184,9 @@ install: libbitshuffle.so
                (("NAME\\): \\$\\(SNAPPY_OBJ\\)")
                 "NAME): $(SNAPPY_OBJ)\n\t@mkdir -p $(@D)"))
              ;; Finally we can run the Makefile to build the dynamic library.
-             (zero? (system* "make" "native"))))
+             ;; Use the -nocmake target to avoid a dependency on cmake,
+             ;; which in turn requires the "git_unpacked" directory.
+             (invoke "make" "native-nocmake")))
          ;; Once we have built the shared library, we need to place it in the
          ;; "build" directory so it can be added to the jar file.
          (add-after 'build-jni 'copy-jni
@@ -1187,13 +1195,14 @@ install: libbitshuffle.so
                                "build/classes/org/xerial/snappy/native")))
          (add-before 'check 'fix-failing
            (lambda _
-             ;; This package assumes maven build, which puts results in "target".
-             ;; We put them in "build" instead, so fix that.
-             (substitute* "src/test/java/org/xerial/snappy/SnappyLoaderTest.java"
-               (("target/classes") "build/classes"))
-             ;; FIXME: probably an error
-             (substitute* "src/test/java/org/xerial/snappy/SnappyOutputStreamTest.java"
-               (("91080") "91013")))))))
+             (with-directory-excursion "src/test/java/org/xerial/snappy"
+               ;; This package assumes maven build, which puts results in "target".
+               ;; We put them in "build" instead, so fix that.
+               (substitute* "SnappyLoaderTest.java"
+                 (("target/classes") "build/classes"))
+               ;; This requires Hadoop, which is not in Guix yet.
+               (delete-file "SnappyHadoopCompatibleOutputStreamTest.java"))
+             #t)))))
     (inputs
      `(("osgi-framework" ,java-osgi-framework)))
     (propagated-inputs
@@ -1205,6 +1214,8 @@ install: libbitshuffle.so
        ("hamcrest" ,java-hamcrest-core)
        ("xerial-core" ,java-xerial-core)
        ("classworlds" ,java-plexus-classworlds)
+       ("commons-lang" ,java-commons-lang)
+       ("commons-io" ,java-commons-io)
        ("perl" ,perl)))
     (home-page "https://github.com/xerial/snappy-java")
     (synopsis "Compression/decompression algorithm in Java")
@@ -1314,10 +1325,11 @@ compresser/decompresser.")
        ("java-snappy" ,java-snappy)
        ("hamcrest" ,java-hamcrest-core)
        ("testng" ,java-testng)))
-    (synopsis "Java port of snappy")
-    (description "Iq80-snappy is a rewrite (port) of Snappy writen in pure
-Java.  This compression code produces a byte-for-byte exact copy of the output
-created by the original C++ code, and extremely fast.")
+    (synopsis "Java port of the Snappy (de)compressor")
+    (description
+     "Iq80-snappy is a port of the Snappy compressor and decompressor rewritten
+in pure Java.  This compression code produces a byte-for-byte exact copy of the
+output created by the original C++ code, and is extremely fast.")
     (license license:asl2.0)))
 
 (define-public java-jbzip2
@@ -1386,6 +1398,7 @@ It can be used as a replacement for the Apache @code{CBZip2InputStream} /
                   (delete-file-recursively "CPP/7zip/Compress/Rar")
                   #t))
               (patches (search-patches "p7zip-CVE-2016-9296.patch"
+                                       "p7zip-CVE-2017-17969.patch"
                                        "p7zip-remove-unused-code.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -1532,6 +1545,7 @@ or junctions, and always follows hard links.")
      (origin (method url-fetch)
              (uri (string-append "http://github.com/twogood/unshield/archive/"
                                  version ".tar.gz"))
+             (file-name (string-append name "-" version ".tar.gz"))
              (sha256
               (base32
                "0x7ps644yp5dka2zhb8w0ifqmw3d255jafpzfwv8xbcpgq6fmm2x"))))
@@ -1632,7 +1646,7 @@ trade-off between compression ratio and speed, without affecting decompression
 speed.")
     (license (list license:bsd-3         ; the main top-level LICENSE file
                    license:bsd-2         ; many files explicitly state 2-Clause
-                   license:gpl2          ; the mail top-level COPYING file
+                   license:gpl2          ; the main top-level COPYING file
                    license:gpl3+         ; tests/gzip/*.sh
                    license:expat         ; lib/dictBuilder/divsufsort.[ch]
                    license:public-domain ; zlibWrapper/examples/fitblk*
@@ -1645,7 +1659,7 @@ speed.")
     (source (package-source zstd))
     (build-system gnu-build-system)
     (native-inputs
-     `(("googletest", googletest)))
+     `(("googletest" ,googletest)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
@@ -1727,6 +1741,7 @@ Compression ratios of 2:1 to 3:1 are common for text files.")
 (define-public unzip
   (package (inherit zip)
     (name "unzip")
+    (replacement unzip/fixed)
     (version "6.0")
     (source
      (origin
@@ -1777,25 +1792,32 @@ recreates the stored directory structure by default.")
     (license (license:non-copyleft "file://LICENSE"
                                    "See LICENSE in the distribution."))))
 
+(define unzip/fixed
+  (package/inherit unzip
+    (arguments
+      (substitute-keyword-arguments (package-arguments unzip)
+        ((#:phases phases)
+          `(modify-phases ,phases
+             (add-after 'unpack 'fortify
+               (lambda _
+                 ;; Mitigate CVE-2018-1000035, an exploitable buffer overflow.
+                 ;; This environment variable is recommended in 'unix/Makefile'
+                 ;; for passing flags to the C compiler.
+                 (setenv "LOCAL_UNZIP" "-D_FORTIFY_SOURCE=1")
+                 #t))))))))
+
 (define-public zziplib
   (package
     (name "zziplib")
-    (version "0.13.62")
+    (version "0.13.69")
+    (home-page "https://github.com/gdraheim/zziplib")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "mirror://sourceforge/zziplib/zziplib13/"
-                           version "/zziplib-"
-                           version ".tar.bz2"))
-       (patches (search-patches "zziplib-CVE-2017-5974.patch"
-                                "zziplib-CVE-2017-5975.patch"
-                                "zziplib-CVE-2017-5976.patch"
-                                "zziplib-CVE-2017-5978.patch"
-                                "zziplib-CVE-2017-5979.patch"
-                                "zziplib-CVE-2017-5981.patch"))
+       (uri (string-append home-page "/archive/v" version ".tar.gz"))
        (sha256
         (base32
-         "0nsjqxw017hiyp524p9316283jlf5piixc1091gkimhz38zh7f51"))))
+         "0i052a7shww0fzsxrdp3rd7g4mbzx7324a8ysbc0br7frpblcql4"))))
     (build-system gnu-build-system)
     (inputs
      `(("zlib" ,zlib)))
@@ -1805,13 +1827,12 @@ recreates the stored directory structure by default.")
                      ;; http://forums.gentoo.org/viewtopic-t-863161-start-0.html
                      ("python" ,python-2)
                      ("zip" ,zip))) ; to create test files
-    (arguments
-     `(#:parallel-tests? #f)) ; since test files are created on the fly
-    (home-page "http://zziplib.sourceforge.net/")
     (synopsis "Library for accessing zip files")
     (description
      "ZZipLib is a library based on zlib for accessing zip files.")
-    (license license:lgpl2.0+)))
+    ;; zziplib is dual licensed under LGPL2.0+ and MPL1.1.  Some example source
+    ;; files carry the Zlib license; see "docs/copying.html" for details.
+    (license (list license:lgpl2.0+ license:mpl1.1))))
 
 (define-public perl-archive-zip
   (package
@@ -1886,7 +1907,7 @@ archive can be reverted.")
     (inputs
      `(("perl" ,perl)
        ("file" ,file)))
-    (home-page "http://www.nongnu.org/atool/")
+    (home-page "https://www.nongnu.org/atool/")
     (synopsis  "Universal tool to manage file archives of various types")
     (description "The main command is @command{aunpack} which extracts files
 from an archive.  The other commands provided are @command{apack} (to create
@@ -1955,19 +1976,19 @@ algorithms in Java.")
 (define-public lunzip
   (package
     (name "lunzip")
-    (version "1.9")
+    (version "1.10")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://download.savannah.gnu.org/releases/lzip/"
+       (uri (string-append "mirror://savannah/lzip/"
                            name "/" name "-" version ".tar.gz"))
        (sha256
-        (base32 "1ax3d9cp66z1qb9q7lfzg5bpx9630xrxgq9a5sw569wm0qqgpg2q"))))
+        (base32 "1iw59br6nsxs7l1p875h8w3vxwr04xfhg5zyal64crvamhxkj5kl"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
        (list "CC=gcc")))
-    (home-page "http://www.nongnu.org/lzip/lunzip.html")
+    (home-page "https://www.nongnu.org/lzip/lunzip.html")
     (synopsis "Small, stand-alone lzip decompressor")
     (description
      "Lunzip is a decompressor for files in the lzip compression format (.lz),
@@ -1982,19 +2003,19 @@ Lunzip is intended to be fully compatible with the regular lzip package.")
 (define-public clzip
   (package
     (name "clzip")
-    (version "1.9")
+    (version "1.10")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://download.savannah.gnu.org/releases/lzip/"
+       (uri (string-append "mirror://savannah/lzip/"
                            name "/" name "-" version ".tar.gz"))
        (sha256
-        (base32 "1brvsnpihzj81cf4wk2x5bnr2qldlq0wncpdbzxmzvxapm1cq2yc"))))
+        (base32 "03xcmhl3dya4jrwmsqh09ikimpb36fr3vkh2bwfzz1sbcns0cdg3"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
        (list "CC=gcc")))
-    (home-page "http://www.nongnu.org/lzip/clzip.html")
+    (home-page "https://www.nongnu.org/lzip/clzip.html")
     (synopsis "Small, stand-alone lzip compressor and decompressor")
     (description
      "Clzip is a compressor and decompressor for files in the lzip compression
@@ -2008,14 +2029,14 @@ Clzip is intended to be fully compatible with the regular lzip package.")
 (define-public lzlib
   (package
     (name "lzlib")
-    (version "1.9")
+    (version "1.10")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://download.savannah.gnu.org/releases/lzip/"
+       (uri (string-append "mirror://savannah/lzip/"
                            name "/" name "-" version ".tar.gz"))
        (sha256
-        (base32 "13mssf3hrcnmd4ijbqnxfk0zgj1q5lvpxxkm1hmrbl1h73czhwi4"))))
+        (base32 "0hqhnj2lzqacdbmmnpy91lsm1rd9zlngs1q6s9pyahsv1a0bfshx"))))
     (build-system gnu-build-system)
     ;; The included minilzip binary is only ~16 smaller than the ‘real’ lzip.
     ;; It's used during the test suite, but don't be tempted to install it.
@@ -2023,7 +2044,7 @@ Clzip is intended to be fully compatible with the regular lzip package.")
      `(#:configure-flags
        (list "CC=gcc"
              "--enable-shared")))       ; only static (.a) is built by default
-    (home-page "http://www.nongnu.org/lzip/lzlib.html")
+    (home-page "https://www.nongnu.org/lzip/lzlib.html")
     (synopsis "Lzip data compression C library")
     (description
      "Lzlib is a C library for in-memory LZMA compression and decompression in
@@ -2036,18 +2057,18 @@ corrupted input.")
 (define-public plzip
   (package
     (name "plzip")
-    (version "1.6")
+    (version "1.7")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "http://download.savannah.gnu.org/releases/lzip/"
+       (uri (string-append "mirror://savannah/lzip/"
                            name "/" name "-" version ".tar.gz"))
        (sha256
-        (base32 "0z2cs6vn4xl65wakd013xl3sdfpg8dr0cvcjwc2slh8y9bz7j7ax"))))
+        (base32 "1dzjp9r7krwpsn224bhcqbzd5aj5b4556sdi9yzl2bzbk3fjrqlm"))))
     (build-system gnu-build-system)
     (inputs
      `(("lzlib" ,lzlib)))
-    (home-page "http://www.nongnu.org/lzip/plzip.html")
+    (home-page "https://www.nongnu.org/lzip/plzip.html")
     (synopsis "Parallel lossless data compressor for the lzip format")
     (description
      "Plzip is a massively parallel (multi-threaded) lossless data compressor
@@ -2062,3 +2083,72 @@ faster by plzip, unless the @code{-b} option was used: lzip usually produces
 single-member files which can't be decompressed in parallel.")
     (license (list license:bsd-2        ; arg_parser.{cc,h}
                    license:gpl2+))))    ; everything else
+
+(define-public innoextract
+  (package
+   (name "innoextract")
+   (version "1.6")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/dscharrer/innoextract/archive/"
+                         version ".tar.gz"))
+     (sha256
+      (base32
+       "08sp5vbfjvq1irhhraqkn5m2x1z209r4axhx7laf1adcw30ccapi"))
+     (file-name (string-append name "-" version ".tar.gz"))))
+   (build-system cmake-build-system)
+   (arguments
+    `(#:tests? #f)) ;; No tests available.
+   (inputs `(("boost" ,boost)
+             ("libiconv" ,libiconv)
+             ("xz" ,xz)))
+   (native-inputs `(("pkg-config" ,pkg-config)))
+   (home-page "https://constexpr.org/innoextract/")
+   (synopsis "Tool for extracting Inno Setup installers")
+   (description "innoextract allows extracting Inno Setup installers under
+non-Windows systems without running the actual installer using wine.")
+   (license license:zlib)))
+
+(define-public google-brotli
+  (package
+    (name "google-brotli")
+    (version "1.0.2")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append "https://github.com/google/brotli/archive/v"
+                                 version ".tar.gz"))
+             (sha256
+              (base32
+               "08kl9gww2058p1p7j9xqmcmrabcfihhj3fq984d7fi3bchb2mky2"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'rename-static-libraries
+           ;; The build tools put a 'static' suffix on the static libraries, but
+           ;; other applications don't know how to find these.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((lib (string-append (assoc-ref %outputs "out") "/lib/")))
+               (rename-file (string-append lib "libbrotlicommon-static.a")
+                            (string-append lib "libbrotlicommon.a"))
+               (rename-file (string-append lib "libbrotlidec-static.a")
+                            (string-append lib "libbrotlidec.a"))
+               (rename-file (string-append lib "libbrotlienc-static.a")
+                            (string-append lib "libbrotlienc.a"))
+               #t))))
+       #:configure-flags
+       (list ;; Defaults to "lib64" on 64-bit archs.
+             (string-append "-DCMAKE_INSTALL_LIBDIR="
+                            (assoc-ref %outputs "out") "/lib"))))
+    (home-page "https://github.com/google/brotli")
+    (synopsis "General-purpose lossless compression")
+    (description "This package provides the reference implementation of Brotli,
+a generic-purpose lossless compression algorithm that compresses data using a
+combination of a modern variant of the LZ77 algorithm, Huffman coding and 2nd
+order context modeling, with a compression ratio comparable to the best
+currently available general-purpose compression methods.  It is similar in speed
+with @code{deflate} but offers more dense compression.
+
+The specification of the Brotli Compressed Data Format is defined in RFC 7932.")
+    (license license:expat)))

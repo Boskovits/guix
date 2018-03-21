@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017 Chris Marusich <cmmarusich@gmail.com>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -41,6 +41,9 @@
   #:use-module (gnu build install)
   #:autoload   (gnu build file-systems)
                  (find-partition-by-label find-partition-by-uuid)
+  #:autoload   (gnu build linux-modules)
+                 (device-module-aliases matching-modules)
+  #:use-module (gnu system linux-initrd)
   #:use-module (gnu system)
   #:use-module (gnu bootloader)
   #:use-module (gnu system file-systems)
@@ -331,7 +334,9 @@ bring the system down."
             (let ((to-load-names  (map shepherd-service-canonical-name to-load))
                   (to-start       (filter shepherd-service-auto-start? to-load)))
               (info (G_ "loading new services:~{ ~a~}...~%") to-load-names)
-              (mlet %store-monad ((files (mapm %store-monad shepherd-service-file
+              (mlet %store-monad ((files (mapm %store-monad
+                                               (compose lower-object
+                                                        shepherd-service-file)
                                                to-load)))
                 ;; Here we assume that FILES are exactly those that were computed
                 ;; as part of the derivation that built OS, which is normally the
@@ -622,21 +627,49 @@ any, are available.  Raise an error if they're not."
       ;; Better be safe than sorry.
       (exit 1))))
 
-(define (check-mapped-devices mapped-devices)
+(define (check-mapped-devices os)
   "Check that each of MAPPED-DEVICES is valid according to the 'check'
 procedure of its type."
+  (define boot-mapped-devices
+    (operating-system-boot-mapped-devices os))
+
+  (define (needed-for-boot? md)
+    (memq md boot-mapped-devices))
+
+  (define initrd-modules
+    (operating-system-initrd-modules os))
+
   (for-each (lambda (md)
               (let ((check (mapped-device-kind-check
                             (mapped-device-type md))))
                 ;; We expect CHECK to raise an exception with a detailed
-                ;; '&message' if something goes wrong, but handle the case
-                ;; where it just returns #f.
-                (unless (check md)
-                  (leave (G_ "~a: invalid '~a' mapped device~%")
-                         (location->string
-                          (source-properties->location
-                           (mapped-device-location md)))))))
-            mapped-devices))
+                ;; '&message' if something goes wrong.
+                (check md
+                       #:needed-for-boot? (needed-for-boot? md)
+                       #:initrd-modules initrd-modules)))
+            (operating-system-mapped-devices os)))
+
+(define (check-initrd-modules os)
+  "Check that modules needed by 'needed-for-boot' file systems in OS are
+available in the initrd.  Note that mapped devices are responsible for
+checking this by themselves in their 'check' procedure."
+  (define (file-system-/dev fs)
+    (let ((device (file-system-device fs)))
+      (match (file-system-title fs)
+        ('device device)
+        ('uuid   (find-partition-by-uuid device))
+        ('label  (find-partition-by-label device)))))
+
+  (define file-systems
+    (filter file-system-needed-for-boot?
+            (operating-system-file-systems os)))
+
+  (for-each (lambda (fs)
+              (check-device-initrd-modules (file-system-/dev fs)
+                                           (operating-system-initrd-modules os)
+                                           (source-properties->location
+                                            (file-system-location fs))))
+            file-systems))
 
 
 ;;;
@@ -700,7 +733,8 @@ and TARGET arguments."
                       (#$installer #$bootloader #$device #$target))))))
 
 (define* (perform-action action os
-                         #:key install-bootloader?
+                         #:key skip-safety-checks?
+                         install-bootloader?
                          dry-run? derivations-only?
                          use-substitutes? bootloader-target target
                          image-size file-system-type full-boot?
@@ -709,15 +743,18 @@ and TARGET arguments."
   "Perform ACTION for OS.  INSTALL-BOOTLOADER? specifies whether to install
 bootloader; BOOTLOADER-TAGET is the target for the bootloader; TARGET is the
 target root directory; IMAGE-SIZE is the size of the image to be built, for
-the 'vm-image' and 'disk-image' actions.  The root filesystem is created as a
-FILE-SYSTEM-TYPE filesystem.  FULL-BOOT? is used for the 'vm' action; it
+the 'vm-image' and 'disk-image' actions.  The root file system is created as a
+FILE-SYSTEM-TYPE file system.  FULL-BOOT? is used for the 'vm' action; it
 determines whether to boot directly to the kernel or to the bootloader.
 
 When DERIVATIONS-ONLY? is true, print the derivation file name(s) without
 building anything.
 
 When GC-ROOT is a path, also make that path an indirect root of the build
-output when building a system derivation, such as a disk image."
+output when building a system derivation, such as a disk image.
+
+When SKIP-SAFETY-CHECKS? is true, skip the file system and initrd module
+static checks."
   (define println
     (cut format #t "~a~%" <>))
 
@@ -727,10 +764,12 @@ output when building a system derivation, such as a disk image."
   ;; Check whether the declared file systems exist.  This is better than
   ;; instantiating a broken configuration.  Assume that we can only check if
   ;; running as root.
-  (when (memq action '(init reconfigure))
+  (when (and (not skip-safety-checks?)
+             (memq action '(init reconfigure)))
+    (check-mapped-devices os)
     (when (zero? (getuid))
-      (check-file-system-availability (operating-system-file-systems os)))
-    (check-mapped-devices (operating-system-mapped-devices os)))
+      (check-file-system-availability (operating-system-file-systems os))
+      (check-initrd-modules os)))
 
   (mlet* %store-monad
       ((sys       (system-derivation-for-action os action
@@ -899,6 +938,8 @@ Some ACTIONS support additional ARGS.\n"))
       --expose=SPEC      for 'vm', expose host file system according to SPEC"))
   (display (G_ "
       --full-boot        for 'vm', make a full boot sequence"))
+  (display (G_ "
+      --skip-checks      skip file system and initrd module safety checks"))
   (newline)
   (display (G_ "
   -h, --help             display this help and exit"))
@@ -940,6 +981,9 @@ Some ACTIONS support additional ARGS.\n"))
          (option '("full-boot") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'full-boot? #t result)))
+         (option '("skip-checks") #f #f
+                 (lambda (opt name arg result)
+                   (alist-cons 'skip-safety-checks? #t result)))
 
          (option '("share") #t #f
                  (lambda (opt name arg result)
@@ -1033,6 +1077,8 @@ resulting from command-line parsing."
                              #:derivations-only? (assoc-ref opts
                                                             'derivations-only?)
                              #:use-substitutes? (assoc-ref opts 'substitutes?)
+                             #:skip-safety-checks?
+                             (assoc-ref opts 'skip-safety-checks?)
                              #:file-system-type (assoc-ref opts 'file-system-type)
                              #:image-size (assoc-ref opts 'image-size)
                              #:full-boot? (assoc-ref opts 'full-boot?)

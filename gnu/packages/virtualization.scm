@@ -6,7 +6,8 @@
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 Danny Milosavljevic <dannym@scratchpost.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -52,6 +53,7 @@
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
+  #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages selinux)
   #:use-module (gnu packages sdl)
   #:use-module (gnu packages spice)
@@ -81,16 +83,14 @@
 (define-public qemu
   (package
     (name "qemu")
-    (version "2.10.2")
+    (version "2.11.1")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://download.qemu.org/qemu-"
                                  version ".tar.xz"))
-             (patches (search-patches "qemu-CVE-2017-15038.patch"
-                                      "qemu-CVE-2017-15289.patch"))
              (sha256
               (base32
-               "17w21spvaxaidi2am5lpsln8yjpyp2zi3s3gc6nsxj5arlgamzgw"))))
+               "11l6cs6mib16rgdrnqrhkqs033fjik316gkgfz3asbmxz38lalca"))))
     (build-system gnu-build-system)
     (arguments
      '(;; Running tests in parallel can occasionally lead to failures, like:
@@ -99,7 +99,8 @@
        #:configure-flags (list "--enable-usb-redir" "--enable-opengl"
                                (string-append "--smbd="
                                               (assoc-ref %outputs "out")
-                                              "/libexec/samba-wrapper"))
+                                              "/libexec/samba-wrapper")
+                               "--audio-drv-list=alsa,pa,sdl")
        #:phases
        (modify-phases %standard-phases
          (replace 'configure
@@ -181,6 +182,7 @@ exec smbd $@")))
        ("ncurses" ,ncurses)
        ;; ("pciutils" ,pciutils)
        ("pixman" ,pixman)
+       ("pulseaudio" ,pulseaudio)
        ("sdl" ,sdl)
        ("spice" ,spice)
        ("usbredir" ,usbredir)
@@ -228,7 +230,7 @@ server and embedded PowerPC, and S390 guests.")
     ;; Remove dependencies on optional libraries, notably GUI libraries.
     (inputs (fold alist-delete (package-inputs qemu)
                   '("libusb" "mesa" "sdl" "spice" "virglrenderer"
-                    "usbredir" "libdrm" "libepoxy")))))
+                    "usbredir" "libdrm" "libepoxy" "pulseaudio")))))
 
 (define-public libosinfo
   (package
@@ -279,11 +281,11 @@ server and embedded PowerPC, and S390 guests.")
        ("usb.ids"
         ,(origin
            (method url-fetch)
-           (uri "http://linux-usb.cvs.sourceforge.net/viewvc/linux-usb/htdocs/usb.ids?revision=1.551")
+           (uri "https://svn.code.sf.net/p/linux-usb/repo/trunk/htdocs/usb.ids?r=2681")
            (file-name "usb.ids")
            (sha256
             (base32
-             "17rg5i0wbyk289gr8v4kgvnc9q5bidz7ldcvv9x58l083wn16hq3"))))))
+             "1m6yhvz5k8aqzxgk7xj3jkk8frl1hbv0h3vgj4wbnvnx79qnvz3r"))))))
     (home-page "https://libosinfo.org/")
     (synopsis "Operating system information database")
     (description "libosinfo is a GObject based library API for managing
@@ -345,14 +347,14 @@ manage system or application containers.")
 (define-public libvirt
   (package
     (name "libvirt")
-    (version "3.10.0")
+    (version "4.0.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://libvirt.org/sources/libvirt-"
                                   version ".tar.xz"))
               (sha256
                (base32
-                "03kb37iv3dvvdlslznlc0njvjpmq082lczmsslz5p4fcwb50kwfz"))))
+                "1j6zzajh4j3zzsaqn5f5mrchm0590xcf6rzkfajvqw3bd4dcms79"))))
     (build-system gnu-build-system)
     (arguments
      `(;; FAIL: virshtest
@@ -362,7 +364,7 @@ manage system or application containers.")
        ;; FAIL: networkxml2firewalltest
        ;; FAIL: nwfilterebiptablestest
        ;; FAIL: nwfilterxml2firewalltest
-       ;; Times while running commandest.
+       ;; Time-out while running commandtest.
        #:tests? #f
        #:configure-flags
        (list "--with-polkit"
@@ -382,9 +384,9 @@ manage system or application containers.")
            ;; at runtime, we must prevent writing to them at installation
            ;; time.
            (lambda _
-             (zero? (system* "make" "install"
-                             "sysconfdir=/tmp/etc"
-                             "localstatedir=/tmp/var"))))
+             (invoke "make" "install"
+                            "sysconfdir=/tmp/etc"
+                            "localstatedir=/tmp/var")))
          (add-after 'install 'wrap-libvirtd
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
@@ -612,14 +614,14 @@ domains, their live performance and resource utilization statistics.")
 (define-public criu
   (package
     (name "criu")
-    (version "3.5")
+    (version "3.7")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://download.openvz.org/criu/criu-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1w0ybla7ac0ql0jzh0vxdf2w9amqp88jcg0na3b33r3hq8acry6x"))))
+                "0qrpz7pvnks34v7d8lb73flz3mb7qwnib94pdwaxh0mskn8470fq"))))
     (build-system gnu-build-system)
     (arguments
      `(#:test-target "test"
@@ -728,7 +730,7 @@ Machine Protocol.")
 (define-public lookingglass
   (package
    (name "lookingglass")
-   (version "a9")
+   (version "a10")
    (source
     (origin
      (method url-fetch)
@@ -737,7 +739,7 @@ Machine Protocol.")
      (file-name (string-append name "-" version))
      (sha256
       (base32
-       "015chy4x94x4dd5831d7n0gada8rhahmdx7bdbdhajlzivi3kjcw"))))
+       "0zlxg9ibzr0a598wr5nl1pb4l7mzsqn8ip72v4frph0vwsm5il6c"))))
    (build-system gnu-build-system)
    (inputs `(("fontconfig" ,fontconfig)
              ("glu" ,glu)
@@ -746,7 +748,7 @@ Machine Protocol.")
              ("sdl2" ,sdl2)
              ("sdl2-ttf" ,sdl2-ttf)
              ("spice-protocol" ,spice-protocol)))
-   (native-inputs `(("pkg-config", pkg-config)))
+   (native-inputs `(("pkg-config" ,pkg-config)))
    (arguments
     `(#:tests? #f ;; No tests are available.
       #:phases (modify-phases %standard-phases

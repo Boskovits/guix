@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -323,11 +323,6 @@ info --version")
             'success!
             (marionette-eval '(begin
                                 ;; Make sure the (guix …) modules are found.
-                                ;;
-                                ;; XXX: Currently shepherd and marionette run
-                                ;; on Guile 2.0 whereas Guix is on 2.2.  Yet
-                                ;; we should be able to load the 2.0 Scheme
-                                ;; files since it's pure Scheme.
                                 (add-to-load-path
                                  #+(file-append guix "/share/guile/site/2.2"))
 
@@ -482,7 +477,7 @@ in a loop.  See <http://bugs.gnu.org/26931>.")
 
 (define %mcron-os
   ;; System with an mcron service, with one mcron job for "root" and one mcron
-  ;; job for an unprivileged user (note: #:user is an 'mcron2' thing.)
+  ;; job for an unprivileged user.
   (let ((job1 #~(job next-second-from
                      (lambda ()
                        (call-with-output-file "witness"

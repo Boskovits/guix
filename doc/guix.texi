@@ -13,7 +13,7 @@
 @set OPENPGP-SIGNING-KEY-ID 3CE464558A84FDC69DB40CFB090B11993D9AEBB5
 
 @copying
-Copyright @copyright{} 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès@*
+Copyright @copyright{} 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès@*
 Copyright @copyright{} 2013, 2014, 2016 Andreas Enge@*
 Copyright @copyright{} 2013 Nikita Karetnikov@*
 Copyright @copyright{} 2014, 2015, 2016 Alex Kost@*
@@ -21,16 +21,16 @@ Copyright @copyright{} 2015, 2016 Mathieu Lirzin@*
 Copyright @copyright{} 2014 Pierre-Antoine Rault@*
 Copyright @copyright{} 2015 Taylan Ulrich Bayırlı/Kammer@*
 Copyright @copyright{} 2015, 2016, 2017 Leo Famulari@*
-Copyright @copyright{} 2015, 2016, 2017 Ricardo Wurmus@*
+Copyright @copyright{} 2015, 2016, 2017, 2018 Ricardo Wurmus@*
 Copyright @copyright{} 2016 Ben Woodcroft@*
 Copyright @copyright{} 2016, 2017 Chris Marusich@*
-Copyright @copyright{} 2016, 2017 Efraim Flashner@*
+Copyright @copyright{} 2016, 2017, 2018 Efraim Flashner@*
 Copyright @copyright{} 2016 John Darrington@*
-Copyright @copyright{} 2016, 2017 ng0@*
+Copyright @copyright{} 2016, 2017 Nils Gillmann@*
 Copyright @copyright{} 2016, 2017 Jan Nieuwenhuizen@*
 Copyright @copyright{} 2016 Julien Lepiller@*
 Copyright @copyright{} 2016 Alex ter Weele@*
-Copyright @copyright{} 2017 Clément Lassieur@*
+Copyright @copyright{} 2017, 2018 Clément Lassieur@*
 Copyright @copyright{} 2017 Mathieu Othacehe@*
 Copyright @copyright{} 2017 Federico Beffa@*
 Copyright @copyright{} 2017 Carlo Zancanaro@*
@@ -40,11 +40,14 @@ Copyright @copyright{} 2017 Christopher Allan Webber@*
 Copyright @copyright{} 2017 Marius Bakke@*
 Copyright @copyright{} 2017 Hartmut Goebel@*
 Copyright @copyright{} 2017 Maxim Cournoyer@*
-Copyright @copyright{} 2017 Tobias Geerinckx-Rice@*
+Copyright @copyright{} 2017, 2018 Tobias Geerinckx-Rice@*
 Copyright @copyright{} 2017 George Clemmer@*
 Copyright @copyright{} 2017 Andy Wingo@*
-Copyright @copyright{} 2017 Arun Isaac@*
-Copyright @copyright{} 2017 nee
+Copyright @copyright{} 2017, 2018 Arun Isaac@*
+Copyright @copyright{} 2017 nee@*
+Copyright @copyright{} 2018 Rutger Helling@*
+Copyright @copyright{} 2018 Oleg Pykhalov@*
+Copyright @copyright{} 2018 Mike Gerwitz
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -122,6 +125,7 @@ Setting Up the Daemon
 
 * Build Environment Setup::     Preparing the isolated build environment.
 * Daemon Offload Setup::        Offloading builds to remote machines.
+* SELinux Support::             Using an SELinux policy for the daemon.
 
 Package Management
 
@@ -247,6 +251,7 @@ Services
 * Audio Services::              The MPD.
 * Virtualization Services::     Virtualization services.
 * Version Control Services::    Providing remote access to Git repositories.
+* Game Services::                Game servers.
 * Miscellaneous Services::      Other services.
 
 Defining Services
@@ -402,6 +407,11 @@ dependencies.  This is often quicker than installing from source, which
 is described in the next sections.  The only requirement is to have
 GNU@tie{}tar and Xz.
 
+We provide a
+@uref{https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh,
+shell installer script}, which automates the download, installation, and
+initial configuration of Guix.  It should be run as the root user.
+
 Installing goes along these lines:
 
 @enumerate
@@ -433,7 +443,8 @@ and rerun the @code{gpg --verify} command.
 @c end authentication part
 
 @item
-As @code{root}, run:
+Now, you need to become the @code{root} user.  Depending on your distribution,
+you may have to run @code{su -} or @code{sudo -i}.  As @code{root}, run:
 
 @example
 # cd /tmp
@@ -593,7 +604,7 @@ in the Guix source tree for additional details.
 GNU Guix depends on the following packages:
 
 @itemize
-@item @url{http://gnu.org/software/guile/, GNU Guile}, version 2.0.9 or
+@item @url{http://gnu.org/software/guile/, GNU Guile}, version 2.0.13 or
 later, including 2.2.x;
 @item @url{http://gnupg.org/, GNU libgcrypt};
 @item
@@ -604,6 +615,7 @@ Guile,, gnutls-guile, GnuTLS-Guile});
 @c FIXME: Specify a version number once a release has been made.
 @uref{https://gitlab.com/guile-git/guile-git, Guile-Git}, from August
 2017 or later;
+@item @url{http://zlib.net, zlib};
 @item @url{http://www.gnu.org/software/make/, GNU Make}.
 @end itemize
 
@@ -625,8 +637,8 @@ Support for build offloading (@pxref{Daemon Offload Setup}) and
 version 0.10.2 or later.
 
 @item
-When @url{http://zlib.net, zlib} is available, @command{guix publish}
-can compress build byproducts (@pxref{Invoking guix publish}).
+When @url{http://www.bzip.org, libbz2} is available,
+@command{guix-daemon} can use it to compress build logs.
 @end itemize
 
 Unless @code{--disable-daemon} was passed to @command{configure}, the
@@ -634,7 +646,6 @@ following packages are also needed:
 
 @itemize
 @item @url{http://sqlite.org, SQLite 3};
-@item @url{http://www.bzip.org, libbz2};
 @item @url{http://gcc.gnu.org, GCC's g++}, with support for the
 C++11 standard.
 @end itemize
@@ -748,6 +759,7 @@ the daemon to download pre-built binaries.
 @menu
 * Build Environment Setup::     Preparing the isolated build environment.
 * Daemon Offload Setup::        Offloading builds to remote machines.
+* SELinux Support::             Using an SELinux policy for the daemon.
 @end menu
 
 @node Build Environment Setup
@@ -1075,6 +1087,92 @@ main node:
 @end example
 
 
+@node SELinux Support
+@subsection SELinux Support
+
+@cindex SELinux, daemon policy
+@cindex mandatory access control, SELinux
+@cindex security, guix-daemon
+Guix includes an SELinux policy file at @file{etc/guix-daemon.cil} that
+can be installed on a system where SELinux is enabled, in order to label
+Guix files and to specify the expected behavior of the daemon.  Since
+GuixSD does not provide an SELinux base policy, the daemon policy cannot
+be used on GuixSD.
+
+@subsubsection Installing the SELinux policy
+@cindex SELinux, policy installation
+To install the policy run this command as root:
+
+@example
+semodule -i etc/guix-daemon.cil
+@end example
+
+Then relabel the file system with @code{restorecon} or by a different
+mechanism provided by your system.
+
+Once the policy is installed, the file system has been relabeled, and
+the daemon has been restarted, it should be running in the
+@code{guix_daemon_t} context.  You can confirm this with the following
+command:
+
+@example
+ps -Zax | grep guix-daemon
+@end example
+
+Monitor the SELinux log files as you run a command like @code{guix build
+hello} to convince yourself that SELinux permits all necessary
+operations.
+
+@subsubsection Limitations
+@cindex SELinux, limitations
+
+This policy is not perfect.  Here is a list of limitations or quirks
+that should be considered when deploying the provided SELinux policy for
+the Guix daemon.
+
+@enumerate
+@item
+@code{guix_daemon_socket_t} isn’t actually used.  None of the socket
+operations involve contexts that have anything to do with
+@code{guix_daemon_socket_t}.  It doesn’t hurt to have this unused label,
+but it would be preferrable to define socket rules for only this label.
+
+@item
+@code{guix gc} cannot access arbitrary links to profiles.  By design,
+the file label of the destination of a symlink is independent of the
+file label of the link itself.  Although all profiles under
+$localstatedir are labelled, the links to these profiles inherit the
+label of the directory they are in.  For links in the user’s home
+directory this will be @code{user_home_t}.  But for links from the root
+user’s home directory, or @file{/tmp}, or the HTTP server’s working
+directory, etc, this won’t work.  @code{guix gc} would be prevented from
+reading and following these links.
+
+@item
+The daemon’s feature to listen for TCP connections might no longer work.
+This might require extra rules, because SELinux treats network sockets
+differently from files.
+
+@item
+Currently all files with a name matching the regular expression
+@code{/gnu/store/.+-(guix-.+|profile)/bin/guix-daemon} are assigned the
+label @code{guix_daemon_exec_t}; this means that @emph{any} file with
+that name in any profile would be permitted to run in the
+@code{guix_daemon_t} domain.  This is not ideal.  An attacker could
+build a package that provides this executable and convince a user to
+install and run it, which lifts it into the @code{guix_daemon_t} domain.
+At that point SELinux could not prevent it from accessing files that are
+allowed for processes in that domain.
+
+We could generate a much more restrictive policy at installation time,
+so that only the @emph{exact} file name of the currently installed
+@code{guix-daemon} executable would be labelled with
+@code{guix_daemon_exec_t}, instead of using a broad regular expression.
+The downside is that root would have to install or upgrade the policy at
+installation time whenever the Guix package that provides the
+effectively running @code{guix-daemon} executable is upgraded.
+@end enumerate
+
 @node Invoking guix-daemon
 @section Invoking @command{guix-daemon}
 
@@ -1234,12 +1332,13 @@ processes to gain access to undeclared dependencies.  It is necessary,
 though, when @command{guix-daemon} is running under an unprivileged user
 account.
 
-@item --disable-log-compression
-Disable compression of the build logs.
+@item --log-compression=@var{type}
+Compress build logs according to @var{type}, one of @code{gzip},
+@code{bzip2}, or @code{none}.
 
 Unless @code{--lose-logs} is used, all the build logs are kept in the
 @var{localstatedir}.  To save space, the daemon automatically compresses
-them with bzip2 by default.  This option disables that.
+them with bzip2 by default.
 
 @item --disable-deduplication
 @cindex deduplication
@@ -1474,8 +1573,10 @@ full name of a font using XLFD (X Logical Font Description), like this:
 To be able to use such full names for the TrueType fonts installed in
 your Guix profile, you need to extend the font path of the X server:
 
+@c Note: 'xset' does not accept symlinks so the trick below arranges to
+@c get at the real directory.  See <https://bugs.gnu.org/30655>.
 @example
-xset +fp ~/.guix-profile/share/fonts/truetype
+xset +fp $(dirname $(readlink -f ~/.guix-profile/share/fonts/truetype/fonts.dir))
 @end example
 
 @cindex @code{xlsfonts}
@@ -2657,6 +2758,12 @@ lucky enough to be using Guix.  You'd tell them to run @command{guix
 package -i @var{something}}, but that's not possible in this case.  This
 is where @command{guix pack} comes in.
 
+@quotation Note
+If you are looking for ways to exchange binaries among machines that
+already run Guix, @pxref{Invoking guix copy}, @ref{Invoking guix
+publish}, and @ref{Invoking guix archive}.
+@end quotation
+
 @cindex pack
 @cindex bundle
 @cindex application bundle
@@ -2739,6 +2846,19 @@ This has the same purpose as the same-named option in @command{guix
 build} (@pxref{Additional Build Options, @code{--expression} in
 @command{guix build}}).
 
+@item --manifest=@var{file}
+@itemx -m @var{file}
+Use the packages contained in the manifest object returned by the Scheme
+code in @var{file}.
+
+This has a similar purpose as the same-named option in @command{guix
+package} (@pxref{profile-manifest, @option{--manifest}}) and uses the
+same manifest files.  It allows you to define a collection of packages
+once and use it both for creating profiles and for creating archives
+for use on machines that do not have Guix installed.  Note that you can
+specify @emph{either} a manifest file @emph{or} a list of packages,
+but not both.
+
 @item --system=@var{system}
 @itemx -s @var{system}
 Attempt to build for @var{system}---e.g., @code{i686-linux}---instead of
@@ -2792,9 +2912,15 @@ options (@pxref{Package Transformation Options}).
 @cindex @command{guix archive}
 @cindex archive
 The @command{guix archive} command allows users to @dfn{export} files
-from the store into a single archive, and to later @dfn{import} them.
+from the store into a single archive, and to later @dfn{import} them on
+a machine that runs Guix.
 In particular, it allows store files to be transferred from one machine
 to the store on another machine.
+
+@quotation Note
+If you're looking for a way to produce archives in a format suitable for
+tools other than Guix, @pxref{Invoking guix pack}.
+@end quotation
 
 @cindex exporting store items
 To export store files as an archive to standard output, run:
@@ -3681,10 +3807,10 @@ Go build mechanisms}.
 The user is expected to provide a value for the key @code{#:import-path}
 and, in some cases, @code{#:unpack-path}.  The
 @url{https://golang.org/doc/code.html#ImportPaths, import path}
-corresponds to the filesystem path expected by the package's build
+corresponds to the file system path expected by the package's build
 scripts and any referring packages, and provides a unique way to
 refer to a Go package.  It is typically based on a combination of the
-package source code's remote URI and filesystem hierarchy structure.  In
+package source code's remote URI and file system hierarchy structure.  In
 some cases, you will need to unpack the package's source code to a
 different directory structure than the one indicated by the import path,
 and @code{#:unpack-path} should be used in such cases.
@@ -3991,12 +4117,12 @@ Apart from that, the build system also adds the following phases:
 @table @code
 
 @item fix-runpath
-This phase tries to locate the local directories in the package being build,
-which has libraries that some of the binaries need.  If any are found, they will
-be added to the programs @code{RUNPATH}.  It is needed because
-@code{meson-for-build} keeps the @code{RUNPATH} of binaries and libraries from
-when they are build, but often that is not the @code{RUNPATH} we want.
-Therefor it is also shrinked to the minimum needed by the program.
+This phase ensures that all binaries can find the libraries they need.
+It searches for required libraries in subdirectories of the package being
+built, and adds those to @code{RUNPATH} where needed.  It also removes
+references to libraries left over from the build phase by
+@code{meson-for-build}, such as test dependencies, that aren't actually
+required for the program to run.
 
 @item glib-or-gtk-wrap
 This phase is the phase provided by @code{glib-or-gtk-build-system}, and it
@@ -5619,10 +5745,25 @@ The following derivations will be built:
 Attempt to build for @var{system}---e.g., @code{i686-linux}---instead of
 the system type of the build host.
 
+@quotation Note
+The @code{--system} flag is for @emph{native} compilation and must not
+be confused with cross-compilation.  See @code{--target} below for
+information on cross-compilation.
+@end quotation
+
 An example use of this is on Linux-based systems, which can emulate
 different personalities.  For instance, passing
-@code{--system=i686-linux} on an @code{x86_64-linux} system allows users
+@code{--system=i686-linux} on an @code{x86_64-linux} system allows you
 to build packages in a complete 32-bit environment.
+
+Similarly, when transparent emulation with QEMU and @code{binfmt_misc}
+is enabled (@pxref{Virtualization Services,
+@code{qemu-binfmt-service-type}}), you can build for any system for
+which a QEMU @code{binfmt_misc} handler is installed.
+
+Builds for a system other than that of the machine you are using can
+also be offloaded to a remote machine of the right architecture.
+@xref{Daemon Offload Setup}, for more information on offloading.
 
 @item --target=@var{triplet}
 @cindex cross-compilation
@@ -5674,6 +5815,7 @@ collection as soon as the build completes.  @xref{Invoking guix gc}, for
 more on GC roots.
 
 @item --log-file
+@cindex build logs, access
 Return the build log file names or URLs for the given
 @var{package-or-derivation}, or raise an error if build logs are
 missing.
@@ -6322,6 +6464,19 @@ packages, etc.---see the documentation for @option{--type} below.  There
 are many packages, though, for which it lacks a method to determine
 whether a new upstream release is available.  However, the mechanism is
 extensible, so feel free to get in touch with us to add a new method!
+
+Sometimes the upstream name differs from the package name used in Guix,
+and @command{guix refresh} needs a little help.  Most updaters honor the
+@code{upstream-name} property in package definitions, which can be used
+to that effect:
+
+@example
+(define-public network-manager
+  (package
+    (name "network-manager")
+    ;; @dots{}
+    (properties '((upstream-name . "NetworkManager")))))
+@end example
 
 When passed @code{--update}, it modifies distribution source files to
 update the version numbers and source tarball hashes of those package
@@ -7066,7 +7221,7 @@ The above commands only use the default output of the given packages.
 To select other outputs, two element tuples can be specified:
 
 @example
-guix environment --ad-hoc -e '(list (@ (gnu packages bash) bash) "include")'
+guix environment --ad-hoc -e '(list (@@ (gnu packages bash) bash) "include")'
 @end example
 
 @item --load=@var{file}
@@ -7080,6 +7235,15 @@ As an example, @var{file} might contain a definition like this
 @example
 @verbatiminclude environment-gdb.scm
 @end example
+
+@item --manifest=@var{file}
+@itemx -m @var{file}
+Create an environment for the packages contained in the manifest object
+returned by the Scheme code in @var{file}.
+
+This is similar to the same-named option in @command{guix package}
+(@pxref{profile-manifest, @option{--manifest}}) and uses the same
+manifest files.
 
 @item --ad-hoc
 Include all specified packages in the resulting environment, as if an
@@ -7125,16 +7289,58 @@ Attempt to build for @var{system}---e.g., @code{i686-linux}.
 @cindex container
 Run @var{command} within an isolated container.  The current working
 directory outside the container is mapped inside the container.
-Additionally, a dummy home directory is created that matches the current
-user's home directory, and @file{/etc/passwd} is configured accordingly.
-The spawned process runs as the current user outside the container, but
-has root privileges in the context of the container.
+Additionally, unless overridden with @code{--user}, a dummy home
+directory is created that matches the current user's home directory, and
+@file{/etc/passwd} is configured accordingly.  The spawned process runs
+as the current user outside the container, but has root privileges in
+the context of the container.
 
 @item --network
 @itemx -N
 For containers, share the network namespace with the host system.
 Containers created without this flag only have access to the loopback
 device.
+
+@item --link-profile
+@itemx -P
+For containers, link the environment profile to
+@file{~/.guix-profile} within the container.  This is equivalent to
+running the command @command{ln -s $GUIX_ENVIRONMENT ~/.guix-profile}
+within the container.  Linking will fail and abort the environment if
+the directory already exists, which will certainly be the case if
+@command{guix environment} was invoked in the user's home directory.
+
+Certain packages are configured to look in
+@code{~/.guix-profile} for configuration files and data;@footnote{For
+example, the @code{fontconfig} package inspects
+@file{~/.guix-profile/share/fonts} for additional fonts.}
+@code{--link-profile} allows these programs to behave as expected within
+the environment.
+
+@item --user=@var{user}
+@itemx -u @var{user}
+For containers, use the username @var{user} in place of the current
+user.  The generated @file{/etc/passwd} entry within the container will
+contain the name @var{user}; the home directory will be
+@file{/home/USER}; and no user GECOS data will be copied.  @var{user}
+need not exist on the system.
+
+Additionally, any shared or exposed path (see @code{--share} and
+@code{--expose} respectively) whose target is within the current user's
+home directory will be remapped relative to @file{/home/USER}; this
+includes the automatic mapping of the current working directory.
+
+@example
+# will expose paths as /home/foo/wd, /home/foo/test, and /home/foo/target
+cd $HOME/wd
+guix environment --container --user=foo \
+     --expose=$HOME/test \
+     --expose=/tmp/target=$HOME/target
+@end example
+
+While this will limit the leaking of user identity through home paths
+and each of the user fields, this is only one useful component of a
+broader privacy/anonymity solution---not one in and of itself.
 
 @item --expose=@var{source}[=@var{target}]
 For containers, expose the file system @var{source} from the host system
@@ -7235,6 +7441,22 @@ http://example.org/file/hello-2.10.tar.gz/sha256/0ssi1@dots{}ndq1i
 
 Obviously, these URLs only work for files that are in the store; in
 other cases, they return 404 (``Not Found'').
+
+@cindex build logs, publication
+Build logs are available from @code{/log} URLs like:
+
+@example
+http://example.org/log/gwspk@dots{}-guile-2.2.3
+@end example
+
+@noindent
+When @command{guix-daemon} is configured to save compressed build logs,
+as is the case by default (@pxref{Invoking guix-daemon}), @code{/log}
+URLs return the compressed log as-is, with an appropriate
+@code{Content-Type} and/or @code{Content-Encoding} header.  We recommend
+running @command{guix-daemon} with @code{--log-compression=gzip} since
+Web browsers can automatically decompress it, which is not the case with
+bzip2 compression.
 
 The following options are available:
 
@@ -8146,7 +8368,7 @@ parted /dev/sda set 1 esp on
 Once you are done partitioning the target hard disk drive, you have to
 create a file system on the relevant partition(s)@footnote{Currently
 GuixSD only supports ext4 and btrfs file systems.  In particular, code
-that reads partition UUIDs and labels only works for these file system
+that reads file system UUIDs and labels only works for these file system
 types.}.  For the ESP, if you have one and assuming it is
 @file{/dev/sda2}, run:
 
@@ -8187,7 +8409,7 @@ root file system):
 mount LABEL=my-root /mnt
 @end example
 
-Also mount any other partitions you would like to use on the target
+Also mount any other file systems you would like to use on the target
 system relative to this path.  If you have @file{/boot} on a separate
 partition for example, mount it at @file{/mnt/boot} now so it is found
 by @code{guix system init} afterwards.
@@ -8274,7 +8496,7 @@ to a mounted EFI partition, like @code{/boot/efi}, and do make sure the
 path is actually mounted.
 
 @item
-Be sure that your partition labels match the value of their respective
+Be sure that your file system labels match the value of their respective
 @code{device} fields in your @code{file-system} configuration, assuming
 your @code{file-system} configuration sets the value of @code{title} to
 @code{'label}.
@@ -8480,7 +8702,7 @@ of a package:
 @end lisp
 
 @findex specification->package
-Referring to packages by variable name, like @var{tcpdump} above, has
+Referring to packages by variable name, like @code{bind} above, has
 the advantage of being unambiguous; it also allows typos and such to be
 diagnosed right away as ``unbound variables''.  The downside is that one
 needs to know which module defines which package, and to augment the
@@ -8571,7 +8793,7 @@ instead of full-blown desktop environments would look like this:
 @include os-config-lightweight-desktop.texi
 @end lisp
 
-This example refers to the @file{/boot/efi} partition by its UUID,
+This example refers to the @file{/boot/efi} file system by its UUID,
 @code{1234-ABCD}.  Replace this UUID with the right UUID on your system,
 as returned by the @command{blkid} command.
 
@@ -8670,11 +8892,16 @@ the command-line of the kernel---e.g., @code{("console=ttyS0")}.
 @item @code{bootloader}
 The system bootloader configuration object.  @xref{Bootloader Configuration}.
 
-@item @code{initrd} (default: @code{base-initrd})
+@item @code{initrd-modules} (default: @code{%base-initrd-modules})
 @cindex initrd
 @cindex initial RAM disk
-A two-argument monadic procedure that returns an initial RAM disk for
-the Linux kernel.  @xref{Initial RAM Disk}.
+The list of Linux kernel modules that need to be available in the
+initial RAM disk.  @xref{Initial RAM Disk}.
+
+@item @code{initrd} (default: @code{base-initrd})
+A monadic procedure that returns an initial RAM disk for the Linux
+kernel.  This field is provided to support low-level customization and
+should rarely be needed for casual use.  @xref{Initial RAM Disk}.
 
 @item @code{firmware} (default: @var{%base-firmware})
 @cindex firmware
@@ -8835,8 +9062,8 @@ interpreted.
 
 When it is the symbol @code{device}, then the @code{device} field is
 interpreted as a file name; when it is @code{label}, then @code{device}
-is interpreted as a partition label name; when it is @code{uuid},
-@code{device} is interpreted as a partition unique identifier (UUID).
+is interpreted as a file system label name; when it is @code{uuid},
+@code{device} is interpreted as a file system unique identifier (UUID).
 
 UUIDs may be converted from their string representation (as shown by the
 @command{tune2fs -l} command) using the @code{uuid} form@footnote{The
@@ -8854,8 +9081,8 @@ like this:
   (device (uuid "4dab5feb-d176-45de-b287-9b0a6e4c01cb")))
 @end example
 
-The @code{label} and @code{uuid} options offer a way to refer to disk
-partitions without having to hard-code their actual device
+The @code{label} and @code{uuid} options offer a way to refer to file
+systems without having to hard-code their actual device
 name@footnote{Note that, while it is tempting to use
 @file{/dev/disk/by-uuid} and similar device names to achieve the same
 result, this is not recommended: These special device nodes are created
@@ -9423,6 +9650,7 @@ declaration.
 * Audio Services::              The MPD.
 * Virtualization Services::     Virtualization services.
 * Version Control Services::    Providing remote access to Git repositories.
+* Game Services::                Game servers.
 * Miscellaneous Services::      Other services.
 @end menu
 
@@ -9570,7 +9798,20 @@ man page for more information.
 
 @item @code{tty}
 The name of the console this agetty runs on, as a string---e.g.,
-@code{"ttyS0"}. This argument is mandatory.
+@code{"ttyS0"}. This argument is optional, it will default to
+a reasonable default serial port used by the kernel Linux.
+
+For this, if there is a value for an option @code{agetty.tty} in the kernel
+command line, agetty will extract the device name of the serial port
+from it and use that.
+
+If not and if there is a value for an option @code{console} with a tty in
+the Linux command line, agetty will extract the device name of the
+serial port from it and use that.
+
+In both cases, agetty will leave the other serial device settings
+(baud rate etc.) alone---in the hope that Linux pinned them to the
+correct values.
 
 @item @code{baud-rate} (default: @code{#f})
 A string containing a comma-separated list of one or more baud rates, in
@@ -9910,6 +10151,10 @@ The number of seconds of silence and the number of seconds of activity,
 respectively, after which a build process times out.  A value of zero
 disables the timeout.
 
+@item @code{log-compression} (default: @code{'bzip2})
+The type of compression used for build logs---one of @code{gzip},
+@code{bzip2}, or @code{none}.
+
 @item @code{extra-options} (default: @code{'()})
 List of extra command-line options for @command{guix-daemon}.
 
@@ -10133,9 +10378,9 @@ caching; when @code{#f}, the number of processors is used.
 @xref{Invoking guix publish, @option{--workers}}, for more information.
 
 @item @code{ttl} (default: @code{#f})
-When it is an integer, this denotes the @dfn{time-to-live} of the
-published archives.  @xref{Invoking guix publish, @option{--ttl}}, for
-more information.
+When it is an integer, this denotes the @dfn{time-to-live} in seconds
+of the published archives.  @xref{Invoking guix publish, @option{--ttl}},
+for more information.
 @end table
 @end deftp
 
@@ -10234,7 +10479,7 @@ gexps to introduce job definitions that are passed to mcron
 for more information on mcron job specifications.  Below is the
 reference of the mcron service.
 
-@deffn {Scheme Procedure} mcron-service @var{jobs} [#:mcron @var{mcron2}]
+@deffn {Scheme Procedure} mcron-service @var{jobs} [#:mcron @var{mcron}]
 Return an mcron service running @var{mcron} that schedules @var{jobs}, a
 list of gexps denoting mcron job specifications.
 
@@ -10259,7 +10504,7 @@ mcron jobs to run.
 Data type representing the configuration of mcron.
 
 @table @asis
-@item @code{mcron} (default: @var{mcron2})
+@item @code{mcron} (default: @var{mcron})
 The mcron package to use.
 
 @item @code{jobs}
@@ -10292,9 +10537,8 @@ with the default settings, for commonly encountered log files.
 
 (operating-system
   ;; @dots{}
-  (services (cons* (service mcron-service-type)
-                   (service rottlog-service-type)
-                   %base-services)))
+  (services (cons (service rottlog-service-type)
+                  %base-services)))
 @end lisp
 
 @defvr {Scheme Variable} rottlog-service-type
@@ -10526,6 +10770,59 @@ make an initial adjustment of more than 1,000 seconds.
 List of host names used as the default NTP servers.
 @end defvr
 
+@cindex OpenNTPD
+@deffn {Scheme Procedure} openntpd-service-type
+Run the @command{ntpd}, the Network Time Protocol (NTP) daemon, as implemented
+by @uref{http://www.openntpd.org, OpenNTPD}.  The daemon will keep the system
+clock synchronized with that of the given servers.
+
+@example
+(service
+ openntpd-service-type
+ (openntpd-configuration
+  (listen-on '("127.0.0.1" "::1"))
+  (sensor '("udcf0 correction 70000"))
+  (constraint-from '("www.gnu.org"))
+  (constraints-from '("https://www.google.com/"))
+  (allow-large-adjustment? #t)))
+
+@end example
+@end deffn
+
+@deftp {Data Type} openntpd-configuration
+@table @asis
+@item @code{openntpd} (default: @code{(file-append openntpd "/sbin/ntpd")})
+The openntpd executable to use.
+@item @code{listen-on} (default: @code{'("127.0.0.1" "::1")})
+A list of local IP addresses or hostnames the ntpd daemon should listen on.
+@item @code{query-from} (default: @code{'()})
+A list of local IP address the ntpd daemon should use for outgoing queries.
+@item @code{sensor} (default: @code{'()})
+Specify a list of timedelta sensor devices ntpd should use.  @code{ntpd}
+will listen to each sensor that acutally exists and ignore non-existant ones.
+See @uref{https://man.openbsd.org/ntpd.conf, upstream documentation} for more
+information.
+@item @code{server} (default: @var{%ntp-servers})
+Specify a list of IP addresses or hostnames of NTP servers to synchronize to.
+@item @code{servers} (default: @code{'()})
+Specify a list of IP addresses or hostnames of NTP pools to synchronize to.
+@item @code{constraint-from} (default: @code{'()})
+@code{ntpd} can be configured to query the ‘Date’ from trusted HTTPS servers via TLS.
+This time information is not used for precision but acts as an authenticated
+constraint, thereby reducing the impact of unauthenticated NTP
+man-in-the-middle attacks.
+Specify a list of URLs, IP addresses or hostnames of HTTPS servers to provide
+a constraint.
+@item @code{constraints-from} (default: @code{'()})
+As with constraint from, specify a list of URLs, IP addresses or hostnames of
+HTTPS servers to provide a constraint.  Should the hostname resolve to multiple
+IP addresses, @code{ntpd} will calculate a median constraint from all of them.
+@item @code{allow-large-adjustment?} (default: @code{#f})
+Determines if @code{ntpd} is allowed to make an initial adjustment of more
+than 180 seconds.
+@end table
+@end deftp
+
 @cindex inetd
 @deffn {Scheme variable} inetd-service-type
 This service runs the @command{inetd} (@pxref{inetd invocation,,,
@@ -10649,21 +10946,6 @@ service.
 
 See @uref{https://www.torproject.org/docs/tor-hidden-service.html.en, the Tor
 project's documentation} for more information.
-@end deffn
-
-@deffn {Scheme Procedure} bitlbee-service [#:bitlbee bitlbee] @
-         [#:interface "127.0.0.1"] [#:port 6667] @
-         [#:extra-settings ""]
-Return a service that runs @url{http://bitlbee.org,BitlBee}, a daemon that
-acts as a gateway between IRC and chat networks.
-
-The daemon will listen to the interface corresponding to the IP address
-specified in @var{interface}, on @var{port}.  @code{127.0.0.1} means that only
-local clients can connect, whereas @code{0.0.0.0} means that connections can
-come from any networking interface.
-
-In addition, @var{extra-settings} specifies a string to append to the
-configuration file.
 @end deffn
 
 The @code{(gnu services rsync)} module provides the following services:
@@ -10874,6 +11156,23 @@ server.  Alternately, one can specify the @command{sftp-server} command:
          (openssh-configuration
           (subsystems
            `(("sftp" ,(file-append openssh "/libexec/sftp-server"))))))
+@end example
+
+@item @code{accepted-environment} (default: @code{'()})
+List of strings describing which environment variables may be exported.
+
+Each string gets on its own line.  See the @code{AcceptEnv} option in
+@code{man sshd_config}.
+
+This example allows ssh-clients to export the @code{COLORTERM} variable.
+It is set by terminal emulators, which support colors.  You can use it in
+your shell's ressource file to enable colors for the prompt and commands
+if this variable is set.
+
+@example
+(service openssh-service-type
+         (openssh-configuration
+           (accepted-environment '("COLORTERM"))))
 @end example
 
 @item @code{authorized-keys} (default: @code{'()})
@@ -11095,6 +11394,9 @@ The XAuth package to use.
 The Shepherd package used when invoking @command{halt} and
 @command{reboot}.
 
+@item @code{sessreg} (default: @code{sessreg})
+The sessreg package used in order to register the session.
+
 @item @code{slim} (default: @code{slim})
 The SLiM package to use.
 @end table
@@ -11249,8 +11551,8 @@ configuration file.  It is used to pass extra text to be
 added verbatim to the configuration file.
 @end deffn
 
-@deffn {Scheme Procedure} screen-locker-service @var{package} [@var{name}]
-Add @var{package}, a package for a screen-locker or screen-saver whose
+@deffn {Scheme Procedure} screen-locker-service @var{package} [@var{program}]
+Add @var{package}, a package for a screen locker or screen saver whose
 command is @var{program}, to the set of setuid programs and add a PAM entry
 for it.  For example:
 
@@ -11288,16 +11590,16 @@ CUPS service will generate a self-signed certificate if needed, for
 secure connections to the print server.
 
 Suppose you want to enable the Web interface of CUPS and also add
-support for HP printers @i{via} the @code{hplip} package.  You can do
-that directly, like this (you need to use the @code{(gnu packages cups)}
-module):
+support for Epson printers @i{via} the @code{escpr} package and for HP
+printers @i{via} the @code{hplip} package.  You can do that directly,
+like this (you need to use the @code{(gnu packages cups)} module):
 
 @example
 (service cups-service-type
          (cups-configuration
            (web-interface? #t)
            (extensions
-             (list cups-filters hplip))))
+             (list cups-filters escpr hplip))))
 @end example
 
 The available configuration parameters follow.  Each parameter
@@ -12150,6 +12452,15 @@ appropriately, allowing MATE to operate with elevated privileges on a
 limited number of special-purpose system interfaces.  Additionally,
 adding a service made by @code{mate-desktop-service} adds the MATE
 metapackage to the system profile.
+
+The desktop environments in Guix use the Xorg display server by
+default.  If you'd like to use the newer display server protocol
+called Wayland, you need to use the @code{sddm-service} instead of the
+@code{slim-service} for the graphical login manager.  You should then
+select the ``GNOME (Wayland)'' session in SDDM.  Alternatively you can
+also try starting GNOME on Wayland manually from a TTY with the
+command ``XDG_SESSION_TYPE=wayland exec dbus-run-session
+gnome-session``.  Currently only GNOME has support for Wayland.
 
 @deffn {Scheme Procedure} gnome-desktop-service
 Return a service that adds the @code{gnome} package to the system
@@ -14020,6 +14331,9 @@ There is also a way to specify the configuration as a string, if you
 have an old @code{prosody.cfg.lua} file that you want to port over from
 some other system; see the end for more details.
 
+The @code{file-object} type designates either a file-like object
+(@pxref{G-Expressions, file-like objects}) or a file name.
+
 @c The following documentation was initially generated by
 @c (generate-documentation) in (gnu services messaging).  Manually maintained
 @c documentation is better, so we shouldn't hesitate to edit below as
@@ -14040,7 +14354,7 @@ Location of the Prosody data storage directory.  See
 Defaults to @samp{"/var/lib/prosody"}.
 @end deftypevr
 
-@deftypevr {@code{prosody-configuration} parameter} file-name-list plugin-paths
+@deftypevr {@code{prosody-configuration} parameter} file-object-list plugin-paths
 Additional plugin directories.  They are searched in all the specified
 paths in order.  See @url{https://prosody.im/doc/plugins_directory}.
 Defaults to @samp{()}.
@@ -14081,7 +14395,7 @@ should you want to disable them then add them to this list.
 Defaults to @samp{()}.
 @end deftypevr
 
-@deftypevr {@code{prosody-configuration} parameter} file-name groups-file
+@deftypevr {@code{prosody-configuration} parameter} file-object groups-file
 Path to a text file where the shared groups are defined.  If this path is
 empty then @samp{mod_groups} does nothing.  See
 @url{https://prosody.im/doc/modules/mod_groups}.
@@ -14114,13 +14428,13 @@ Path to your private key file.
 Path to your certificate file.
 @end deftypevr
 
-@deftypevr {@code{ssl-configuration} parameter} file-name capath
+@deftypevr {@code{ssl-configuration} parameter} file-object capath
 Path to directory containing root certificates that you wish Prosody to
 trust when verifying the certificates of remote servers.
 Defaults to @samp{"/etc/ssl/certs"}.
 @end deftypevr
 
-@deftypevr {@code{ssl-configuration} parameter} maybe-file-name cafile
+@deftypevr {@code{ssl-configuration} parameter} maybe-file-object cafile
 Path to a file containing root certificates that you wish Prosody to trust.
 Similar to @code{capath} but with all certificates concatenated together.
 @end deftypevr
@@ -14379,6 +14693,49 @@ string, you could instantiate a prosody service like this:
          (opaque-prosody-configuration
           (prosody.cfg.lua "")))
 @end example
+
+@c end of Prosody auto-generated documentation
+
+@subsubheading BitlBee Service
+
+@cindex IRC (Internet Relay Chat)
+@cindex IRC gateway
+@url{http://bitlbee.org,BitlBee} is a gateway that provides an IRC
+interface to a variety of messaging protocols such as XMPP.
+
+@defvr {Scheme Variable} bitlbee-service-type
+This is the service type for the @url{http://bitlbee.org,BitlBee} IRC
+gateway daemon.  Its value is a @code{bitlbee-configuration} (see
+below).
+
+To have BitlBee listen on port 6667 on localhost, add this line to your
+services:
+
+@example
+(service bitlbee-service-type)
+@end example
+@end defvr
+
+@deftp {Data Type} bitlbee-configuration
+This is the configuration for BitlBee, with the following fields:
+
+@table @asis
+@item @code{interface} (default: @code{"127.0.0.1"})
+@itemx @code{port} (default: @code{6667})
+Listen on the network interface corresponding to the IP address
+specified in @var{interface}, on @var{port}.
+
+When @var{interface} is @code{127.0.0.1}, only local clients can
+connect; when it is @code{0.0.0.0}, connections can come from any
+networking interface.
+
+@item @code{package} (default: @code{bitlbee})
+The BitlBee package to use.
+
+@item @code{extra-settings} (default: @code{""})
+Configuration snippet added as-is to the BitlBee configuration file.
+@end table
+@end deftp
 
 
 @node Telephony Services
@@ -14697,6 +15054,48 @@ the 2nd element of the pair is the password.
 @end deftp
 
 
+@subsubheading Darkstat Service
+@cindex darkstat
+Darkstat is a packet sniffer that captures network traffic, calculates
+statistics about usage, and serves reports over HTTP.
+
+@defvar {Scheme Variable} darkstat-service-type
+This is the service type for the
+@uref{https://unix4lyfe.org/darkstat/, darkstat}
+service,  its value must be a @code{darkstat-configuration} record as in
+this example:
+
+@example
+(service darkstat-service-type
+         (darkstat-configuration
+           (interface "eno1")))
+@end example
+@end defvar
+
+@deftp {Data Type} darkstat-configuration
+Data type representing the configuration of @command{darkstat}.
+
+@table @asis
+@item @code{package} (default: @code{darkstat})
+The darkstat package to use.
+
+@item @code{interface}
+Capture traffic on the specified network interface.
+
+@item @code{port} (default: @code{"667"})
+Bind the web interface to the specified port.
+
+@item @code{bind-address} (default: @code{"127.0.0.1"})
+Bind the web interface to the specified address.
+
+@item @code{base} (default: @code{"/"})
+Specify the path of the base URL.  This can be useful if
+@command{darkstat} is accessed via a reverse proxy.
+
+@end table
+@end deftp
+
+
 @node Kerberos Services
 @subsubsection Kerberos Services
 @cindex Kerberos
@@ -14829,8 +15228,162 @@ Local accounts with lower values will silently fail to authenticate.
 @cindex web
 @cindex www
 @cindex HTTP
-The @code{(gnu services web)} module provides the nginx web server and
-also a fastcgi wrapper daemon.
+The @code{(gnu services web)} module provides the Apache HTTP Server,
+the nginx web server, and also a fastcgi wrapper daemon.
+
+@subsubheading Apache HTTP Server
+
+@deffn {Scheme Variable} httpd-service-type
+Service type for the @uref{https://httpd.apache.org/,Apache HTTP} server
+(@dfn{httpd}).  The value for this service type is a
+@code{https-configuration} record.
+
+A simple example configuration is given below.
+
+@example
+(service httpd-service-type
+         (httpd-configuration
+           (config
+             (httpd-config-file
+               (server-name "www.example.com")
+               (document-root "/srv/http/www.example.com")))))
+@end example
+
+Other services can also extend the @code{httpd-service-type} to add to
+the configuration.
+
+@example
+(simple-service 'my-extra-server httpd-service-type
+                (list
+                  (httpd-virtualhost
+                    "*:80"
+                    (list (string-append
+                           "ServerName "www.example.com
+                            DocumentRoot \"/srv/http/www.example.com\"")))))
+@end example
+@end deffn
+
+The details for the @code{httpd-configuration}, @code{httpd-module},
+@code{httpd-config-file} and @code{httpd-virtualhost} record types are
+given below.
+
+@deffn {Data Type} httpd-configuration
+This data type represents the configuration for the httpd service.
+
+@table @asis
+@item @code{package} (default: @code{httpd})
+The httpd package to use.
+
+@item @code{pid-file} (default: @code{"/var/run/httpd"})
+The pid file used by the shepherd-service.
+
+@item @code{config} (default: @code{(httpd-config-file)})
+The configuration file to use with the httpd service. The default value
+is a @code{httpd-config-file} record, but this can also be a different
+G-expression that generates a file, for example a @code{plain-file}. A
+file outside of the store can also be specified through a string.
+
+@end table
+@end deffn
+
+@deffn {Data Type} httpd-module
+This data type represents a module for the httpd service.
+
+@table @asis
+@item @code{name}
+The name of the module.
+
+@item @code{file}
+The file for the module. This can be relative to the httpd package being
+used, the absolute location of a file, or a G-expression for a file
+within the store, for example @code{(file-append mod-wsgi
+"/modules/mod_wsgi.so")}.
+
+@end table
+@end deffn
+
+@deffn {Data Type} httpd-config-file
+This data type represents a configuration file for the httpd service.
+
+@table @asis
+@item @code{modules} (default: @code{%default-httpd-modules})
+The modules to load. Additional modules can be added here, or loaded by
+additional configuration.
+
+@item @code{server-root} (default: @code{httpd})
+The @code{ServerRoot} in the configuration file, defaults to the httpd
+package. Directives including @code{Include} and @code{LoadModule} are
+taken as relative to the server root.
+
+@item @code{server-name} (default: @code{#f})
+The @code{ServerName} in the configuration file, used to specify the
+request scheme, hostname and port that the server uses to identify
+itself.
+
+This doesn't need to be set in the server config, and can be specifyed
+in virtual hosts. The default is @code{#f} to not specify a
+@code{ServerName}.
+
+@item @code{document-root} (default: @code{"/srv/http"})
+The @code{DocumentRoot} from which files will be served.
+
+@item @code{listen} (default: @code{'("80")})
+The list of values for the @code{Listen} directives in the config
+file. The value should be a list of strings, when each string can
+specify the port number to listen on, and optionally the IP address and
+protocol to use.
+
+@item @code{pid-file} (default: @code{"/var/run/httpd"})
+The @code{PidFile} to use. This should match the @code{pid-file} set in
+the @code{httpd-configuration} so that the Shepherd service is
+configured correctly.
+
+@item @code{error-log} (default: @code{"/var/log/httpd/error_log"})
+The @code{ErrorLog} to which the server will log errors.
+
+@item @code{user} (default: @code{"httpd"})
+The @code{User} which the server will answer requests as.
+
+@item @code{group} (default: @code{"httpd"})
+The @code{Group} which the server will answer requests as.
+
+@item @code{extra-config} (default: @code{(list "TypesConfig etc/httpd/mime.types")})
+A flat list of strings and G-expressions which will be added to the end
+of the configuration file.
+
+Any values which the service is extended with will be appended to this
+list.
+
+@end table
+@end deffn
+
+@deffn {Data Type} httpd-virtualhost
+This data type represents a virtualhost configuration block for the httpd service.
+
+These should be added to the extra-config for the httpd-service.
+
+@example
+(simple-service 'my-extra-server httpd-service-type
+                (list
+                  (httpd-virtualhost
+                    "*:80"
+                    (list (string-append
+                           "ServerName "www.example.com
+                            DocumentRoot \"/srv/http/www.example.com\"")))))
+@end example
+
+@table @asis
+@item @code{addresses-and-ports}
+The addresses and ports for the @code{VirtualHost} directive.
+
+@item @code{contents}
+The contents of the @code{VirtualHost} directive, this should be a list
+of strings and G-expressions.
+
+@end table
+@end deffn
+
+@subsubheading NGINX
 
 @deffn {Scheme Variable} nginx-service-type
 Service type for the @uref{https://nginx.org/,NGinx} web server.  The
@@ -15035,11 +15588,12 @@ URI which this location block matches.
 
 @anchor{nginx-location-configuration body}
 @item @code{body}
-Body of the location block, specified as a string. This can contain many
+Body of the location block, specified as a list of strings. This can contain
+many
 configuration directives.  For example, to pass requests to a upstream
 server group defined using an @code{nginx-upstream-configuration} block,
-the following directive would be specified in the body @samp{proxy_pass
-http://upstream-name;}.
+the following directive would be specified in the body @samp{(list "proxy_pass
+http://upstream-name;")}.
 
 @end table
 @end deftp
@@ -15252,6 +15806,31 @@ A simple services setup for nginx with php can look like this:
                  %base-services))
 @end example
 
+@cindex cat-avatar-generator
+The cat avatar generator is a simple service to demonstrate the use of php-fpm
+in @code{Nginx}.  It is used to generate cat avatar from a seed, for instance
+the hash of a user's email address.
+
+@deffn {Scheme Procedure} cat-avatar-generator-serice @
+       [#:cache-dir "/var/cache/cat-avatar-generator"] @
+       [#:package cat-avatar-generator] @
+       [#:configuration (nginx-server-configuration)]
+Returns an nginx-server-configuration that inherits @code{configuration}.  It
+extends the nginx configuration to add a server block that serves @code{package},
+a version of cat-avatar-generator.  During execution, cat-avatar-generator will
+be able to use @code{cache-dir} as its cache directory.
+@end deffn
+
+A simple setup for cat-avatar-generator can look like this:
+@example
+(services (cons* (cat-avatar-generator-service
+                  #:configuration
+                  (nginx-server-configuration
+                    (server-name '("example.com"))))
+                 ...
+                 %base-services))
+@end example
+
 @node Certificate Services
 @subsubsection Certificate Services
 
@@ -15281,14 +15860,48 @@ signature.
 The certbot service automates this process: the initial key
 generation, the initial certification request to the Let's Encrypt
 service, the web server challenge/response integration, writing the
-certificate to disk, and the automated periodic renewals.
+certificate to disk, the automated periodic renewals, and the deployment
+tasks associated with the renewal (e.g. reloading services, copying keys
+with different permissions).
+
+Certbot is run twice a day, at a random minute within the hour.  It
+won't do anything until your certificates are due for renewal or
+revoked, but running it regularly would give your service a chance of
+staying online in case a Let's Encrypt-initiated revocation happened for
+some reason.
+
+By using this service, you agree to the ACME Subscriber Agreement, which
+can be found there:
+@url{https://acme-v01.api.letsencrypt.org/directory}.
 
 @defvr {Scheme Variable} certbot-service-type
-A service type for the @code{certbot} Let's Encrypt client.
+A service type for the @code{certbot} Let's Encrypt client.  Its value
+must be a @code{certbot-configuration} record as in this example:
+
+@example
+(define %nginx-deploy-hook
+  (program-file
+   "nginx-deploy-hook"
+   #~(let ((pid (call-with-input-file "/var/run/nginx/pid" read)))
+       (kill pid SIGHUP))))
+
+(service certbot-service-type
+         (certbot-configuration
+          (email "foo@@example.net")
+          (certificates
+           (list
+            (certificate-configuration
+             (domains '("example.net" "www.example.net"))
+             (deploy-hook %nginx-deploy-hook))
+            (certificate-configuration
+             (domains '("bar.example.net")))))))
+@end example
+
+See below for details about @code{certbot-configuration}.
 @end defvr
 
 @deftp {Data Type} certbot-configuration
-Data type representing the configuration of the @code{certbot} serice.
+Data type representing the configuration of the @code{certbot} service.
 This type has the following parameters:
 
 @table @asis
@@ -15299,16 +15912,24 @@ The certbot package to use.
 The directory from which to serve the Let's Encrypt challenge/response
 files.
 
-@item @code{hosts} (default: @code{()})
-A list of hosts for which to generate certificates and request
-signatures.
+@item @code{certificates} (default: @code{()})
+A list of @code{certificates-configuration}s for which to generate
+certificates and request signatures.  Each certificate has a @code{name}
+and several @code{domains}.
+
+@item @code{email}
+Mandatory email used for registration, recovery contact, and important
+account notifications.
+
+@item @code{rsa-key-size} (default: @code{2048})
+Size of the RSA key.
 
 @item @code{default-location} (default: @i{see below})
 The default @code{nginx-location-configuration}.  Because @code{certbot}
 needs to be able to serve challenges and responses, it needs to be able
 to run a web server.  It does so by extending the @code{nginx} web
 service with an @code{nginx-server-configuration} listening on the
-@var{hosts} on port 80, and which has a
+@var{domains} on port 80, and which has a
 @code{nginx-location-configuration} for the @code{/.well-known/} URI
 path subspace used by Let's Encrypt.  @xref{Web Services}, for more on
 these nginx configuration data types.
@@ -15318,19 +15939,44 @@ Requests to other URL paths will be matched by the
 @code{nginx-server-configuration}s.
 
 By default, the @code{default-location} will issue a redirect from
-@code{http://@var{host}/...} to @code{https://@var{host}/...}, leaving
+@code{http://@var{domain}/...} to @code{https://@var{domain}/...}, leaving
 you to define what to serve on your site via @code{https}.
 
 Pass @code{#f} to not issue a default location.
 @end table
 @end deftp
 
-The public key and its signatures will be written to
-@code{/etc/letsencrypt/live/@var{host}/fullchain.pem}, for each
-@var{host} in the configuration.  The private key is written to
-@code{/etc/letsencrypt/live/@var{host}/privkey.pem}.
+@deftp {Data Type} certificate-configuration
+Data type representing the configuration of a certificate.
+This type has the following parameters:
 
+@table @asis
+@item @code{name} (default: @i{see below})
+This name is used by Certbot for housekeeping and in file paths; it
+doesn't affect the content of the certificate itself.  To see
+certificate names, run @code{certbot certificates}.
 
+Its default is the first provided domain.
+
+@item @code{domains} (default: @code{()})
+The first domain provided will be the subject CN of the certificate, and
+all domains will be Subject Alternative Names on the certificate.
+
+@item @code{deploy-hook} (default: @code{#f})
+Command to be run in a shell once for each successfully issued
+certificate.  For this command, the shell variable
+@code{$RENEWED_LINEAGE} will point to the config live subdirectory (for
+example, @samp{"/etc/letsencrypt/live/example.com"}) containing the new
+certificates and keys; the shell variable @code{$RENEWED_DOMAINS} will
+contain a space-delimited list of renewed certificate domains (for
+example, @samp{"example.com www.example.com"}.
+
+@end table
+@end deftp
+
+For each @code{certificate-configuration}, the certificate is saved to
+@code{/etc/letsencrypt/live/@var{name}/fullchain.pem} and the key is
+saved to @code{/etc/letsencrypt/live/@var{name}/privkey.pem}.
 @node DNS Services
 @subsubsection DNS Services
 @cindex DNS (domain name system)
@@ -15568,7 +16214,7 @@ The backend to store the keys in.  Can be @code{'pem} or @code{'pkcs11}.
 @item @code{config} (default: @code{"/var/lib/knot/keys/keys"})
 The configuration string of the backend.  An example for the PKCS#11 is:
 @code{"pkcs11:token=knot;pin-value=1234 /gnu/store/.../lib/pkcs11/libsofthsm2.so"}.
-For the pem backend, the string reprensents a path in the filesystem.
+For the pem backend, the string reprensents a path in the file system.
 
 @end table
 @end deftp
@@ -16884,8 +17530,10 @@ an absolute path can be specified here.
 
 @node Virtualization Services
 @subsubsection Virtualization services
+
 The @code{(gnu services virtualization)} module provides services for
-the libvirt and virtlog daemons.
+the libvirt and virtlog daemons, as well as other virtualization-related
+services.
 
 @subsubheading Libvirt daemon
 @code{libvirtd} is the server side daemon component of the libvirt
@@ -17588,6 +18236,90 @@ Defaults to @samp{3}
 
 @end deftypevr
 
+@subsubheading Transparent Emulation with QEMU
+
+@cindex emulation
+@cindex @code{binfmt_misc}
+@code{qemu-binfmt-service-type} provides support for transparent
+emulation of program binaries built for different architectures---e.g.,
+it allows you to transparently execute an ARMv7 program on an x86_64
+machine.  It achieves this by combining the @uref{https://www.qemu.org,
+QEMU} emulator and the @code{binfmt_misc} feature of the kernel Linux.
+
+@defvr {Scheme Variable} qemu-binfmt-service-type
+This is the type of the QEMU/binfmt service for transparent emulation.
+Its value must be a @code{qemu-binfmt-configuration} object, which
+specifies the QEMU package to use as well as the architecture we want to
+emulated:
+
+@example
+(service qemu-binfmt-service-type
+         (qemu-binfmt-configuration
+           (platforms (lookup-qemu-platforms "arm" "aarch64" "ppc"))))
+@end example
+
+In this example, we enable transparent emulation for the ARM and aarch64
+platforms.  Running @code{herd stop qemu-binfmt} turns it off, and
+running @code{herd start qemu-binfmt} turns it back on (@pxref{Invoking
+herd, the @command{herd} command,, shepherd, The GNU Shepherd Manual}).
+@end defvr
+
+@deftp {Data Type} qemu-binfmt-configuration
+This is the configuration for the @code{qemu-binfmt} service.
+
+@table @asis
+@item @code{platforms} (default: @code{'()})
+The list of emulated QEMU platforms.  Each item must be a @dfn{platform
+object} as returned by @code{lookup-qemu-platforms} (see below).
+
+@item @code{guix-support?} (default: @code{#f})
+When it is true, QEMU and all its dependencies are added to the build
+environment of @command{guix-daemon} (@pxref{Invoking guix-daemon,
+@code{--chroot-directory} option}).  This allows the @code{binfmt_misc}
+handlers to be used within the build environment, which in turn means
+that you can transparently build programs for another architecture.
+
+For example, let's suppose you're on an x86_64 machine and you have this
+service:
+
+@example
+(service qemu-binfmt-service-type
+         (qemu-binfmt-configuration
+           (platforms (lookup-qemu-platforms "arm"))
+           (guix-support? #t)))
+@end example
+
+You can run:
+
+@example
+guix build -s armhf-linux inkscape
+@end example
+
+@noindent
+and it will build Inkscape for ARMv7 @emph{as if it were a native
+build}, transparently using QEMU to emulate the ARMv7 CPU.  Pretty handy
+if you'd like to test a package build for an architecture you don't have
+access to!
+
+@item @code{qemu} (default: @code{qemu})
+The QEMU package to use.
+@end table
+@end deftp
+
+@deffn {Scheme Procedure} lookup-qemu-platforms @var{platforms}@dots{}
+Return the list of QEMU platform objects corresponding to
+@var{platforms}@dots{}.  @var{platforms} must be a list of strings
+corresponding to platform names, such as @code{"arm"}, @code{"sparc"},
+@code{"mips64el"}, and so on.
+@end deffn
+
+@deffn {Scheme Procedure} qemu-platform? @var{obj}
+Return true if @var{obj} is a platform object.
+@end deffn
+
+@deffn {Scheme Procedure} qemu-platform-name @var{platform}
+Return the name of @var{platform}---a string such as @code{"arm"}.
+@end deffn
 
 @node Version Control Services
 @subsubsection Version Control Services
@@ -17729,6 +18461,37 @@ service will redirect all HTTP traffic on @code{git.my-host.org} to
 HTTPS.  You will also need to add an @code{fcgiwrap} proxy to your
 system services.  @xref{Web Services}.
 @end deffn
+
+@node Game Services
+@subsubsection Game Services
+
+@subsubheading The Battle for Wesnoth Service
+@cindex wesnothd
+@uref{https://wesnoth.org, The Battle for Wesnoth} is a fantasy, turn
+based tactical strategy game, with several single player campaigns, and
+multiplayer games (both networked and local).
+
+@defvar {Scheme Variable} wesnothd-service-type
+Service type for the wesnothd service.  Its value must be a
+@code{wesnothd-configuration} object.  To run wesnothd in the default
+configuration, instantiate it as:
+
+@example
+(service wesnothd-service-type)
+@end example
+@end defvar
+
+@deftp {Data Type} wesnothd-configuration
+Data type representing the configuration of @command{wesnothd}.
+
+@table @asis
+@item @code{package} (default: @code{wesnoth-server})
+The wesnoth server package to use.
+
+@item @code{port} (default: @code{15000})
+The port to bind the server to.
+@end table
+@end deftp
 
 @node Miscellaneous Services
 @subsubsection Miscellaneous Services
@@ -17903,59 +18666,932 @@ The following example will configure the service with default values.
 By default, Cgit can be accessed on port 80 (@code{http://localhost:80}).
 
 @example
-(service nginx-service-type)
-(service fcgiwrap-service-type)
 (service cgit-service-type)
 @end example
 
-@deftp {Data Type} cgit-configuration
-Data type representing the configuration of Cgit.
-This type has the following parameters:
+@c %start of fragment
 
-@table @asis
-@item @code{config-file} (default: @code{(cgit-configuration-file)})
-The configuration file to use for Cgit.  This can be set to a
-@dfn{cgit-configuration-file} record value, or any gexp
-(@pxref{G-Expressions}).
+Available @code{cgit-configuration} fields are:
 
-For example, to instead use a local file, the @code{local-file} function
-can be used:
+@deftypevr {@code{cgit-configuration} parameter} package package
+The CGIT package.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} nginx-server-configuration-list nginx
+NGINX configuration.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string about-filter
+Specifies a command which will be invoked to format the content of about
+pages (both top-level and for each repository).
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string agefile
+Specifies a path, relative to each repository path, which can be used to
+specify the date and time of the youngest commit in the repository.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string auth-filter
+Specifies a command that will be invoked for authenticating repository
+access.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string branch-sort
+Flag which, when set to @samp{age}, enables date ordering in the branch
+ref list, and when set @samp{name} enables ordering by branch name.
+
+Defaults to @samp{"name"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string cache-root
+Path used to store the cgit cache entries.
+
+Defaults to @samp{"/var/cache/cgit"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-static-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of repository pages accessed with a fixed SHA1.
+
+Defaults to @samp{-1}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-dynamic-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of repository pages accessed without a fixed SHA1.
+
+Defaults to @samp{5}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-repo-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of the repository summary page.
+
+Defaults to @samp{5}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-root-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of the repository index page.
+
+Defaults to @samp{5}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-scanrc-ttl
+Number which specifies the time-to-live, in minutes, for the result of
+scanning a path for Git repositories.
+
+Defaults to @samp{15}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-about-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of the repository about page.
+
+Defaults to @samp{15}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-snapshot-ttl
+Number which specifies the time-to-live, in minutes, for the cached
+version of snapshots.
+
+Defaults to @samp{5}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer cache-size
+The maximum number of entries in the cgit cache.  When set to @samp{0},
+caching is disabled.
+
+Defaults to @samp{0}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean case-sensitive-sort?
+Sort items in the repo list case sensitively.
+
+Defaults to @samp{#t}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} list clone-prefix
+List of common prefixes which, when combined with a repository URL,
+generates valid clone URLs for the repository.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} list clone-url
+List of @code{clone-url} templates.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string commit-filter
+Command which will be invoked to format commit messages.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string commit-sort
+Flag which, when set to @samp{date}, enables strict date ordering in the
+commit log, and when set to @samp{topo} enables strict topological
+ordering.
+
+Defaults to @samp{"git log"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string css
+URL which specifies the css document to include in all cgit pages.
+
+Defaults to @samp{"/share/cgit/cgit.css"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string email-filter
+Specifies a command which will be invoked to format names and email
+address of committers, authors, and taggers, as represented in various
+places throughout the cgit interface.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean embedded?
+Flag which, when set to @samp{#t}, will make cgit generate a HTML
+fragment suitable for embedding in other HTML pages.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-commit-graph?
+Flag which, when set to @samp{#t}, will make cgit print an ASCII-art
+commit history graph to the left of the commit messages in the
+repository log page.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-filter-overrides?
+Flag which, when set to @samp{#t}, allows all filter settings to be
+overridden in repository-specific cgitrc files.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-follow-links?
+Flag which, when set to @samp{#t}, allows users to follow a file in the
+log view.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-http-clone?
+If set to @samp{#t}, cgit will act as an dumb HTTP endpoint for Git
+clones.
+
+Defaults to @samp{#t}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-index-links?
+Flag which, when set to @samp{#t}, will make cgit generate extra links
+"summary", "commit", "tree" for each repo in the repository index.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-index-owner?
+Flag which, when set to @samp{#t}, will make cgit display the owner of
+each repo in the repository index.
+
+Defaults to @samp{#t}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-log-filecount?
+Flag which, when set to @samp{#t}, will make cgit print the number of
+modified files for each commit on the repository log page.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-log-linecount?
+Flag which, when set to @samp{#t}, will make cgit print the number of
+added and removed lines for each commit on the repository log page.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-remote-branches?
+Flag which, when set to @code{#t}, will make cgit display remote
+branches in the summary and refs views.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-subject-links?
+Flag which, when set to @code{1}, will make cgit use the subject of the
+parent commit as link text when generating links to parent commits in
+commit view.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-html-serving?
+Flag which, when set to @samp{#t}, will make cgit use the subject of the
+parent commit as link text when generating links to parent commits in
+commit view.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-tree-linenumbers?
+Flag which, when set to @samp{#t}, will make cgit generate linenumber
+links for plaintext blobs printed in the tree view.
+
+Defaults to @samp{#t}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean enable-git-config?
+Flag which, when set to @samp{#f}, will allow cgit to use Git config to
+set any repo specific settings.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string favicon
+URL used as link to a shortcut icon for cgit.
+
+Defaults to @samp{"/favicon.ico"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string footer
+The content of the file specified with this option will be included
+verbatim at the bottom of all pages (i.e.  it replaces the standard
+"generated by..." message).
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string head-include
+The content of the file specified with this option will be included
+verbatim in the HTML HEAD section on all pages.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string header
+The content of the file specified with this option will be included
+verbatim at the top of all pages.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string include
+Name of a configfile to include before the rest of the current config-
+file is parsed.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string index-header
+The content of the file specified with this option will be included
+verbatim above the repository index.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string index-info
+The content of the file specified with this option will be included
+verbatim below the heading on the repository index page.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean local-time?
+Flag which, if set to @samp{#t}, makes cgit print commit and tag times
+in the servers timezone.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string logo
+URL which specifies the source of an image which will be used as a logo
+on all cgit pages.
+
+Defaults to @samp{"/share/cgit/cgit.png"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string logo-link
+URL loaded when clicking on the cgit logo image.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string owner-filter
+Command which will be invoked to format the Owner column of the main
+page.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-atom-items
+Number of items to display in atom feeds view.
+
+Defaults to @samp{10}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-commit-count
+Number of entries to list per page in "log" view.
+
+Defaults to @samp{50}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-message-length
+Number of commit message characters to display in "log" view.
+
+Defaults to @samp{80}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-repo-count
+Specifies the number of entries to list per page on the repository index
+page.
+
+Defaults to @samp{50}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-repodesc-length
+Specifies the maximum number of repo description characters to display
+on the repository index page.
+
+Defaults to @samp{80}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer max-blob-size
+Specifies the maximum size of a blob to display HTML for in KBytes.
+
+Defaults to @samp{0}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string max-stats
+Maximum statistics period.  Valid values are @samp{week},@samp{month},
+@samp{quarter} and @samp{year}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} mimetype-alist mimetype
+Mimetype for the specified filename extension.
+
+Defaults to @samp{((gif "image/gif") (html "text/html") (jpg
+"image/jpeg") (jpeg "image/jpeg") (pdf "application/pdf") (png
+"image/png") (svg "image/svg+xml"))}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string mimetype-file
+Specifies the file to use for automatic mimetype lookup.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string module-link
+Text which will be used as the formatstring for a hyperlink when a
+submodule is printed in a directory listing.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean nocache?
+If set to the value @samp{#t} caching will be disabled.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean noplainemail?
+If set to @samp{#t} showing full author email addresses will be
+disabled.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean noheader?
+Flag which, when set to @samp{#t}, will make cgit omit the standard
+header on all pages.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string readme
+Text which will be used as default value for @code{cgit-repo-readme}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean remove-suffix?
+If set to @code{#t} and @code{repository-directory} is enabled, if any
+repositories are found with a suffix of @code{.git}, this suffix will be
+removed for the URL and name.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer renamelimit
+Maximum number of files to consider when detecting renames.
+
+Defaults to @samp{-1}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string repository-sort
+The way in which repositories in each section are sorted.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} robots-list robots
+Text used as content for the @code{robots} meta-tag.
+
+Defaults to @samp{("noindex" "nofollow")}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string root-desc
+Text printed below the heading on the repository index page.
+
+Defaults to @samp{"a fast webinterface for the git dscm"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string root-readme
+The content of the file specified with this option will be included
+verbatim below thef "about" link on the repository index page.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string root-title
+Text printed as heading on the repository index page.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean scan-hidden-path
+If set to @samp{#t} and repository-directory is enabled,
+repository-directory will recurse into directories whose name starts
+with a period.  Otherwise, repository-directory will stay away from such
+directories, considered as "hidden".  Note that this does not apply to
+the ".git" directory in non-bare repos.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} list snapshots
+Text which specifies the default set of snapshot formats that cgit
+generates links for.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} repository-directory repository-directory
+Name of the directory to scan for repositories (represents
+@code{scan-path}).
+
+Defaults to @samp{"/srv/git"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string section
+The name of the current repository section - all repositories defined
+after this option will inherit the current section name.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string section-sort
+Flag which, when set to @samp{1}, will sort the sections on the
+repository listing by name.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer section-from-path
+A number which, if defined prior to repository-directory, specifies how
+many path elements from each repo path to use as a default section name.
+
+Defaults to @samp{0}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} boolean side-by-side-diffs?
+If set to @samp{#t} shows side-by-side diffs instead of unidiffs per
+default.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string source-filter
+Specifies a command which will be invoked to format plaintext blobs in
+the tree view.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer summary-branches
+Specifies the number of branches to display in the repository "summary"
+view.
+
+Defaults to @samp{10}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer summary-log
+Specifies the number of log entries to display in the repository
+"summary" view.
+
+Defaults to @samp{10}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} integer summary-tags
+Specifies the number of tags to display in the repository "summary"
+view.
+
+Defaults to @samp{10}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string strict-export
+Filename which, if specified, needs to be present within the repository
+for cgit to allow access to that repository.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} string virtual-root
+URL which, if specified, will be used as root for all cgit links.
+
+Defaults to @samp{"/"}.
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} repository-cgit-configuration-list repositories
+A list of @dfn{cgit-repo} records to use with config.
+
+Defaults to @samp{()}.
+
+Available @code{repository-cgit-configuration} fields are:
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-list snapshots
+A mask of snapshot formats for this repo that cgit generates links for,
+restricted by the global @code{snapshots} setting.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string source-filter
+Override the default @code{source-filter}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string url
+The relative URL used to access the repository.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string about-filter
+Override the default @code{about-filter}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string branch-sort
+Flag which, when set to @samp{age}, enables date ordering in the branch
+ref list, and when set to @samp{name} enables ordering by branch name.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-list clone-url
+A list of URLs which can be used to clone repo.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string commit-filter
+Override the default @code{commit-filter}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string commit-sort
+Flag which, when set to @samp{date}, enables strict date ordering in the
+commit log, and when set to @samp{topo} enables strict topological
+ordering.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string defbranch
+The name of the default branch for this repository.  If no such branch
+exists in the repository, the first branch name (when sorted) is used as
+default instead.  By default branch pointed to by HEAD, or "master" if
+there is no suitable HEAD.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string desc
+The value to show as repository description.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string homepage
+The value to show as repository homepage.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string email-filter
+Override the default @code{email-filter}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-commit-graph?
+A flag which can be used to disable the global setting
+@code{enable-commit-graph?}.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-log-filecount?
+A flag which can be used to disable the global setting
+@code{enable-log-filecount?}.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-log-linecount?
+A flag which can be used to disable the global setting
+@code{enable-log-linecount?}.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-remote-branches?
+Flag which, when set to @code{#t}, will make cgit display remote
+branches in the summary and refs views.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-subject-links?
+A flag which can be used to override the global setting
+@code{enable-subject-links?}.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean enable-html-serving?
+A flag which can be used to override the global setting
+@code{enable-html-serving?}.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean hide?
+Flag which, when set to @code{#t}, hides the repository from the
+repository index.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-boolean ignore?
+Flag which, when set to @samp{#t}, ignores the repository.
+
+Defaults to @samp{#f}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string logo
+URL which specifies the source of an image which will be used as a logo
+on this repo’s pages.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string logo-link
+URL loaded when clicking on the cgit logo image.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string owner-filter
+Override the default @code{owner-filter}.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string module-link
+Text which will be used as the formatstring for a hyperlink when a
+submodule is printed in a directory listing.  The arguments for the
+formatstring are the path and SHA1 of the submodule commit.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} module-link-path module-link-path
+Text which will be used as the formatstring for a hyperlink when a
+submodule with the specified subdirectory path is printed in a directory
+listing.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string max-stats
+Override the default maximum statistics period.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string name
+The value to show as repository name.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string owner
+A value used to identify the owner of the repository.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string path
+An absolute path to the repository directory.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string readme
+A path (relative to repo) which specifies a file to include verbatim as
+the "About" page for this repo.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-string section
+The name of the current repository section - all repositories defined
+after this option will inherit the current section name.
+
+Defaults to @samp{""}.
+
+@end deftypevr
+
+@deftypevr {@code{repository-cgit-configuration} parameter} repo-list extra-options
+Extra options will be appended to cgitrc file.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@end deftypevr
+
+@deftypevr {@code{cgit-configuration} parameter} list extra-options
+Extra options will be appended to cgitrc file.
+
+Defaults to @samp{()}.
+
+@end deftypevr
+
+@c %end of fragment
+
+However, it could be that you just want to get a @code{cgitrc} up and
+running.  In that case, you can pass an @code{opaque-cgit-configuration}
+as a record to @code{cgit-service-type}.  As its name indicates, an
+opaque configuration does not have easy reflective capabilities.
+
+Available @code{opaque-cgit-configuration} fields are:
+
+@deftypevr {@code{opaque-cgit-configuration} parameter} package cgit
+The cgit package.
+@end deftypevr
+
+@deftypevr {@code{opaque-cgit-configuration} parameter} string string
+The contents of the @code{cgitrc}, as a string.
+@end deftypevr
+
+For example, if your @code{cgitrc} is just the empty string, you
+could instantiate a cgit service like this:
 
 @example
 (service cgit-service-type
-         (cgit-configuration
-           (config-file (local-file "./my-cgitrc.conf"))))
+         (opaque-cgit-configuration
+          (cgitrc "")))
 @end example
-
-@item @code{package} (default: @code{cgit})
-The Cgit package to use.
-
-@end table
-@end deftp
-
-@deftp {Data Type} cgit-configuration-file
-Data type representing the configuration options for Cgit.
-This type has the following parameters:
-
-@table @asis
-@item @code{css} (default: @code{"/share/cgit/cgit.css"})
-URL which specifies the css document to include in all Cgit pages.
-
-@item @code{logo} (default: @code{"/share/cgit/cgit.png"})
-URL which specifies the source of an image which will be used as a logo
-on all Cgit pages.
-
-@item @code{virtual-root} (default: @code{"/"})
-URL which, if specified, will be used as root for all Cgit links.
-
-@item @code{repository-directory} (default: @code{"/srv/git"})
-Name of the directory to scan for repositories.
-
-@item @code{robots} (default: @code{(list "noindex" "nofollow")})
-Text used as content for the ``robots'' meta-tag.
-
-@end table
-@end deftp
 
 @node Setuid Programs
 @subsection Setuid Programs
@@ -18215,7 +19851,27 @@ root file system as well as an initialization script.  The latter is
 responsible for mounting the real root file system, and for loading any
 kernel modules that may be needed to achieve that.
 
-The @code{initrd} field of an @code{operating-system} declaration allows
+The @code{initrd-modules} field of an @code{operating-system}
+declaration allows you to specify Linux-libre kernel modules that must
+be available in the initrd.  In particular, this is where you would list
+modules needed to actually drive the hard disk where your root partition
+is---although the default value of @code{initrd-modules} should cover
+most use cases.  For example, assuming you need the @code{megaraid_sas}
+module in addition to the default modules to be able to access your root
+file system, you would write:
+
+@example
+(operating-system
+  ;; @dots{}
+  (initrd-modules (cons "megaraid_sas" %base-initrd-modules)))
+@end example
+
+@defvr {Scheme Variable} %base-initrd-modules
+This is the list of kernel modules included in the initrd by default.
+@end defvr
+
+Furthermore, if you need lower-level customization, the @code{initrd}
+field of an @code{operating-system} declaration allows
 you to specify which initrd you would like to use.  The @code{(gnu
 system linux-initrd)} module provides three ways to build an initrd: the
 high-level @code{base-initrd} procedure and the low-level
@@ -18228,11 +19884,10 @@ system declaration like this:
 
 @example
 (initrd (lambda (file-systems . rest)
-          ;; Create a standard initrd that has modules "foo.ko"
-          ;; and "bar.ko", as well as their dependencies, in
-          ;; addition to the modules available by default.
+          ;; Create a standard initrd but set up networking
+          ;; with the parameters QEMU expects by default.
           (apply base-initrd file-systems
-                 #:extra-modules '("foo" "bar")
+                 #:qemu-networking? #t
                  rest)))
 @end example
 
@@ -18263,7 +19918,7 @@ initialization system.
 
 @item --root=@var{root}
 Mount @var{root} as the root file system.  @var{root} can be a
-device name like @code{/dev/sda1}, a partition label, or a partition
+device name like @code{/dev/sda1}, a file system label, or a file system
 UUID.
 
 @item --system=@var{system}
@@ -18304,7 +19959,7 @@ the root file system specified on the kernel command line via @code{--root}.
 @var{file-systems} are mounted (@pxref{Mapped Devices}).
 @var{helper-packages} is a list of packages to be copied in the initrd. It may
 include @code{e2fsck/static} or other packages needed by the initrd to check
-root partition.
+the root file system.
 
 When @var{qemu-networking?} is true, set up networking with the standard QEMU
 parameters.  When @var{virtio?} is true, load additional modules so that the
@@ -18316,18 +19971,18 @@ to it are lost.
 
 @deffn {Monadic Procedure} base-initrd @var{file-systems} @
        [#:mapped-devices '()] [#:qemu-networking? #f] [#:volatile-root? #f]@
-       [#:virtio? #t] [#:extra-modules '()]
-Return a monadic derivation that builds a generic initrd.  @var{file-systems} is
-a list of file systems to be mounted by the initrd like for @code{raw-initrd}.
-@var{mapped-devices}, @var{qemu-networking?} and @var{volatile-root?}
-also behaves as in @code{raw-initrd}.
+       [#:linux-modules '()]
+Return a monadic derivation that builds a generic initrd, with kernel
+modules taken from @var{linux}.  @var{file-systems} is a list of file-systems to be
+mounted by the initrd, possibly in addition to the root file system specified
+on the kernel command line via @code{--root}.  @var{mapped-devices} is a list of device
+mappings to realize before @var{file-systems} are mounted.
 
-When @var{virtio?} is true, load additional modules so that the
-initrd can be used as a QEMU guest with para-virtualized I/O drivers.
+@var{qemu-networking?} and @var{volatile-root?} behaves as in @code{raw-initrd}.
 
 The initrd is automatically populated with all the kernel modules necessary
-for @var{file-systems} and for the given options.  However, additional kernel
-modules can be listed in @var{extra-modules}.  They will be added to the initrd, and
+for @var{file-systems} and for the given options.  Additional kernel
+modules can be listed in @var{linux-modules}.  They will be added to the initrd, and
 loaded at boot time in the order in which they appear.
 @end deffn
 
@@ -18819,6 +20474,16 @@ of the image size as a function of the size of the system declared in
 @itemx -r @var{file}
 Make @var{file} a symlink to the result, and register it as a garbage
 collector root.
+
+@item --skip-checks
+Skip pre-installation safety checks.
+
+By default, @command{guix system init} and @command{guix system
+reconfigure} perform safety checks: they make sure the file systems that
+appear in the @code{operating-system} declaration actually exist
+(@pxref{File Systems}), and that any Linux kernel modules that may be
+needed at boot time are listed in @code{initrd-modules} (@pxref{Initial
+RAM Disk}).  Passing this option skips these tests altogether.
 
 @item --on-error=@var{strategy}
 Apply @var{strategy} when an error occurs when reading @var{file}.

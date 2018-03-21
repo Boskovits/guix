@@ -3,7 +3,7 @@
 ;;; Copyright © 2016 Danny Milosavljevic <dannym@scratchpost.org>
 ;;; Copyright © 2016 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
-;;; Coypright © 2016 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Alex Sassmannshausen <alex@pompo.co>
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
@@ -11,6 +11,7 @@
 ;;; Copyright © 2017 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 Oleg Pykhalov <go.wigust@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -409,6 +410,28 @@ exception based code.  It is built with Test::Builder and plays happily with
 Test::More and friends.")
     (license perl-license)))
 
+(define-public perl-test-failwarnings
+  (package
+    (name "perl-test-failwarnings")
+    (version "0.008")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://cpan/authors/id/D/DA/DAGOLDEN/Test-FailWarnings-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "0vx9chcp5x8m0chq574p9fnfckh5gl94j7904rh9v17n568fyd6s"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-capture-tiny" ,perl-capture-tiny)))
+    (home-page "http://search.cpan.org/dist/Test-FailWarnings/")
+    (synopsis "Add test failures if warnings are caught")
+    (description
+     "Test::FailWarnings adds test failures if warnings are caught.")
+    (license asl2.0)))
+
 (define-public perl-test-fatal
   (package
     (name "perl-test-fatal")
@@ -456,6 +479,28 @@ testing exception-throwing code with about the same amount of typing.")
 for testing.")
     (license perl-license)))
 
+(define-public perl-test-filename
+  (package
+    (name "perl-test-filename")
+    (version "0.03")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://cpan/authors/id/D/DA/DAGOLDEN/Test-Filename-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "1gpw4mjw68gnby8s4cifvbz6g2923xsc189jkw9d27i8qv20qiba"))))
+    (build-system perl-build-system)
+    (propagated-inputs
+     `(("perl-path-tiny" ,perl-path-tiny)))
+    (home-page "http://search.cpan.org/dist/Test-Filename/")
+    (synopsis "Portable filename comparison")
+    (description "Test::Filename provides functions to convert all path
+separators automatically.")
+    (license asl2.0)))
+
 (define-public perl-test-files
   (package
     (name "perl-test-files")
@@ -484,7 +529,7 @@ contents of a file is equal to a particular string.")
 (define-public perl-test-harness
   (package
     (name "perl-test-harness")
-    (version "3.39")
+    (version "3.41")
     (source
      (origin
        (method url-fetch)
@@ -492,7 +537,7 @@ contents of a file is equal to a particular string.")
                            "Test-Harness-" version ".tar.gz"))
        (sha256
         (base32
-         "0chiqnzmna2mglm37nzxvn9qhq2j31iwz3i9isqjs7bf3k449gb9"))))
+         "0cgdgzywvscbvb9i0dmd2ls5jwqlnf2z6hx4f4lljpvdjd59v3m8"))))
     (build-system perl-build-system)
     (arguments
      `(#:phases
@@ -928,6 +973,34 @@ cannot connect to the specified hosts and ports, the exception is caught and
 reported, and the tests skipped.")
     (license perl-license)))
 
+(define-public perl-test-roo
+  (package
+    (name "perl-test-roo")
+    (version "1.004")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://cpan/authors/id/D/DA/DAGOLDEN/Test-Roo-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "1mnym49j1lj7gzylma5b6nr4vp75rmgz2v71904v01xmxhy9l4i1"))))
+    (build-system perl-build-system)
+    (native-inputs
+     `(("perl-capture-tiny" ,perl-capture-tiny)))
+    (propagated-inputs
+     `(("perl-indirect" ,perl-indirect)
+       ("perl-moo" ,perl-moo)
+       ("perl-moox-types-mooselike" ,perl-moox-types-mooselike)
+       ("perl-multidimensional" ,perl-multidimensional)
+       ("perl-strictures" ,perl-strictures)
+       ("perl-sub-install" ,perl-sub-install)))
+    (home-page "http://search.cpan.org/dist/Test-Roo/")
+    (synopsis "Composable, reusable tests with roles and Moo")
+    (description "Test::Roo provides composable, reusable tests with roles.")
+    (license asl2.0)))
+
 (define-public perl-test-script
   (package
     (name "perl-test-script")
@@ -975,14 +1048,14 @@ makes fork(2) safe to use in test cases.")
 (define-public perl-test-simple
   (package
     (name "perl-test-simple")
-    (version "1.302120")
+    (version "1.302122")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://cpan/authors/id/E/EX/EXODIST/"
                                   "Test-Simple-" version ".tar.gz"))
               (sha256
                (base32
-                "0v1l0hfza9zlw3qj5l2mrzljy1sk02h3yqcb4kixdb2d5l4n08y8"))))
+                "117m707cbvrh01s3w6g371i9xvpnklifiqpcmky4f49jgck8izgm"))))
     (build-system perl-build-system)
     (synopsis "Basic utilities for writing tests")
     (description

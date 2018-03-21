@@ -4,6 +4,8 @@
 ;;; Copyright © 2015, 2017 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Roel Janssen <roel@gnu.org>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 Leo Famulari <leo@famulari.name>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +47,7 @@
   #:use-module (gnu packages gtk)
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
+  #:use-module (gnu packages libcanberra)
   #:use-module (gnu packages libusb)
   #:use-module (gnu packages llvm)
   #:use-module (gnu packages man)
@@ -66,14 +69,14 @@
 (define-public libraw
   (package
     (name "libraw")
-    (version "0.18.6")
+    (version "0.18.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.libraw.org/data/LibRaw-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "0fx5mwkg0rx37qgxnajc8g8i0mhc6822100ljay5g94aap5arf75"))))
+                "1qi0fkw2zmd0yplrf79z7lgpz0hxl45dj5rdgpaj7283jzys9b2n"))))
     (build-system gnu-build-system)
     (home-page "https://www.libraw.org")
     (synopsis "Raw image decoder")
@@ -90,7 +93,8 @@ cameras (CRW/CR2, NEF, RAF, DNG, and others).")
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/libexif/libexif/"
                                   version "/libexif-" version ".tar.bz2"))
-              (patches (search-patches "libexif-CVE-2017-7544.patch"))
+              (patches (search-patches "libexif-CVE-2016-6328.patch"
+                                       "libexif-CVE-2017-7544.patch"))
               (sha256
                (base32
                 "06nlsibr3ylfwp28w8f5466l6drgrnydgxrm4jmxzrmk5svaxk8n"))))
@@ -105,14 +109,14 @@ data as produced by digital cameras.")
 (define-public libgphoto2
   (package
     (name "libgphoto2")
-    (version "2.5.11")
+    (version "2.5.16")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gphoto/libgphoto/"
                                   version "/libgphoto2-" version ".tar.bz2"))
               (sha256
                (base32
-                "1ap070zz6l4kn2mbyxb1yj4x5ar8hpdbmf2pvjxgnly1ss319dkz"))))
+                "01i95av28d0szyvx6l2gjv039r3205wjwjr91nfimq132rnl2mz7"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs
@@ -136,14 +140,14 @@ from digital cameras.")
 (define-public gphoto2
   (package
     (name "gphoto2")
-    (version "2.5.11")
+    (version "2.5.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/gphoto/gphoto/" version
                                   "/gphoto2-" version ".tar.bz2"))
               (sha256
                (base32
-                "1sgr6rsvzzagcwhc8fxbnvz3k02wr2hab0vrbvcb04k5l3b48a1r"))))
+                "0xsa12k5fz49v8y4h3zahzr427a3ylxaf0k7hybrkp43g4i1lmxf"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -163,7 +167,7 @@ from digital cameras.")
                 (which "env")))
              #t)))
 
-       ;; FIXME: There are 2 test failures, most likely related to the build
+       ;; FIXME: There is 1 test failure, most likely related to the build
        ;; environment.
        #:tests? #f))
 
@@ -463,3 +467,57 @@ user interface.  It can be used to assemble a mosaic of photographs into
 a complete panorama and stitch any series of overlapping pictures.")
     (license license:gpl2+)))
 
+(define-public rawtherapee
+  (package
+    (name "rawtherapee")
+    (version "5.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://rawtherapee.com/shared/source/"
+                                  "rawtherapee-" version ".tar.xz"))
+              (sha256
+               (base32
+                "1229hxqq824hcqg1hy2cfglsp7kjbhhis9m33ss39pgmrb1w227d"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:tests? #f ; no test suite
+       #:build-type "release"
+       #:configure-flags
+       (list (string-append "-DLENSFUNDBDIR="
+                            (assoc-ref %build-inputs "lensfun")
+                            "/share/lensfun")
+             ; Don't optimize the build for the host machine. See the file
+             ; 'ProcessorTargets.cmake' in the source distribution for more
+             ; information.
+             "-DPROC_TARGET_NUMBER=1"
+             ; These flags are recommended by upstream for distributed packages.
+             ; See the file 'RELEASE_NOTES.txt' in the source distribution.
+             "-O3"
+             "-DCACHE_NAME_SUFFIX=\"\"")))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (inputs
+     `(("expat" ,expat)
+       ("fftw" ,fftwf)
+       ("glib" ,glib)
+       ("glibmm" ,glibmm)
+       ("gtk+" ,gtk+)
+       ("gtkmm" ,gtkmm)
+       ("lcms" ,lcms)
+       ("lensfun" ,lensfun)
+       ("libcanberra" ,libcanberra)
+       ("libiptcdata" ,libiptcdata)
+       ("libjpeg" ,libjpeg)
+       ("libpng" ,libpng)
+       ("libsigc++" ,libsigc++)
+       ("libtiff" ,libtiff)
+       ("zlib" ,zlib)))
+    (home-page "http://rawtherapee.com")
+    (synopsis "Raw image developing and processing")
+    (description "RawTherapee is a raw image processing suite.  It comprises a
+subset of image editing operations specifically aimed at non-destructive raw
+photo post-production and is primarily focused on improving a photographer's
+workflow by facilitating the handling of large numbers of images.  Most raw
+formats are supported, including Pentax Pixel Shift, Canon Dual-Pixel, and those
+from Foveon and X-Trans sensors.")
+    (license license:gpl3+)))

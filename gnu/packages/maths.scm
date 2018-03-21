@@ -2,26 +2,28 @@
 ;;; Copyright © 2013, 2014, 2015, 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014, 2016, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2014, 2015, 2016, 2017 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2014 Federico Beffa <beffa@fbengineering.ch>
 ;;; Copyright © 2014 Mathieu Lirzin <mathieu.lirzin@openmailbox.org>
-;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Paul Garlick <pgarlick@tourbillion-technology.com>
-;;; Copyright © 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Dave Love <me@fx@gnu.org>
+;;; Copyright © 2018 Jan Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -51,6 +53,7 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system ocaml)
   #:use-module (guix build-system r)
+  #:use-module (guix build-system ruby)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages bison)
@@ -93,7 +96,9 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages python)
   #:use-module (gnu packages python-web)
+  #:use-module (gnu packages qt)
   #:use-module (gnu packages readline)
+  #:use-module (gnu packages ruby)
   #:use-module (gnu packages tbb)
   #:use-module (gnu packages scheme)
   #:use-module (gnu packages shells)
@@ -101,6 +106,7 @@
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages wxwidgets)
   #:use-module (gnu packages xml)
   #:use-module (srfi srfi-1))
@@ -256,14 +262,14 @@ routines that have been extracted from the V8 JavaScript engine.")
 (define-public dionysus
   (package
     (name "dionysus")
-    (version "1.3.0")
+    (version "1.4.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnu/dionysus/dionysus-" version
-                                  ".tar.gz"))
+                                  ".tar.xz"))
               (sha256
                (base32
-                "1aqnvw6z33bzqgd1ga571pnx6vq2zrkckm1cz91grv45h4jr9vgs"))))
+                "194pzs1mlsj4ww6v37qq3961h5hckm5h805cv0r14xj3g9wfx2sk"))))
     (build-system gnu-build-system)
     (inputs `(("tcl" ,tcl)))                      ;for 'tclsh'
     (synopsis "Local search for universal constants and scientific values")
@@ -336,7 +342,7 @@ the OCaml language.")
 (define-public glpk
   (package
     (name "glpk")
-    (version "4.64")
+    (version "4.65")
     (source
      (origin
       (method url-fetch)
@@ -344,7 +350,7 @@ the OCaml language.")
                           version ".tar.gz"))
       (sha256
        (base32
-        "096cqgjc7vkq6wd8znhcxjbs1s2rym3qf753fqxrrq531vs6g4jk"))))
+        "040sfaa9jclg2nqdh83w71sv9rc1sznpnfiripjdyr48cady50a2"))))
     (build-system gnu-build-system)
     (inputs
      `(("gmp" ,gmp)))
@@ -415,18 +421,26 @@ computing convex hulls.")
 (define-public arpack-ng
   (package
     (name "arpack-ng")
-    (version "3.2.0")
+    (version "3.5.0")
+    (home-page "https://github.com/opencollab/arpack-ng")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/opencollab/arpack-ng/archive/"
-                           version ".tar.gz"))
+       (uri (string-append home-page "/archive/" version ".tar.gz"))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1fwch6vipms1ispzg2djvbzv5wag36f1dmmr3xs3mbp6imfyhvff"))))
+         "0f8jx3fifmj9qdp289zr7r651y1q48k1jya859rqxq62mvis7xsh"))))
     (build-system gnu-build-system)
-    (home-page "https://github.com/opencollab/arpack-ng")
+    (arguments
+     '(#:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'autoreconf
+                    (lambda _
+                      (invoke "autoreconf" "-vfi"))))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("libtool" ,libtool)))
     (inputs
      `(("lapack" ,lapack)
        ("fortran" ,gfortran)))
@@ -436,6 +450,21 @@ computing convex hulls.")
 large scale eigenvalue problems.")
     (license (license:non-copyleft "file://COPYING"
                                 "See COPYING in the distribution."))))
+
+(define-public arpack-ng-3.3.0
+  (package
+    (inherit arpack-ng)
+    (version "3.3.0")
+    (name (package-name arpack-ng))
+    (home-page (package-home-page arpack-ng))
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append home-page "/archive/" version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "1cz53wqzcf6czmcpfb3vb61xi0rn5bwhinczl65hpmbrglg82ndd"))))))
 
 (define-public arpack-ng-openmpi
   (package (inherit arpack-ng)
@@ -695,7 +724,9 @@ incompatible with HDF5.")
        #:configure-flags '("--enable-cxx"
                            "--enable-fortran"
                            "--enable-fortran2003")
-
+       ;; Use -fPIC to allow the R bindings to link with the static libraries
+       #:make-flags (list "CFLAGS=-fPIC"
+                          "CXXFLAGS=-fPIC")
        #:phases
        (modify-phases %standard-phases
          (add-before 'configure 'patch-configure
@@ -719,7 +750,11 @@ incompatible with HDF5.")
              ;; unnecessary store references to those compilers:
              (substitute* "src/libhdf5.settings"
               (("(/gnu/store/)([a-Z0-9]*)" all prefix hash)
-               (string-append prefix (string-take hash 10) "...")))
+               (string-append prefix (string-take hash 10) "..."))
+              ;; Don't record the build-time kernel version to make the
+              ;; settings file reproducible.
+              (("Uname information:.*")
+               "Uname information: Linux\n"))
              #t))
          (add-after 'install 'patch-references
            (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -1275,7 +1310,7 @@ can solve two kinds of problems:
 (define-public octave
   (package
     (name "octave")
-    (version "4.2.1")
+    (version "4.2.2")
     (source
      (origin
       (method url-fetch)
@@ -1283,7 +1318,7 @@ can solve two kinds of problems:
                           version ".tar.lz"))
       (sha256
        (base32
-        "09zhhch79jw3ynw39vizx0i2cbd2bjz3sp38pjdzraqrbivpwp92"))))
+        "0pkkz1vazsh7ipffb09q0nc2jgx6q27pkkngygjij6jrpcly5zsp"))))
     (build-system gnu-build-system)
     (inputs
      `(("lapack" ,lapack)
@@ -1355,6 +1390,7 @@ script files.")
                "https://github.com/tpaviot/oce/archive/OCE-"
                version
                ".tar.gz"))
+        (patches (search-patches "opencascade-oce-glibc-2.26.patch"))
         (sha256
           (base32
             "0vpmnb0k5y2f7lpmwx9pg9yfq24zjvnsak5alzacncfm1hv9b6cd"))))
@@ -1604,7 +1640,7 @@ scientific applications modeled by partial differential equations.")
 (define-public slepc
   (package
     (name "slepc")
-    (version "3.8.0")
+    (version "3.8.2")
     (source
      (origin
        (method url-fetch)
@@ -1612,7 +1648,7 @@ scientific applications modeled by partial differential equations.")
                            version ".tar.gz"))
        (sha256
         (base32
-         "0qyrsdndfdw2g0jmj9iskxj3j20zlkplhv26288s079dhm7cr365"))))
+         "04zd48p43rnvg68p6cp28zll0px5whglc5v0sc3s6vdj1v920z8y"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("python" ,python-2)))
@@ -1641,7 +1677,7 @@ scientific applications modeled by partial differential equations.")
               (format #t "configure flags: ~s~%" flags)
               (setenv "SLEPC_DIR" (getcwd))
               (setenv "PETSC_DIR" (assoc-ref inputs "petsc"))
-              (zero? (apply system* "./configure" flags)))))
+              (apply invoke "./configure" flags))))
          (add-after 'install 'delete-doc
           ;; TODO: SLEPc installs HTML documentation alongside headers in
           ;; $out/include.  We'd like to move them to share/doc, but delete
@@ -1670,7 +1706,7 @@ as well as other related problems such as the singular value decomposition.
 The emphasis of the software is on methods and techniques appropriate for
 problems in which the associated matrices are sparse, for example, those
 arising after the discretization of partial differential equations.")
-    (license license:lgpl3)))
+    (license license:bsd-2)))
 
 (define-public slepc-complex
   (package (inherit slepc)
@@ -1889,12 +1925,12 @@ programming problems.")
 (define-public r-pracma
   (package
     (name "r-pracma")
-    (version "2.1.1")
+    (version "2.1.4")
     (source (origin
       (method url-fetch)
       (uri (cran-uri "pracma" version))
       (sha256
-        (base32 "1mylrrkyycaw9m01mmg6xkn5wgdlabs5l0qyws60r0n2ycblp897"))))
+        (base32 "1ygm81i7mqvh229dp9935djjyb120p3bqvaf4k572sa4q63fzjhc"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-quadprog" ,r-quadprog)))
@@ -1905,6 +1941,38 @@ linear algebra, numerical optimization, differential equations, plus some
 special functions.  It uses Matlab function names where appropriate to simplify
 porting.")
     (license license:gpl3+)))
+
+(define-public ruby-asciimath
+  (package
+    (name "ruby-asciimath")
+    (version "1.0.4")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "asciimath" version))
+       (sha256
+        (base32
+         "1d80kiph5mc78zps7si1hv48kv4k12mzaq8jk5kb3pqpjdr72qmc"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         ;; Apply this patch
+         ;; https://github.com/asciidoctor/asciimath/commit/1c06fdc8086077f4785479f78b0823a4a72d7948
+         (add-after 'unpack 'patch-remove-spurious-backslashes
+           (lambda _
+             (substitute* "spec/parser_spec.rb"
+               (("\\\\\"")
+                "\"")))))))
+    (native-inputs
+     `(("bundler" ,bundler)
+       ("ruby-rspec" ,ruby-rspec)))
+    (synopsis "AsciiMath parsing and conversion library")
+    (description
+     "A pure Ruby AsciiMath parsing and conversion library.  AsciiMath is an
+easy-to-write markup language for mathematics.")
+    (home-page "https://github.com/asciidoctor/asciimath")
+    (license license:expat)))
 
 (define-public superlu
   (package
@@ -2483,7 +2551,7 @@ point numbers.")
 (define-public wxmaxima
   (package
     (name "wxmaxima")
-    (version "17.10.1")
+    (version "18.02.0")
     (source
      (origin
        (method url-fetch)
@@ -2492,12 +2560,12 @@ point numbers.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0qlzc31cqkwpfgrb9cif9bcnkj3rq487plg4rns7jxv6pq4609v1"))))
-    (build-system gnu-build-system)
+         "03kr2rgfp4hcf3is8m8d8f9hj660c3xgrc50vrrfpixx4syh6wvj"))
+       (patches
+        (search-patches "wxmaxima-do-not-use-old-gnuplot-parameters.patch"))))
+    (build-system cmake-build-system)
     (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("gettext" ,gettext-minimal)))
+     `(("gettext" ,gettext-minimal)))
     (inputs
      `(("wxwidgets" ,wxwidgets)
        ("maxima" ,maxima)
@@ -2506,11 +2574,9 @@ point numbers.")
        ("gtk+" ,gtk+)
        ("shared-mime-info" ,shared-mime-info)))
     (arguments
-     `(#:phases
+     `(#:tests? #f ; no check target
+       #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'autoconf
-           (lambda _
-             (zero? (system* "sh" "bootstrap"))))
          (add-after 'install 'wrap-program
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (wrap-program (string-append (assoc-ref outputs "out")
@@ -2805,7 +2871,7 @@ environments.")
 (define-public openspecfun
   (package
     (name "openspecfun")
-    (version "0.5.2")
+    (version "0.5.3")
     (source
      (origin
        (method url-fetch)
@@ -2814,14 +2880,15 @@ environments.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1y5b2h6f2k72536kym3vzy3li3bhpd23x463g7hdmjdi3cncavz1"))))
+         "1rs1bv8jq751fv9vq79890wqf9xlbjc7lvz3ighzyfczbyjcf18m"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f  ;no "check" target
+     '(#:tests? #f                      ; no "check" target
        #:make-flags
        (list (string-append "prefix=" (assoc-ref %outputs "out")))
-       ;; no configure script
-       #:phases (modify-phases %standard-phases (delete 'configure))))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure))))         ; no configure script
     (inputs
      `(("fortran" ,gfortran)))
     (home-page "https://github.com/JuliaLang/openspecfun")
@@ -3040,7 +3107,7 @@ specifications.")
 (define-public lpsolve
   (package
     (name "lpsolve")
-    (version "5.5.2.0")
+    (version "5.5.2.5")
     (source
      (origin
       (method url-fetch)
@@ -3048,7 +3115,7 @@ specifications.")
                           "/lp_solve_" version "_source.tar.gz"))
       (sha256
        (base32
-        "176c7f023mb6b8bfmv4rfqnrlw88lsg422ca74zjh19i2h5s69sq"))
+        "12pj1idjz31r7c2mb5w03vy1cmvycvbkx9z29s40qdmkp1i7q6i0"))
       (modules '((guix build utils)))
       (snippet
        '(substitute* (list "lp_solve/ccc" "lpsolve55/ccc")
@@ -3066,16 +3133,17 @@ specifications.")
           (("isnan\\(0\\)") "isnan(0.)")))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f ; no check target
+     `(#:tests? #f                      ; no check target
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
+         (delete 'configure)            ; no configure script
          (replace 'build
            (lambda _
-             (and (with-directory-excursion "lpsolve55"
-                    (zero? (system* "bash" "ccc")))
-                  (with-directory-excursion "lp_solve"
-                    (zero? (system* "bash" "ccc"))))))
+             (with-directory-excursion "lpsolve55"
+               (invoke "bash" "ccc"))
+             (with-directory-excursion "lp_solve"
+               (invoke "bash" "ccc"))
+             #t))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -3084,11 +3152,8 @@ specifications.")
                     ;; This is where LibreOffice expects to find the header
                     ;; files, and where they are installed by Debian.
                     (include (string-append out "/include/lpsolve")))
-               (mkdir-p lib)
-               (copy-file "lpsolve55/bin/ux64/liblpsolve55.a"
-                          (string-append lib "/liblpsolve55.a"))
-               (copy-file "lpsolve55/bin/ux64/liblpsolve55.so"
-                          (string-append lib "/liblpsolve55.so"))
+               (install-file "lpsolve55/bin/ux64/liblpsolve55.a" lib)
+               (install-file "lpsolve55/bin/ux64/liblpsolve55.so" lib)
                (install-file "lp_solve/bin/ux64/lp_solve" bin)
 
                ;; Install a subset of the header files as on Debian
@@ -3430,14 +3495,14 @@ supports compressed MAT files, as well as newer (version 7.3) MAT files.")
 (define-public vc
   (package
     (name "vc")
-    (version "1.2.0")
+    (version "1.3.3")
     (source
       (origin (method url-fetch)
               (uri (string-append "https://github.com/VcDevel/Vc/releases/"
                                   "download/" version "/Vc-" version ".tar.gz"))
               (sha256
                (base32
-                "1rh6dhqar3y07n4xqyml0sa0v48qv3ch9dc3yc2in855hlh4vnqi"))))
+                "1zmlpn32jzb38smp3j834llmbix3whsrbw0h397qxysbw792kih8"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags
@@ -3640,3 +3705,138 @@ parametrized transition systems with states represented as arrays indexed by
 an arbitrary number of processes.  Cache coherence protocols and mutual
 exclusion algorithms are typical examples of such systems.")
     (license license:asl2.0)))
+
+(define-public elemental
+  (package
+    (name "elemental")
+    (version "0.87.7")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/elemental/Elemental/"
+                                  "archive/v" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1nfp82w22pi8x8fg9sc37z8kf84dqi1dhxp8bbk7571y4aygvv3v"))))
+    (build-system cmake-build-system)
+    (home-page "http://libelemental.org")
+    (native-inputs
+     `(("gfortran" ,gfortran)))
+    (inputs
+     `(("blas" ,openblas)
+       ("gfortran:lib" ,gfortran "lib")
+       ("gmp" ,gmp)
+       ("lapack" ,lapack)
+       ("metis" ,metis)
+       ("mpc" ,mpc)
+       ("mpfr" ,mpfr)
+       ("mpi" ,openmpi)
+       ("qd" ,qd)))
+    (arguments
+     `(#:build-type "Release"           ;default RelWithDebInfo not supported
+       #:configure-flags `("-DEL_DISABLE_PARMETIS:BOOL=YES"
+                           "-DEL_AVOID_COMPLEX_MPI:BOOL=NO"
+                           "-DEL_CACHE_WARNINGS:BOOL=YES"
+                           "-DEL_TESTS:BOOL=YES"
+                           "-DCMAKE_INSTALL_LIBDIR=lib"
+                           "-DGFORTRAN_LIB=gfortran")
+       #:phases (modify-phases %standard-phases
+                  (add-before 'check 'setup-tests
+                    (lambda _
+                      ;; Parallelism is done at the MPI layer.
+                      (setenv "OMP_NUM_THREADS" "1")
+                      #t))
+                  (add-after 'install 'remove-tests
+                    (lambda* (#:key outputs #:allow-other-keys)
+                      ;; Tests are installed, with no easy configuration
+                      ;; switch to prevent this, so delete them.
+                      (delete-file-recursively
+                       (string-append (assoc-ref outputs "out") "/bin"))
+                      #t)))))
+    (synopsis "Dense and sparse-direct linear algebra and optimization")
+    (description "Elemental is a modern C++ library for distributed-memory
+dense and sparse-direct linear algebra, conic optimization, and lattice
+reduction.")
+    (license license:bsd-2)))
+
+(define-public mcrl2
+  (package
+    (name "mcrl2")
+    (version "201707.1.15162")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://www.mcrl2.org/download/devel/mcrl2-"
+                                  version
+                                  ".tar.gz"))
+              (sha256
+               (base32
+                "1ziww2fchsklm25hl9p2mngssxfh9w07nc114cncqaxfibqp2p8f"))))
+    (native-inputs
+     `(("subversion" ,subversion)))
+    (inputs
+     `(("boost" ,boost)
+       ("glu" ,glu)
+       ("mesa" ,mesa)
+       ("qt" ,qt)))
+    (build-system cmake-build-system)
+    (synopsis "Toolset for the mCRL2 formal specification language")
+    (description
+     "@dfn{mCRL2} (micro Common Representation Language 2) is a formal
+specification language for describing concurrent discrete event systems.  Its
+toolset supports analysis and automatic verification, linearisation, simulation,
+state-space exploration and generation, and tools to optimise and analyse
+specifications.  Also, state spaces can be manipulated, visualised and
+analysed.")
+    (home-page "http://mcrl2.org")
+    (license license:boost1.0)))
+
+(define-public r-subplex
+  (package
+    (name "r-subplex")
+    (version "1.5-2")
+    (source
+    (origin
+      (method url-fetch)
+      (uri (cran-uri "subplex" version))
+      (sha256
+       (base32
+        "1v9xrnkapnq7v1jbhlg32ignklzf2vn8rqpayc8pzk8wvz53r33g"))))
+    (build-system r-build-system)
+    (native-inputs
+     `(("gfortran" ,gfortran)))
+    (home-page "https://cran.r-project.org/web/packages/subplex")
+    (synopsis "Unconstrained optimization using the subplex algorithm")
+    (description "This package implements the Subplex optimization algorithm.
+It solves unconstrained optimization problems using a simplex method on
+subspaces.  The method is well suited for optimizing objective functions that
+are noisy or are discontinuous at the solution.")
+    (license license:gpl3+)))
+
+(define-public r-desolve
+  (package
+    (name "r-desolve")
+    (version "1.20")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (cran-uri "deSolve" version))
+        (sha256
+         (base32
+          "18nx3maww979a8p8ly4hv63y65mnjx8vbj2fpipd6rhcbf1lbsan"))))
+    (properties `((upstream-name . "deSolve")))
+    (build-system r-build-system)
+    (native-inputs
+     `(("gfortran" ,gfortran)))
+    (home-page "https://desolve.r-forge.r-project.org/")
+    (synopsis "Solvers for initial value problems of differential equations")
+    (description "This package provides functions that solve initial
+value problems of a system of first-order ordinary differential equations (ODE),
+of partial differential equations (PDE), of differential algebraic equations
+(DAE), and of delay differential equations.  The functions provide an interface
+to the FORTRAN functions lsoda, lsodar, lsode, lsodes of the ODEPACK collection,
+to the FORTRAN functions dvode and daspk and a C-implementation of solvers of
+the Runge-Kutta family with fixed or variable time steps.  The package contains
+routines designed for solving ODEs resulting from 1-D, 2-D and 3-D partial
+differential equations (PDE) that have been converted to ODEs by numerical
+differencing.")
+    (license license:gpl2+)))

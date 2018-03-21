@@ -24,6 +24,7 @@
                 #:select (gpl2 gpl2+ gpl3+ lgpl2.1+ bsd-3 x11))
   #:use-module (guix packages)
   #:use-module (guix download)
+  #:use-module (guix utils)
   #:use-module (guix build-system gnu)
   #:use-module (gnu packages)
   #:use-module (gnu packages compression)
@@ -90,7 +91,9 @@ rich set of boolean query operators.")
        #:make-flags
        (list (string-append "pkgpylibdir="
                             (assoc-ref %outputs "out")
-                            "/lib/python3.5/site-packages/xapian"))))
+                            "/lib/python" ,(version-major+minor
+                                            (package-version python))
+                            "/site-packages/xapian"))))
     (inputs
      `(("python" ,python)
        ("python-sphinx" ,python-sphinx) ; for documentation
@@ -134,7 +137,7 @@ rich set of boolean query operators.")
                                              "-Wl,-rpath=../src/.libs")))
                             (zero? (system* "make"))
                             (zero? (system* "./libtocctests")))))))))
-    (home-page "http://t-o-c-c.com/")
+    (home-page "https://t-o-c-c.com/")
     (synopsis "Tool for Obsessive Compulsive Classifiers")
     (description
      "libtocc is the engine of the Tocc project, a tag-based file management
@@ -158,7 +161,7 @@ files and directories.")
                   (add-after
                    'unpack 'chdir-source
                    (lambda _ (chdir "cli/src"))))))
-    (home-page "http://t-o-c-c.com/")
+    (home-page "https://t-o-c-c.com/")
     (synopsis "Command-line interface to libtocc")
     (description
      "Tocc is a tag-based file management system.  This package contains the

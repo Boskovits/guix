@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2017 Jan Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -35,7 +36,7 @@
 (define-public nyacc
   (package
     (name "nyacc")
-    (version "0.82.4")
+    (version "0.83.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://savannah/nyacc/"
@@ -43,7 +44,7 @@
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0ykz64jlf1kpxz3qqr0nmci57r5yqwyd3s2g93vrmcnpy9d7y22p"))))
+                "0120n0mdb6r58c4jc024dhwqy5s8a20waknijfhqjc59a884lrd6"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("guile" ,guile-2.2)))
@@ -76,8 +77,8 @@ extensive examples, including parsers for the Javascript and C99 languages.")
          ("nyacc" ,nyacc)))
       (native-inputs
        `(("guile" ,guile-2.2)
-         ,@(if (string-prefix? "x86_64-linux" (or (%current-target-system)
-                                                  (%current-system)))
+         ,@(if (not (string-prefix? "i686-linux" (or (%current-target-system)
+                                                     (%current-system))))
                ;; Use cross-compiler rather than #:system "i686-linux" to get
                ;; MesCC 64 bit .go files installed ready for use with Guile.
                `(("i686-linux-binutils" ,(cross-binutils triplet))

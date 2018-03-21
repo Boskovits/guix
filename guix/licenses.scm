@@ -8,7 +8,7 @@
 ;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
 ;;; Copyright © 2016 Rene Saavedra <rennes@openmailbox.org>
-;;; Copyright © 2016, 2017 ng0 <ng0@libertad.pw>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
@@ -87,6 +87,7 @@
             tcl/tk
             unlicense
             vim
+            w3c
             x11 x11-style
             zpl2.1
             zlib
@@ -577,6 +578,11 @@ at URI, which may be a file:// URI pointing the package's tree."
   (license "Unlicense"
            "https://unlicense.org/"
            "https://www.gnu.org/licenses/license-list.html#Unlicense"))
+
+(define w3c
+  (license "W3C Software Notice and License"
+           "https://directory.fsf.org/wiki/License:W3C_31Dec2002"
+           "https://www.gnu.org/licenses/license-list.en.html#W3C"))
 
 (define wtfpl2
   (license "WTFPL 2"

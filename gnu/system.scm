@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 Chris Marusich <cmmarusich@gmail.com>
@@ -74,6 +74,7 @@
             operating-system-kernel
             operating-system-kernel-file
             operating-system-kernel-arguments
+            operating-system-initrd-modules
             operating-system-initrd
             operating-system-users
             operating-system-groups
@@ -90,6 +91,7 @@
             operating-system-activation-script
             operating-system-user-accounts
             operating-system-shepherd-service-names
+            operating-system-user-kernel-arguments
 
             operating-system-derivation
             operating-system-profile
@@ -153,6 +155,10 @@ booted from ROOT-DEVICE"
 
   (initrd operating-system-initrd                 ; (list fs) -> M derivation
           (default base-initrd))
+  (initrd-modules operating-system-initrd-modules ; list of strings
+                  (thunked)                       ; it's system-dependent
+                  (default %base-initrd-modules))
+
   (firmware operating-system-firmware             ; list of packages
             (default %base-firmware))
 
@@ -447,7 +453,6 @@ a container or that of a \"bare metal\" system."
   (let* ((mappings  (device-mapping-services os))
          (root-fs   (root-file-system-service))
          (other-fs  (non-boot-file-system-service os))
-         (unmount   (user-unmount-service known-fs))
          (swaps     (swap-services os))
          (procs     (service user-processes-service-type))
          (host-name (host-name-service (operating-system-host-name os)))
@@ -472,7 +477,7 @@ a container or that of a \"bare metal\" system."
            (service fstab-service-type '())
            (session-environment-service
             (operating-system-environment-variables os))
-           host-name procs root-fs unmount
+           host-name procs root-fs
            (service setuid-program-service-type
                     (operating-system-setuid-programs os))
            (service profile-service-type
@@ -491,8 +496,9 @@ a container or that of a \"bare metal\" system."
 (define* (operating-system-services os #:key container?)
   "Return all the services of OS, including \"internal\" services that do not
 explicitly appear in OS."
-  (append (operating-system-user-services os)
-          (essential-services os #:container? container?)))
+  (instantiate-missing-services
+   (append (operating-system-user-services os)
+           (essential-services os #:container? container?))))
 
 
 ;;;
@@ -509,7 +515,9 @@ explicitly appear in OS."
   ;; required for basic administrator tasks.
   (cons* procps psmisc which less zile nano
          pciutils usbutils
-         util-linux inetutils isc-dhcp
+         ;; temporary package to fix CVE-2018-7738 without a graft
+         util-linux-2.31.1
+         inetutils isc-dhcp
          (@ (gnu packages admin) shadow)          ;for 'passwd'
 
          ;; wireless-tools is deprecated in favor of iw, but it's still what
@@ -844,6 +852,8 @@ hardware-related operations as necessary when booting a Linux container."
 
   (mlet %store-monad ((initrd (make-initrd boot-file-systems
                                            #:linux (operating-system-kernel os)
+                                           #:linux-modules
+                                           (operating-system-initrd-modules os)
                                            #:mapped-devices mapped-devices)))
     (return (file-append initrd "/initrd"))))
 

@@ -5,12 +5,12 @@
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 <ng0@infotropique.org>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2016, 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
@@ -144,9 +144,9 @@ keys, no previous conversation is compromised.")
      #:configure-flags '("-DBUILD_SHARED_LIBS=on" "-DBUILD_TESTING=1")))
   (build-system cmake-build-system)
   (inputs `( ;; Required for tests:
-            ("check", check)
-            ("openssl", openssl)))
-  (native-inputs `(("pkg-config", pkg-config)))
+            ("check" ,check)
+            ("openssl" ,openssl)))
+  (native-inputs `(("pkg-config" ,pkg-config)))
   (home-page "https://github.com/WhisperSystems/libsignal-protocol-c")
   (synopsis "Implementation of a ratcheting forward secrecy protocol")
   (description "libsignal-protocol-c is an implementation of a ratcheting
@@ -449,14 +449,14 @@ compromised.")
 (define-public znc
   (package
     (name "znc")
-    (version "1.6.5")
+    (version "1.6.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://znc.in/releases/archive/znc-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1jia6kq6bp8yxfj02d5vj9vqb4pylqcldspyjj6iz82kkka2a0ig"))))
+                "09cmsnxvi7jg9a0dicf60fxnxdff4aprw7h8vjqlj5ywf6y43f3z"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases
@@ -483,7 +483,7 @@ compromised.")
        ("zlib" ,zlib)
        ("icu4c" ,icu4c)
        ("cyrus-sasl" ,cyrus-sasl)))
-    (home-page "http://znc.in")
+    (home-page "https://znc.in")
     (synopsis "IRC network bouncer")
     (description "ZNC is an IRC network bouncer or BNC.  It can detach the
 client from the actual IRC server, and also from selected channels.  Multiple
@@ -613,8 +613,8 @@ end-to-end encryption support; XML console.")
              (assoc-ref glib-or-gtk:%standard-phases 'glib-or-gtk-wrap)))))
       (inputs
        `(("libgee" ,libgee)
-         ("libsignal-protocol-c", libsignal-protocol-c)
-         ("libgcrypt", libgcrypt)
+         ("libsignal-protocol-c" ,libsignal-protocol-c)
+         ("libgcrypt" ,libgcrypt)
          ("libsoup" ,libsoup)
          ("sqlite" ,sqlite)
          ("gpgme" ,gpgme)
@@ -623,7 +623,7 @@ end-to-end encryption support; XML console.")
          ("gsettings-desktop-schemas" ,gsettings-desktop-schemas)))
       (native-inputs
        `(("pkg-config" ,pkg-config)
-         ("libsignal-protocol-c-source", (package-source libsignal-protocol-c))
+         ("libsignal-protocol-c-source" ,(package-source libsignal-protocol-c))
          ("glib" ,glib "bin")
          ("vala" ,vala)
          ("gettext" ,gettext-minimal)))
@@ -773,7 +773,7 @@ protocols.")
 (define-public c-toxcore
   (package
     (name "c-toxcore")
-    (version "0.1.10")
+    (version "0.1.11")
     (source
      (origin
        (method url-fetch)
@@ -782,7 +782,7 @@ protocols.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1lbvq9pp1ganjk5lql5lzcn8bcmgfi8y026pb2j2nq8yldqrrjby"))))
+         "040vwihl1r5159vzimmnff75iqfg53vhnfi5wcb3cd0c2r51idl5"))))
     (build-system cmake-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -874,10 +874,18 @@ instant messenger with audio and video chat capabilities.")
                (("__DATE__") "\"\"")
                (("__TIME__") "\"\"")
                (("TIMESTAMP") "\"\""))
-             #t)))))
+             #t))
+         ;; Ensure that icons are found at runtime.
+         (add-after 'install 'wrap-executable
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/qtox")
+                 `("QT_PLUGIN_PATH" prefix
+                   ,(list (string-append (assoc-ref inputs "qtsvg")
+                                         "/lib/qt5/plugins/"))))))))))
     (inputs
      `(("ffmpeg" ,ffmpeg)
-       ("filteraudio", filteraudio)
+       ("filteraudio" ,filteraudio)
        ("glib" ,glib)
        ("gtk+" ,gtk+-2)
        ("libsodium" ,libsodium)

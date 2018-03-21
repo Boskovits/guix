@@ -318,6 +318,7 @@ desktop session from the system or user profile will be used."
         (use-modules (ice-9 match)
                      (ice-9 regex)
                      (ice-9 ftw)
+                     (ice-9 rdelim)
                      (srfi srfi-1)
                      (srfi srfi-26))
 
@@ -436,7 +437,9 @@ desktop session from the system or user profile will be used."
   (auto-login-session slim-configuration-auto-login-session
                       (default #f))
   (startx slim-configuration-startx
-          (default (xorg-start-command))))
+          (default (xorg-start-command)))
+  (sessreg slim-configuration-sessreg
+           (default sessreg)))
 
 (define (slim-pam-service config)
   "Return a PAM service for @command{slim}."
@@ -453,7 +456,8 @@ desktop session from the system or user profile will be used."
           (xauth   (slim-configuration-xauth config))
           (startx  (slim-configuration-startx config))
           (shepherd   (slim-configuration-shepherd config))
-          (theme-name (slim-configuration-theme-name config)))
+          (theme-name (slim-configuration-theme-name config))
+          (sessreg (slim-configuration-sessreg config)))
       (mixed-text-file "slim.cfg"  "
 default_path /run/current-system/profile/bin
 default_xserver " startx "
@@ -466,6 +470,8 @@ authfile /var/run/slim.auth
 login_cmd  exec " xinitrc " %session
 sessiondir /run/current-system/profile/share/xsessions
 session_msg session (F1 to change):
+sessionstart_cmd " sessreg "/bin/sessreg -a -l $DISPLAY %user
+sessionstop_cmd " sessreg "/bin/sessreg -d -l $DISPLAY %user
 
 halt_cmd " shepherd "/sbin/halt
 reboot_cmd " shepherd "/sbin/reboot\n"
@@ -590,7 +596,7 @@ theme."
                                 #:optional
                                 (program (package-name package))
                                 #:key allow-empty-passwords?)
-  "Add @var{package}, a package for a screen-locker or screen-saver whose
+  "Add @var{package}, a package for a screen locker or screen saver whose
 command is @var{program}, to the set of setuid programs and add a PAM entry
 for it.  For example:
 

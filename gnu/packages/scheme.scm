@@ -5,10 +5,10 @@
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
-;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -90,37 +90,37 @@
        (modify-phases %standard-phases
          (replace 'unpack
            (lambda* (#:key inputs #:allow-other-keys)
-             (and (zero? (system* "tar" "xzvf"
-                                  (assoc-ref inputs "source")))
-                  (chdir ,(mit-scheme-source-directory (%current-system)
-                                                       version))
-                  (begin
-                    ;; Delete these dangling symlinks since they break
-                    ;; `patch-shebangs'.
-                    (for-each delete-file
-                              (append '("src/lib/shim-config.scm")
-                                      (find-files "src/lib/lib" "\\.so$")
-                                      (find-files "src/lib" "^liarc-")
-                                      (find-files "src/compiler" "^make\\.")))
-                    (chdir "src")
-                    #t))))
+             (invoke "tar" "xzvf"
+                     (assoc-ref inputs "source"))
+             (chdir ,(mit-scheme-source-directory (%current-system)
+                                                  version))
+             ;; Delete these dangling symlinks since they break
+             ;; `patch-shebangs'.
+             (for-each delete-file
+                       (append '("src/lib/shim-config.scm")
+                               (find-files "src/lib/lib" "\\.so$")
+                               (find-files "src/lib" "^liarc-")
+                               (find-files "src/compiler" "^make\\.")))
+             (chdir "src")
+             #t))
          (replace 'build
            (lambda* (#:key system outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
                (if (or (string-prefix? "x86_64" system)
                        (string-prefix? "i686" system))
-                   (zero? (system* "make" "compile-microcode"))
-                   (zero? (system* "./etc/make-liarc.sh"
-                                   (string-append "--prefix=" out)))))))
+                   (invoke "make" "compile-microcode")
+                   (invoke "./etc/make-liarc.sh"
+                           (string-append "--prefix=" out)))
+               #t)))
          (add-after 'configure 'configure-doc
            (lambda* (#:key outputs inputs #:allow-other-keys)
              (with-directory-excursion "../doc"
                (let* ((out (assoc-ref outputs "out"))
                       (bash (assoc-ref inputs "bash"))
                       (bin/sh (string-append bash "/bin/sh")))
-                 (system* bin/sh "./configure"
-                          (string-append "--prefix=" out)
-                          (string-append "SHELL=" bin/sh))
+                 (invoke bin/sh "./configure"
+                         (string-append "--prefix=" out)
+                         (string-append "SHELL=" bin/sh))
                  (substitute* '("Makefile" "make-common")
                    (("/lib/mit-scheme/doc")
                     (string-append "/share/doc/" ,name "-" ,version)))
@@ -128,7 +128,8 @@
          (add-after 'build 'build-doc
            (lambda* _
              (with-directory-excursion "../doc"
-               (zero? (system* "make")))))
+               (invoke "make"))
+             #t))
          (add-after 'install 'install-doc
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
@@ -138,7 +139,7 @@
                      (string-append doc "/share/doc/" ,name "-" ,version)))
                (with-directory-excursion "../doc"
                  (for-each (lambda (target)
-                             (system* "make" target))
+                             (invoke "make" target))
                            '("install-config" "install-info-gz" "install-man"
                              "install-html" "install-pdf")))
                (mkdir-p new-doc/mit-scheme-dir)
@@ -200,14 +201,14 @@ features an integrated Emacs-like editor and a large runtime library.")
 (define-public bigloo
   (package
     (name "bigloo")
-    (version "4.3a")
+    (version "4.3b")
     (source (origin
              (method url-fetch)
              (uri (string-append "ftp://ftp-sop.inria.fr/indes/fp/Bigloo/bigloo"
                                  version ".tar.gz"))
              (sha256
               (base32
-               "03rcqs6kvy2j5lqk4fidqay5qfyp474qqspbh6wk4qdbds6w599w"))
+               "1x7xdgsls277zlf6gcaxs2cj62xj6yvb0qxh0ddmxfamvxba0cf4"))
              ;; Remove bundled libraries.
              (modules '((guix build utils)))
              (snippet
@@ -229,34 +230,37 @@ features an integrated Emacs-like editor and a large runtime library.")
                ((", @DATE@") ""))
              (substitute* "autoconf/osversion"
                (("^version.*$") "version=\"\"\n"))
+             (substitute* "comptime/Makefile"
+               (("\\$\\(LDCOMPLIBS\\)")
+                "$(LDCOMPLIBS) $(LDFLAGS)"))
 
              ;; The `configure' script doesn't understand options
              ;; of those of Autoconf.
              (let ((out (assoc-ref outputs "out")))
-               (zero?
-                (system* "./configure"
-                         (string-append "--prefix=" out)
-                         ; use system libraries
-                         "--customgc=no"
-                         "--customunistring=no"
-                         "--customlibuv=no"
-                         (string-append"--mv=" (which "mv"))
-                         (string-append "--rm=" (which "rm"))
-                         "--cflags=-fPIC"
-                         (string-append "--ldflags=-Wl,-rpath="
-                                        (assoc-ref outputs "out")
-                                        "/lib/bigloo/" ,version)
-                         (string-append "--lispdir=" out
-                                        "/share/emacs/site-lisp")
-                         "--sharedbde=yes"
-                         "--sharedcompiler=yes")))))
+               (invoke "./configure"
+                       (string-append "--prefix=" out)
+                       ; use system libraries
+                       "--customgc=no"
+                       "--customunistring=no"
+                       "--customlibuv=no"
+                       (string-append"--mv=" (which "mv"))
+                       (string-append "--rm=" (which "rm"))
+                       "--cflags=-fPIC"
+                       (string-append "--ldflags=-Wl,-rpath="
+                                      (assoc-ref outputs "out")
+                                      "/lib/bigloo/" ,version)
+                       (string-append "--lispdir=" out
+                                      "/share/emacs/site-lisp")
+                       "--sharedbde=yes"
+                       "--sharedcompiler=yes"
+                       "--disable-patch"))))
          (add-after 'install 'install-emacs-modes
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (dir (string-append out "/share/emacs/site-lisp")))
-               (zero? (system* "make" "-C" "bmacs" "all" "install"
-                               (string-append "EMACSBRAND=emacs25")
-                               (string-append "EMACSDIR=" dir)))))))))
+               (invoke "make" "-C" "bmacs" "all" "install"
+                       (string-append "EMACSBRAND=emacs25")
+                       (string-append "EMACSDIR=" dir))))))))
     (inputs
      `(("emacs" ,emacs)                      ;UDE needs the X version of Emacs
        ("libgc" ,libgc)
@@ -515,7 +519,7 @@ of libraries.")
 (define-public gambit-c
   (package
     (name "gambit-c")
-    (version "4.8.8")
+    (version "4.8.9")
     (source
      (origin
        (method url-fetch)
@@ -525,7 +529,7 @@ of libraries.")
              (string-map (lambda (c) (if (char=? c #\.) #\_ c)) version)
              ".tgz"))
        (sha256
-        (base32 "1plw1id94mpg2c4y6q9z39ndcz1hbxfnp3i08szsg6794rasmgkk"))))
+        (base32 "16sg1s8myzxqpimj5ry6lfza0qfs157zj28bvmxwwgy89jd9m5v7"))))
     (build-system gnu-build-system)
     (arguments
      '(#:configure-flags
@@ -947,3 +951,70 @@ implementation includes Hobbit, a Scheme-to-C compiler, which can
 generate C files whose binaries can be dynamically or statically
 linked with a SCM executable.")
     (license lgpl3+)))
+
+(define-public tinyscheme
+  (package
+    (name "tinyscheme")
+    (version "1.41")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/" name "/" name "/"
+                                  name "-" version "/" name "-" version ".zip"))
+              (sha256
+               (base32
+                "0yqma4jrjgj95f3hf30h542x97n8ah234n19yklbqq0phfsa08wf"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("unzip" ,unzip)))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source #:allow-other-keys)
+             (invoke "unzip" source)
+             (chdir (string-append ,name "-" ,version))
+             #t))
+         (add-after 'unpack 'set-scm-directory
+           ;; Hard-code ‘our’ init.scm instead of looking in the current
+           ;; working directory, so invoking ‘scheme’ just works.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (scm (string-append out "/share/" ,name)))
+               (substitute* "scheme.c"
+                 (("init.scm" all)
+                  (string-append scm "/" all)))
+               #t)))
+         (delete 'configure)            ; no configure script
+         (replace 'install
+           ;; There's no ‘install’ target.  Install files manually.
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out     (assoc-ref outputs "out"))
+                    (bin     (string-append out "/bin"))
+                    (doc     (string-append out "/share/doc/"
+                                            ,name "-" ,version))
+                    (include (string-append out "/include"))
+                    (lib     (string-append out "/lib"))
+                    (scm     (string-append out "/share/" ,name)))
+               (install-file "scheme" bin)
+               (install-file "Manual.txt" doc)
+               (install-file "scheme.h" include)
+               (install-file "libtinyscheme.so" lib)
+               (install-file "init.scm" scm)
+               #t))))
+       #:tests? #f))                    ; no tests
+    (home-page "http://tinyscheme.sourceforge.net/")
+    (synopsis "Light-weight interpreter for the Scheme programming language")
+    (description
+     "TinyScheme is a light-weight Scheme interpreter that implements as large a
+subset of R5RS as was possible without getting very large and complicated.
+
+It's meant to be used as an embedded scripting interpreter for other programs.
+As such, it does not offer an Integrated Development Environment (@dfn{IDE}) or
+extensive toolkits, although it does sport a small (and optional) top-level
+loop.
+
+As an embedded interpreter, it allows multiple interpreter states to coexist in
+the same program, without any interference between them.  Foreign functions in C
+can be added and values can be defined in the Scheme environment.  Being quite a
+small program, it is easy to comprehend, get to grips with, and use.")
+    (license bsd-3)))                   ; there are no licence headers

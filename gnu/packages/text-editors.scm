@@ -3,7 +3,7 @@
 ;;; Copyright © 2016 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Feng Shu <tumashu@163.com>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2014 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.org>
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
@@ -81,10 +81,10 @@
      (list (search-path-specification
             (variable "VIS_PATH")
             (files '("share/vis")))))
-    (inputs `(("lua", lua)
-              ("ncurses", ncurses)
-              ("libtermkey", libtermkey)
-              ("lua-lpeg", lua-lpeg)
+    (inputs `(("lua" ,lua)
+              ("ncurses" ,ncurses)
+              ("libtermkey" ,libtermkey)
+              ("lua-lpeg" ,lua-lpeg)
               ("tre" ,tre)))
     (synopsis "Vim-like text editor")
     (description
@@ -181,7 +181,7 @@ bindings and many of the powerful features of GNU Emacs.")
     (version "0.8.18.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://download.savannah.gnu.org/releases/"
+              (uri (string-append "mirror://savannah/"
                                   "leafpad/leafpad-" version ".tar.gz"))
               (sha256
                (base32
@@ -239,14 +239,14 @@ Wordstar-, EMACS-, Pico, Nedit or vi-like key bindings.  e3 can be used on
 (define-public mg
   (package
     (name "mg")
-    (version "20170401")
+    (version "20171014")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://homepage.boetes.org/software/mg/mg-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1arasswgdadbb265rahq3867r9s54jva6k4m3p5n0f8mgjqhhdha"))
+                "0hakfikzsml7z0hja8m8mcahrmfy2piy81bq9nccsjplyfc9clai"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -283,7 +283,7 @@ Wordstar-, EMACS-, Pico, Nedit or vi-like key bindings.  e3 can be used on
                              (doc (string-append out "/share/doc/mg")))
                         (install-file "tutorial" doc)
                         #t))))))
-    (home-page "http://homepage.boetes.org/software/mg/")
+    (home-page "https://homepage.boetes.org/software/mg/")
     (synopsis "Microscopic GNU Emacs clone")
     (description
      "Mg (mg) is a GNU Emacs style editor, with which it is \"broadly\"

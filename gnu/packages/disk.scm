@@ -2,7 +2,7 @@
 ;;; Copyright © 2012, 2013 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2015 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
@@ -178,7 +178,7 @@ scheme.")
 (define-public ddrescue
   (package
     (name "ddrescue")
-    (version "1.22")
+    (version "1.23")
     (source
      (origin
       (method url-fetch)
@@ -186,7 +186,7 @@ scheme.")
                           version ".tar.lz"))
       (sha256
        (base32
-        "19qhx9ggkkjl0g3a88g501wmybkj1y4n5lm5kp0km0blh0p7p189"))))
+        "13cd6c0x91zq10vdlyl6r5rib47bmsn5sshmkin3igwj8pa2vbm9"))))
     (build-system gnu-build-system)
     (home-page "https://www.gnu.org/software/ddrescue/ddrescue.html")
     (synopsis "Data recovery utility")
@@ -319,17 +319,17 @@ and can dramatically shorten the lifespan of the drive if left unchecked.")
 (define-public gparted
   (package
     (name "gparted")
-    (version "0.30.0")
+    (version "0.31.0")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "mirror://sourceforge/gparted/gparted/gparted-"
                            version "/gparted-" version ".tar.gz"))
        (sha256
-        (base32 "0jngbsbvg8k8vbpsphqbk8br2cbmxhabbm2c5bmxm2q5zvpr64fk"))))
+        (base32 "1fh7rpgb4xxdhgyjsirb83zvjfc5mfngb8a1pjbv7r6r6jj4jyrv"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f ; Tests require a network connection.
+     `(#:tests? #f                      ; tests require a network connection
        #:configure-flags '("--disable-scrollkeeper")))
     (inputs
      `(("util-linux" ,util-linux)
@@ -371,7 +371,7 @@ permit managing file systems not included in libparted.")
   (synopsis "Colourised @command{df} clone")
   (description "All-singing, all-dancing, fully colourised @command{df} clone
 written in Python.  It displays the amount of disk space available on the
-mounted filesystems, using different colours for different types of file
+mounted file systems, using different colours for different types of file
 systems.  Output format is completely customizable.")
   (license license:public-domain)))
 

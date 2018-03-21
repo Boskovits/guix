@@ -1,14 +1,15 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
-;;; Copyright © 2015, 2016, 2017 Ben Woodcroft <donttrustben@gmail.com>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2015, 2016 Pjotr Prins <pjotr.guix@thebird.nl>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2016 Raoul Bonnal <ilpuccio.febo@gmail.com>
+;;; Copyright © 2016, 2018 Raoul Bonnal <ilpuccio.febo@gmail.com>
 ;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -71,6 +72,7 @@
   #:use-module (gnu packages image)
   #:use-module (gnu packages imagemagick)
   #:use-module (gnu packages java)
+  #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages ldc)
   #:use-module (gnu packages linux)
   #:use-module (gnu packages logging)
@@ -108,32 +110,6 @@
   #:use-module (gnu packages xorg)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match))
-
-(define-public r-ape
-  (package
-    (name "r-ape")
-    (version "5.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (cran-uri "ape" version))
-       (sha256
-        (base32
-         "0q59pmxawz498cb9mv5m49lhiwxib8ak94yyydz7qg8b6lpd4bn3"))))
-    (build-system r-build-system)
-    (propagated-inputs
-     `(("r-lattice" ,r-lattice)
-       ("r-nlme" ,r-nlme)
-       ("r-rcpp" ,r-rcpp)))
-    (home-page "http://ape-package.ird.fr/")
-    (synopsis "Analyses of phylogenetics and evolution")
-    (description
-     "This package provides functions for reading, writing, plotting, and
-manipulating phylogenetic trees, analyses of comparative data in a
-phylogenetic framework, ancestral character analyses, analyses of
-diversification and macroevolution, computing distances from DNA sequences,
-and several other tools.")
-    (license license:gpl2+)))
 
 (define-public aragorn
   (package
@@ -789,20 +765,6 @@ into separate processes; and more.")
 
 (define-public python2-biopython
   (package-with-python2 python-biopython))
-
-;; An outdated version of biopython is required for seqmagick, see
-;; https://github.com/fhcrc/seqmagick/issues/59
-;; When that issue has been resolved this package should be removed.
-(define python2-biopython-1.66
-  (package
-    (inherit python2-biopython)
-    (version "1.66")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "biopython" version))
-              (sha256
-               (base32
-                "1gdv92593klimg22icf5j9by7xiq86jnwzkpz4abaa05ylkdf6hp"))))))
 
 (define-public bpp-core
   ;; The last release was in 2014 and the recommended way to install from source
@@ -1867,38 +1829,22 @@ file formats including SAM/BAM, Wiggle/BigWig, BED, GFF/GTF, VCF.")
 (define-public cutadapt
   (package
     (name "cutadapt")
-    (version "1.14")
+    (version "1.16")
     (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://github.com/marcelm/cutadapt/archive/v"
-                    version ".tar.gz"))
-              (file-name (string-append name "-" version ".tar.gz"))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/marcelm/cutadapt.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
               (sha256
                (base32
-                "16gbpiwy4m48vq2h5wqar3i8vr6vcj9gcl2qvqim19x6ya9dp8kd"))))
+                "09pr02067jiks19nc0aby4xp70hhgvb554i2y1c04rv1m401w7q8"))))
     (build-system python-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         ;; The tests must be run after installation.
-         (delete 'check)
-         (add-after 'install 'check
-           (lambda* (#:key inputs outputs #:allow-other-keys)
-             (setenv "PYTHONPATH"
-                     (string-append
-                      (getenv "PYTHONPATH")
-                      ":" (assoc-ref outputs "out")
-                      "/lib/python"
-                      (string-take (string-take-right
-                                    (assoc-ref inputs "python") 5) 3)
-                      "/site-packages"))
-             (zero? (system* "nosetests" "-P" "tests")))))))
     (inputs
      `(("python-xopen" ,python-xopen)))
     (native-inputs
      `(("python-cython" ,python-cython)
-       ("python-nose" ,python-nose)))
+       ("python-pytest" ,python-pytest)))
     (home-page "https://cutadapt.readthedocs.io/en/stable/")
     (synopsis "Remove adapter sequences from nucleotide sequencing reads")
     (description
@@ -2052,7 +1998,7 @@ with Python.")
     (version "2.5.1")
     (source (origin
               (method url-fetch)
-              (uri (string-append "https://github.com/fidelram/deepTools/"
+              (uri (string-append "https://github.com/deeptools/deepTools/"
                                   "archive/" version ".tar.gz"))
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
@@ -2071,7 +2017,7 @@ with Python.")
      `(("python-mock" ,python-mock)   ;for tests
        ("python-nose" ,python-nose)   ;for tests
        ("python-pytz" ,python-pytz))) ;for tests
-    (home-page "https://github.com/fidelram/deepTools")
+    (home-page "https://github.com/deeptools/deepTools")
     (synopsis "Tools for normalizing and visualizing deep-sequencing data")
     (description
      "DeepTools addresses the challenge of handling the large amounts of data
@@ -2087,7 +2033,7 @@ identify enrichments with functional annotations of the genome.")
 (define-public diamond
   (package
     (name "diamond")
-    (version "0.9.14")
+    (version "0.9.18")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -2096,7 +2042,7 @@ identify enrichments with functional annotations of the genome.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "07li3chjdna0wjyh680j3bhwiqh1fbfq9dy9jxxs82mc0rw0m1yy"))))
+                "1vi2nddmy7knrv8gsprwqp6a40k63n3f2dfvx22ipjhrg9xir96f"))))
     (build-system cmake-build-system)
     (arguments
      '(#:tests? #f ; no "check" target
@@ -3032,6 +2978,76 @@ sequencing (HTS) data.  There are also an number of useful utilities for
 manipulating HTS data.")
     (license license:expat)))
 
+(define-public java-htsjdk-latest
+  (package
+    (name "java-htsjdk")
+    (version "2.14.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/samtools/htsjdk.git")
+                    (commit version)))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1lmya1fdjy03mz6zmdmd86j9v9vfhqb3952mqq075navx1i6g4bc"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:tests? #f                      ; test require Scala
+       #:jdk ,icedtea-8
+       #:jar-name "htsjdk.jar"
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-useless-build.xml
+           (lambda _ (delete-file "build.xml") #t))
+         ;; The tests require the scalatest package.
+         (add-after 'unpack 'remove-tests
+           (lambda _ (delete-file-recursively "src/test") #t)))))
+    (inputs
+     `(("java-ngs" ,java-ngs)
+       ("java-snappy-1" ,java-snappy-1)
+       ("java-commons-compress" ,java-commons-compress)
+       ("java-commons-logging-minimal" ,java-commons-logging-minimal)
+       ("java-commons-jexl-2" ,java-commons-jexl-2)
+       ("java-xz" ,java-xz)))
+    (native-inputs
+     `(("java-junit" ,java-junit)))
+    (home-page "http://samtools.github.io/htsjdk/")
+    (synopsis "Java API for high-throughput sequencing data (HTS) formats")
+    (description
+     "HTSJDK is an implementation of a unified Java library for accessing
+common file formats, such as SAM and VCF, used for high-throughput
+sequencing (HTS) data.  There are also an number of useful utilities for
+manipulating HTS data.")
+    (license license:expat)))
+
+;; This is needed for picard 2.10.3
+(define-public java-htsjdk-2.10.1
+  (package (inherit java-htsjdk-latest)
+    (name "java-htsjdk")
+    (version "2.10.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/samtools/htsjdk.git")
+                    (commit version)))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1kxh7slm2pm3x9p6jxa1wqsq9a31dhiiflhxnxqcisan4k3rwia2"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:tests? #f                      ; tests require Scala
+       #:jdk ,icedtea-8
+       #:jar-name "htsjdk.jar"
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-useless-build.xml
+           (lambda _ (delete-file "build.xml") #t))
+         ;; The tests require the scalatest package.
+         (add-after 'unpack 'remove-tests
+           (lambda _ (delete-file-recursively "src/test") #t)))))))
+
 ;; This version matches java-htsjdk 2.3.0.  Later versions also require a more
 ;; recent version of java-htsjdk, which depends on gradle.
 (define-public java-picard
@@ -3101,6 +3117,90 @@ manipulating HTS data.")
        ("java-guava" ,java-guava)))
     (native-inputs
      `(("java-testng" ,java-testng)))
+    (home-page "http://broadinstitute.github.io/picard/")
+    (synopsis "Tools for manipulating high-throughput sequencing data and formats")
+    (description "Picard is a set of Java command line tools for manipulating
+high-throughput sequencing (HTS) data and formats.  Picard is implemented
+using the HTSJDK Java library to support accessing file formats that are
+commonly used for high-throughput sequencing data such as SAM, BAM, CRAM and
+VCF.")
+    (license license:expat)))
+
+;; This is needed for dropseq-tools
+(define-public java-picard-2.10.3
+  (package
+    (name "java-picard")
+    (version "2.10.3")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/broadinstitute/picard.git")
+                    (commit version)))
+              (file-name (string-append "java-picard-" version "-checkout"))
+              (sha256
+               (base32
+                "1ajlx31l6i1k3y2rhnmgq07sz99g2czqfqgkr9mihmdjp3gwjhvi"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:jar-name "picard.jar"
+       ;; Tests require jacoco:coverage.
+       #:tests? #f
+       #:jdk ,icedtea-8
+       #:main-class "picard.cmdline.PicardCommandLine"
+       #:modules ((guix build ant-build-system)
+                  (guix build utils)
+                  (guix build java-utils)
+                  (sxml simple)
+                  (sxml transform)
+                  (sxml xpath))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'remove-useless-build.xml
+           (lambda _ (delete-file "build.xml") #t))
+         ;; This is necessary to ensure that htsjdk is found when using
+         ;; picard.jar as an executable.
+         (add-before 'build 'edit-classpath-in-manifest
+           (lambda* (#:key inputs #:allow-other-keys)
+             (chmod "build.xml" #o664)
+             (call-with-output-file "build.xml.new"
+               (lambda (port)
+                 (sxml->xml
+                  (pre-post-order
+                   (with-input-from-file "build.xml"
+                     (lambda _ (xml->sxml #:trim-whitespace? #t)))
+                   `((target    . ,(lambda (tag . kids)
+                                     (let ((name ((sxpath '(name *text*))
+                                                  (car kids)))
+                                           ;; FIXME: We're breaking the line
+                                           ;; early with a dummy path to
+                                           ;; ensure that the store reference
+                                           ;; isn't broken apart and can still
+                                           ;; be found by the reference
+                                           ;; scanner.
+                                           (msg (format #f
+                                                        "\
+Class-Path: /~a \
+ ~a/share/java/htsjdk.jar${line.separator}"
+                                                        ;; maximum line length is 70
+                                                        (string-tabulate (const #\b) 57)
+                                                        (assoc-ref inputs "java-htsjdk"))))
+                                       (if (member "manifest" name)
+                                           `(,tag ,@kids
+                                                  (echo
+                                                   (@ (message ,msg)
+                                                      (file "${manifest.file}")
+                                                      (append "true"))))
+                                           `(,tag ,@kids)))))
+                     (*default* . ,(lambda (tag . kids) `(,tag ,@kids)))
+                     (*text*    . ,(lambda (_ txt) txt))))
+                  port)))
+             (rename-file "build.xml.new" "build.xml")
+             #t)))))
+    (propagated-inputs
+     `(("java-htsjdk" ,java-htsjdk-2.10.1)))
+    (native-inputs
+     `(("java-testng" ,java-testng)
+       ("java-guava" ,java-guava)))
     (home-page "http://broadinstitute.github.io/picard/")
     (synopsis "Tools for manipulating high-throughput sequencing data and formats")
     (description "Picard is a set of Java command line tools for manipulating
@@ -3224,10 +3324,89 @@ VCF.")
        ("jdk" ,icedtea-8 "jdk")
        ("jdk-src" ,(car (assoc-ref (package-native-inputs icedtea-8) "jdk-drop")))))))
 
+(define-public fastqc
+  (package
+    (name "fastqc")
+    (version "0.11.5")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://www.bioinformatics.babraham.ac.uk/"
+                           "projects/fastqc/fastqc_v"
+                           version "_source.zip"))
+       (sha256
+        (base32
+         "18rrlkhcrxvvvlapch4dpj6xc6mpayzys8qfppybi8jrpgx5cc5f"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:tests? #f                      ; there are no tests
+       #:build-target "build"
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-dependencies
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "build.xml"
+               (("jbzip2-0.9.jar")
+                (string-append (assoc-ref inputs "java-jbzip2")
+                               "/share/java/jbzip2.jar"))
+               (("sam-1.103.jar")
+                (string-append (assoc-ref inputs "java-picard-1.113")
+                               "/share/java/sam-1.112.jar"))
+               (("cisd-jhdf5.jar")
+                (string-append (assoc-ref inputs "java-cisd-jhdf5")
+                               "/share/java/sis-jhdf5.jar")))
+             #t))
+         ;; There is no installation target
+         (replace 'install
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out   (assoc-ref outputs "out"))
+                    (bin   (string-append out "/bin"))
+                    (share (string-append out "/share/fastqc/"))
+                    (exe   (string-append share "/fastqc")))
+               (for-each mkdir-p (list bin share))
+               (copy-recursively "bin" share)
+               (substitute* exe
+                 (("my \\$java_bin = 'java';")
+                  (string-append "my $java_bin = '"
+                                 (assoc-ref inputs "java")
+                                 "/bin/java';")))
+               (chmod exe #o555)
+               (symlink exe (string-append bin "/fastqc"))
+               #t))))))
+    (inputs
+     `(("java" ,icedtea)
+       ("perl" ,perl)                   ; needed for the wrapper script
+       ("java-cisd-jhdf5" ,java-cisd-jhdf5)
+       ("java-picard-1.113" ,java-picard-1.113)
+       ("java-jbzip2" ,java-jbzip2)))
+    (native-inputs
+     `(("unzip" ,unzip)))
+    (home-page "http://www.bioinformatics.babraham.ac.uk/projects/fastqc/")
+    (synopsis "Quality control tool for high throughput sequence data")
+    (description
+     "FastQC aims to provide a simple way to do some quality control
+checks on raw sequence data coming from high throughput sequencing
+pipelines.  It provides a modular set of analyses which you can use to
+give a quick impression of whether your data has any problems of which
+you should be aware before doing any further analysis.
+
+The main functions of FastQC are:
+
+@itemize
+@item Import of data from BAM, SAM or FastQ files (any variant);
+@item Providing a quick overview to tell you in which areas there may
+  be problems;
+@item Summary graphs and tables to quickly assess your data;
+@item Export of results to an HTML based permanent report;
+@item Offline operation to allow automated generation of reports
+  without running the interactive application.
+@end itemize\n")
+    (license license:gpl3+)))
+
 (define-public htslib
   (package
     (name "htslib")
-    (version "1.6")
+    (version "1.7")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -3235,17 +3414,8 @@ VCF.")
                     version "/htslib-" version ".tar.bz2"))
               (sha256
                (base32
-                "1jsca3hg4rbr6iqq6imkj4lsvgl8g9768bcmny3hlff2w25vx24m"))))
+                "1il6i2p84b0y9c93dhvzzki1ifw9bvapm2mvpr0xvb2nq8jlwgdy"))))
     (build-system gnu-build-system)
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after
-          'unpack 'patch-tests
-          (lambda _
-            (substitute* "test/test.pl"
-              (("/bin/bash") (which "bash")))
-            #t)))))
     (inputs
      `(("openssl" ,openssl)
        ("curl" ,curl)
@@ -3447,7 +3617,7 @@ sometimes better.  Khmer can also identify and fix problems with shotgun
 data.")
     ;; When building on i686, armhf and mips64el, we get the following error:
     ;; error: ['khmer', 'khmer.tests', 'oxli'] require 64-bit operating system
-    (supported-systems '("x86_64-linux"))
+    (supported-systems '("x86_64-linux" "aarch64-linux"))
     (license license:bsd-3)))
 
 (define-public kaiju
@@ -3518,16 +3688,16 @@ sequencing tag position and orientation.")
 (define-public mafft
   (package
     (name "mafft")
-    (version "7.310")
+    (version "7.313")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "http://mafft.cbrc.jp/alignment/software/mafft-" version
+                    "https://mafft.cbrc.jp/alignment/software/mafft-" version
                     "-without-extensions-src.tgz"))
               (file-name (string-append name "-" version ".tgz"))
               (sha256
                (base32
-                "0gbsaz6z2qa307kd7wfb06c3y4ikmv1hsdvlns11f6zq4w1z9pwc"))))
+                "0r83qmg2if8mi6jyx3xdf8ar2gcxl7r9nmj98jr7lxym97v61a2k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; no automated tests, though there are tests in the read me
@@ -4642,6 +4812,7 @@ distribution, coverage uniformity, strand specificity, etc.")
                 (uri (hg-reference
                       (url "https://bitbucket.org/libsleipnir/sleipnir")
                       (changeset changeset)))
+                (file-name (string-append name "-" version "-checkout"))
                 (sha256
                  (base32
                   "0qrvilwh18dpbhkf92qvxbmay0j75ra3jg2wrhz67gf538zzphsx"))))
@@ -4700,7 +4871,7 @@ to the user's query of interest.")
 (define-public samtools
   (package
     (name "samtools")
-    (version "1.5")
+    (version "1.7")
     (source
      (origin
        (method url-fetch)
@@ -4709,7 +4880,7 @@ to the user's query of interest.")
                        version "/samtools-" version ".tar.bz2"))
        (sha256
         (base32
-         "1xidmv0jmfy7l0kb32hdnlshcxgzi1hmygvig0cqrq1fhckdlhl5"))))
+         "18acyqysbxpydlc44lqv2hpp57l06bs9a3yqmcvjk8va2xrrdc77"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((ice-9 ftw)
@@ -5391,34 +5562,19 @@ bioinformatics file formats, sequence alignment, and more.")
 (define-public seqmagick
   (package
     (name "seqmagick")
-    (version "0.6.1")
+    (version "0.7.0")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append
-             "https://pypi.python.org/packages/source/s/seqmagick/seqmagick-"
-             version ".tar.gz"))
+       (uri (pypi-uri "seqmagick" version))
        (sha256
         (base32
-         "0cgn477n74gsl4qdaakrrhi953kcsd4q3ivk2lr18x74s3g4ma1d"))))
+         "12bfyp8nqi0hd36rmj450aygafp01qy3hkbvlwn3bk39pyjjkgg5"))))
     (build-system python-build-system)
-    (arguments
-     ;; python2 only, see https://github.com/fhcrc/seqmagick/issues/56
-     `(#:python ,python-2
-       #:phases
-       (modify-phases %standard-phases
-         ;; Current test in setup.py does not work as of 0.6.1,
-         ;; so use nose to run tests instead for now. See
-         ;; https://github.com/fhcrc/seqmagick/issues/55
-         (replace 'check (lambda _ (zero? (system* "nosetests")))))))
     (inputs
-     ;; biopython-1.66 is required due to
-     ;; https://github.com/fhcrc/seqmagick/issues/59
-     ;; When that issue is resolved the 'python2-biopython-1.66' package
-     ;; should be removed.
-     `(("python-biopython" ,python2-biopython-1.66)))
+     `(("python-biopython" ,python-biopython)))
     (native-inputs
-     `(("python-nose" ,python2-nose)))
+     `(("python-nose" ,python-nose)))
     (home-page "https://github.com/fhcrc/seqmagick")
     (synopsis "Tools for converting and modifying sequence files")
     (description
@@ -5591,6 +5747,11 @@ application of SortMeRNA is filtering rRNA from metatranscriptomic data.")
        (modify-phases %standard-phases
          (add-after 'unpack 'enter-source-dir
            (lambda _ (chdir "source") #t))
+         (add-after 'enter-source-dir 'make-reproducible
+           (lambda _
+             (substitute* "Makefile"
+               (("(COMPILATION_TIME_PLACE=\")(.*)(\")" _ pre mid post)
+                (string-append pre "Built with Guix" post)))))
          (add-after 'enter-source-dir 'do-not-use-bundled-htslib
            (lambda _
              (substitute* "Makefile"
@@ -5872,14 +6033,14 @@ information as possible.")
 (define-public r-vegan
   (package
     (name "r-vegan")
-    (version "2.4-5")
+    (version "2.4-6")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "vegan" version))
        (sha256
         (base32
-         "0cyyvn3xsjn24w590jn6z4xajafv7yzvj6c51vqi9q6m8v5831ya"))))
+         "175mqr42mmxy98gpf3rky8alnkw3w1k90ggdw3cispl36841p76w"))))
     (build-system r-build-system)
     (native-inputs
      `(("gfortran" ,gfortran)))
@@ -6040,14 +6201,14 @@ distribution.")
 (define-public r-dexseq
   (package
     (name "r-dexseq")
-    (version "1.24.2")
+    (version "1.24.3")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "DEXSeq" version))
        (sha256
         (base32
-         "18nh8ynxirfwkmc4sawdxgl7w1sl9ny5zpv8zbhv9vi5vgb8pxmj"))))
+         "0xip73hlbr3zry9d7ly9vvvsbb3xjcmfa09lr9fdy528dwjrf084"))))
     (properties `((upstream-name . "DEXSeq")))
     (build-system r-build-system)
     (propagated-inputs
@@ -6223,14 +6384,14 @@ testing and other simple calculations.")
 (define-public r-shortread
   (package
     (name "r-shortread")
-    (version "1.36.0")
+    (version "1.36.1")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "ShortRead" version))
        (sha256
         (base32
-         "06mknlsmd4hnaxzdjapgvp2kgdnf9w103y500dsac5jgsz4vwzcz"))))
+         "1cyv47632m9ljkxfsvnvmd19sb607ys5kz8fwh6v39dnw16g0a6m"))))
     (properties `((upstream-name . "ShortRead")))
     (build-system r-build-system)
     (inputs
@@ -6393,7 +6554,7 @@ SELECT or UPDATE queries to an end-point.")
 (define-public vsearch
   (package
     (name "vsearch")
-    (version "2.6.2")
+    (version "2.7.1")
     (source
      (origin
        (method url-fetch)
@@ -6403,7 +6564,7 @@ SELECT or UPDATE queries to an end-point.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "02khrgh8hm11cgww2f9mqc6886zqli9ss4pd4kfpqzd0d31vbzv5"))
+         "0jlzfgh79fzmb4g7sngzdjjsjyc37icvs1k7vmc2ksxglj6x5i7f"))
        (patches (search-patches "vsearch-unbundle-cityhash.patch"))
        (snippet
         '(begin
@@ -6695,25 +6856,28 @@ also known as views, in a controlled vocabulary.")
 
 (define-public r-bookdown
   (package
-  (name "r-bookdown")
-  (version "0.5")
-  (source (origin
-            (method url-fetch)
-            (uri (cran-uri "bookdown" version))
-            (sha256
-             (base32
-              "0zm63kr4f4kja4qpwkzl119zzyciqj7ihajfqgfjpgb4dzaiycxp"))))
-  (build-system r-build-system)
-  (propagated-inputs
-   `(("r-htmltools" ,r-htmltools)
-     ("r-knitr" ,r-knitr)
-     ("r-rmarkdown" ,r-rmarkdown)
-     ("r-yaml" ,r-yaml)))
-  (home-page "https://github.com/rstudio/bookdown")
-  (synopsis "Authoring books and technical documents with R markdown")
-  (description "This package provides output formats and utilities for
+    (name "r-bookdown")
+    (version "0.7")
+    (source (origin
+              (method url-fetch)
+              (uri (cran-uri "bookdown" version))
+              (sha256
+               (base32
+                "1b3fw1f41zph5yw3kynb47aijq53vhaa6mnnvxly72zamyzdf95q"))))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-htmltools" ,r-htmltools)
+       ("r-knitr" ,r-knitr)
+       ("r-rmarkdown" ,r-rmarkdown)
+       ("r-tinytex" ,r-tinytex)
+       ("r-yaml" ,r-yaml)
+       ("r-xfun" ,r-xfun)
+       ("ghc-pandoc" ,ghc-pandoc)))
+    (home-page "https://github.com/rstudio/bookdown")
+    (synopsis "Authoring books and technical documents with R markdown")
+    (description "This package provides output formats and utilities for
 authoring books and technical documents with R Markdown.")
-  (license license:gpl3)))
+    (license license:gpl3)))
 
 (define-public r-biocstyle
   (package
@@ -6789,14 +6953,14 @@ checks on R packages that are to be submitted to the Bioconductor repository.")
 (define-public r-getopt
   (package
     (name "r-getopt")
-    (version "1.20.1")
+    (version "1.20.2")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "getopt" version))
        (sha256
         (base32
-         "0m463mcvixh54i3ng42n0vxmdlf97dgbfs2sf9wnjm782ddw68hm"))))
+         "13p35lbpy7i578752fa71sbfvcsqw5qfa9p6kf8b5m3c5p9i4v1x"))))
     (build-system r-build-system)
     (home-page "https://github.com/trevorld/getopt")
     (synopsis "Command-line option processor for R")
@@ -6988,13 +7152,13 @@ names in their natural, rather than lexicographic, order.")
 (define-public r-edger
   (package
     (name "r-edger")
-    (version "3.20.2")
+    (version "3.20.9")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "edgeR" version))
               (sha256
                (base32
-                "0j5s3i33qmld9l7gs1rzpv601zxyqz711x8mq35hml088c8s99w9"))))
+                "0y52snwbz37xzdd7gihdkqczbndlfzmmypv6hri3ymjyfmlx6qaw"))))
     (properties `((upstream-name . "edgeR")))
     (build-system r-build-system)
     (propagated-inputs
@@ -7016,13 +7180,13 @@ CAGE.")
 (define-public r-variantannotation
   (package
     (name "r-variantannotation")
-    (version "1.24.2")
+    (version "1.24.5")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "VariantAnnotation" version))
               (sha256
                (base32
-                "19wgb2kcqy97pm3xgqc781id9fbmzp1hdwzkkhdzpvyf29w4n29j"))))
+                "07ywn3c4w83l3sr76d0z3b1nv9icgdh3phsjlc6cfx7i6nfmvxw2"))))
     (properties
      `((upstream-name . "VariantAnnotation")))
     (inputs
@@ -7054,13 +7218,13 @@ coding changes and predict coding outcomes.")
 (define-public r-limma
   (package
     (name "r-limma")
-    (version "3.34.4")
+    (version "3.34.9")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "limma" version))
               (sha256
                (base32
-                "1vcxf9jg8xngxg5kb9bp8rw5sghpnkpj320iq309m2fp41ahsk3f"))))
+                "1y2fm61g5i0fn0j3l31xvwh9zww9bpkc4nwzb1d0yv1cag20jkdc"))))
     (build-system r-build-system)
     (home-page "http://bioinf.wehi.edu.au/limma")
     (synopsis "Package for linear models for microarray and RNA-seq data")
@@ -7109,13 +7273,13 @@ different technologies, including microarrays, RNA-seq, and quantitative PCR.")
 (define-public r-genomicranges
   (package
     (name "r-genomicranges")
-    (version "1.30.0")
+    (version "1.30.3")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "GenomicRanges" version))
               (sha256
                (base32
-                "10ra2sjn17h6gilm9iz0cygp9ijpgbirljlc4drwrnivnw9cmi2a"))))
+                "07cszc9ri94nzk4dffwnsj247ih6pchnrzrvnb0q4dkk33gwy8n1"))))
     (properties
      `((upstream-name . "GenomicRanges")))
     (build-system r-build-system)
@@ -7187,13 +7351,13 @@ annotation data packages using SQLite data storage.")
 (define-public r-biomart
   (package
     (name "r-biomart")
-    (version "2.34.1")
+    (version "2.34.2")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "biomaRt" version))
               (sha256
                (base32
-                "0jzv8b86vpvavwnzi5xf7y18xmn72zkabkn2kclg1mgl847cq13k"))))
+                "1zlgs2zg0lmnk572p55n7m34nkxka8w10x8f2ndssjkffl2csy79"))))
     (properties
      `((upstream-name . "biomaRt")))
     (build-system r-build-system)
@@ -7345,13 +7509,13 @@ array-like objects like @code{DataFrame} objects (typically with Rle columns),
 (define-public r-summarizedexperiment
   (package
     (name "r-summarizedexperiment")
-    (version "1.8.0")
+    (version "1.8.1")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "SummarizedExperiment" version))
               (sha256
                (base32
-                "1011r8l0k8420j31bmh4xdcp6ka5bzf4bqhip84v5b6alpkcbvmf"))))
+                "19vlwnby83fqjrilsxvnvgz0gvby7mrxvlmx18nb3p1w591ddfjh"))))
     (properties
      `((upstream-name . "SummarizedExperiment")))
     (build-system r-build-system)
@@ -7409,13 +7573,13 @@ alignments.")
 (define-public r-rtracklayer
   (package
     (name "r-rtracklayer")
-    (version "1.38.2")
+    (version "1.38.3")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "rtracklayer" version))
               (sha256
                (base32
-                "1sjn3976f1sqvrq6jq2hgc60ffxgfr3jlklaxfrk3xad5cv2kr2d"))))
+                "1khzfczm35k5lq9h0jlqrq01192spzjyh8s6is89spj006flwn4k"))))
     (build-system r-build-system)
     (arguments
      `(#:phases
@@ -7454,13 +7618,13 @@ as well as query and modify the browser state, such as the current viewport.")
 (define-public r-genomicfeatures
   (package
     (name "r-genomicfeatures")
-    (version "1.30.0")
+    (version "1.30.3")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "GenomicFeatures" version))
               (sha256
                (base32
-                "1khjvq1ffhqavkwf8n7bilknci60lxbg52icrcf2vnb9k8rlpghs"))))
+                "010vn8hlwbnw12pd1d8pv6m12yp3xwx557gba5rbjq9p4qypnn3z"))))
     (properties
      `((upstream-name . "GenomicFeatures")))
     (build-system r-build-system)
@@ -7539,13 +7703,13 @@ information about the latest version of the Gene Ontologies.")
 (define-public r-topgo
   (package
     (name "r-topgo")
-    (version "2.30.0")
+    (version "2.30.1")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "topGO" version))
               (sha256
                (base32
-                "1hqffz5qp7glxdvjp37005g8qk5nam3f9wpf6d1wjnzpar04f3dz"))))
+                "1cgz4knxr328xfqlhl6ypxl6x86rfrlqz748kn94ainxjzz55i6x"))))
     (properties
      `((upstream-name . "topGO")))
     (build-system r-build-system)
@@ -7680,13 +7844,13 @@ reference point and sorted by a user defined feature.")
 (define-public r-genomation
   (package
     (name "r-genomation")
-    (version "1.10.0")
+    (version "1.11.3")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "genomation" version))
               (sha256
                (base32
-                "1ddd8c9w1f1i1ga9rpbwiic8rsaws1chdxx4j38bpyaiy4zhz1ca"))))
+                "1d2g1v6xhrf3gm86pv8ln22df5g6v6k6i4i39v4j82zn4apany6v"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-biostrings" ,r-biostrings)
@@ -8131,7 +8295,7 @@ throughput genetic sequencing data sets using regression methods.")
 (define-public r-qtl
  (package
   (name "r-qtl")
-  (version "1.41-6")
+  (version "1.42-8")
   (source
    (origin
     (method url-fetch)
@@ -8139,7 +8303,7 @@ throughput genetic sequencing data sets using regression methods.")
                         version ".tar.gz"))
     (sha256
      (base32
-      "067az4v432zxp6lxck8d7vlh9w4r13r0mvw5zsglyaqwsh3d9sad"))))
+      "1l528dwvfpdlr05imrrm4rq32axp6hld9nqm6mm43kn5n7z2f5k6"))))
   (build-system r-build-system)
   (home-page "http://rqtl.org/")
   (synopsis "R package for analyzing QTL experiments in genetics")
@@ -8270,7 +8434,7 @@ paired-end data.")
        ("r-testthat" ,r-testthat)
        ;; During vignette building knitr checks that "pandoc-citeproc"
        ;; is in the PATH.
-       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc)))
+       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc-with-pandoc-1)))
     (propagated-inputs
      `(("r-data-table" ,r-data-table)
        ("r-biomart" ,r-biomart)
@@ -8385,14 +8549,14 @@ in SNV base substitution data.")
 (define-public r-wgcna
   (package
     (name "r-wgcna")
-    (version "1.61")
+    (version "1.63")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "WGCNA" version))
        (sha256
         (base32
-         "1vrc2k33a196hrrl7k0z534fp96vv0shmigcr65ny1q0v6lq0h6i"))))
+         "1225dqm68bynkmklnsxdqdd3zqrpzbvqwyly8ibxmk75z33xz309"))))
     (properties `((upstream-name . "WGCNA")))
     (build-system r-build-system)
     (propagated-inputs
@@ -8490,14 +8654,14 @@ factors bound at the specific regions.")
 (define-public r-gkmsvm
   (package
     (name "r-gkmsvm")
-    (version "0.71.0")
+    (version "0.79.0")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "gkmSVM" version))
        (sha256
         (base32
-         "1zpxgxmf2nd5j5wn00ps6kfxr8wxh7d1swr1rr4spq7sj5z5z0k0"))))
+         "04dakbgfvfalz4rm4fvvybp506dn5fbj5g86ybfhrc6wywjllsz3"))))
     (properties `((upstream-name . "gkmSVM")))
     (build-system r-build-system)
     (propagated-inputs
@@ -8562,6 +8726,16 @@ of gene-level counts.")
                       "src/hdf5source/hdf5small.tgz" "-C" "src/" )
              (substitute* "src/hdf5/configure"
                (("/bin/mv") "mv"))
+             ;; Remove timestamp and host system information to make
+             ;; the build reproducible.
+             (substitute* "src/hdf5/src/libhdf5.settings.in"
+               (("Configured on: @CONFIG_DATE@")
+                "Configured on: Guix")
+               (("Uname information:.*")
+                "Uname information: Linux\n")
+               ;; Remove unnecessary store reference.
+               (("C Compiler:.*")
+                "C Compiler: GCC\n"))
              #t)))))
     (propagated-inputs
      `(("r-zlibbioc" ,r-zlibbioc)))
@@ -8726,6 +8900,7 @@ intervals (e.g. genes, sequence alignments).")
                 (uri (git-reference
                       (url "https://github.com/smithlabcode/piranha.git")
                       (commit commit)))
+                (file-name (git-file-name name version))
                 (sha256
                  (base32
                   "117dc0zf20c61jam69sk4abl57ah6yi6i7qra7d7y5zrbgk12q5n"))))
@@ -8839,18 +9014,17 @@ replacement for strverscmp.")
 (define-public multiqc
   (package
     (name "multiqc")
-    (version "1.3")
+    (version "1.4")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "multiqc" version))
        (sha256
         (base32
-         "0fx1sx53znbgzfhbbiyd8j6cg5llpcsl5q5c45jy2c81d12piqfd"))))
+         "0ihx4rzmsfphv4byn05qv6f1y95g2dxs6viwziipl4wjk96acgm8"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-enum34" ,python-enum34)
-       ("python-jinja2" ,python-jinja2)
+     `(("python-jinja2" ,python-jinja2)
        ("python-simplejson" ,python-simplejson)
        ("python-pyyaml" ,python-pyyaml)
        ("python-click" ,python-click)
@@ -8965,13 +9139,13 @@ number detection tools.")
 (define-public r-methylkit
   (package
     (name "r-methylkit")
-    (version "1.4.0")
+    (version "1.4.1")
     (source (origin
               (method url-fetch)
               (uri (bioconductor-uri "methylKit" version))
               (sha256
                (base32
-                "0h53w2mrjrg2n0ndi12k9j6cwclgwcgpy25nz7nyj971aisw02xn"))))
+                "1k0nfn9318sgwm4z963bhnbp4c3zv85v3f9886vc5hgaisr0yvai"))))
     (properties `((upstream-name . "methylKit")))
     (build-system r-build-system)
     (propagated-inputs
@@ -9335,14 +9509,14 @@ structure (pcaRes) to provide a common interface to the PCA results.")
 (define-public r-msnbase
   (package
     (name "r-msnbase")
-    (version "2.4.0")
+    (version "2.4.2")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "MSnbase" version))
        (sha256
         (base32
-         "0dqfimljhrx3gac8d1k72gppx27lz8yckyb12v4604nbviw7xd3r"))))
+         "1ig64bf881p118dwqfr0ry41m7yhnyv165smv8fdwfv7sb6sagif"))))
     (properties `((upstream-name . "MSnbase")))
     (build-system r-build-system)
     (propagated-inputs
@@ -9415,13 +9589,13 @@ and irregular enzymatic cleavages, mass measurement accuracy, etc.")
 (define-public r-seurat
   (package
     (name "r-seurat")
-    (version "2.1.0")
+    (version "2.2.1")
     (source (origin
               (method url-fetch)
               (uri (cran-uri "Seurat" version))
               (sha256
                (base32
-                "1hqaq6bciikrsyw157w8fn4jw885air7xbkxrmism93rp4qx483x"))
+                "1sr82nf38hq07avrfn8vlrzjq7dfm4pcr8l1nh6mnglcql2bk9z2"))
               ;; Delete pre-built jar.
               (snippet
                '(begin (delete-file "inst/java/ModularityOptimizer.jar")
@@ -9458,8 +9632,8 @@ Main-Class: ModularityOptimizer\n")))
        ("r-fnn" ,r-fnn)
        ("r-fpc" ,r-fpc)
        ("r-gdata" ,r-gdata)
-       ("r-ggjoy" ,r-ggjoy)
        ("r-ggplot2" ,r-ggplot2)
+       ("r-ggridges" ,r-ggridges)
        ("r-gplots" ,r-gplots)
        ("r-gridextra" ,r-gridextra)
        ("r-hmisc" ,r-hmisc)
@@ -9469,13 +9643,14 @@ Main-Class: ModularityOptimizer\n")))
        ("r-lars" ,r-lars)
        ("r-mass" ,r-mass)
        ("r-matrix" ,r-matrix)
+       ("r-metap" ,r-metap)
        ("r-mixtools" ,r-mixtools)
-       ("r-nmf" ,r-nmf)
        ("r-pbapply" ,r-pbapply)
        ("r-plotly" ,r-plotly)
        ("r-ranger" ,r-ranger)
        ("r-rcolorbrewer" ,r-rcolorbrewer)
        ("r-rcpp" ,r-rcpp)
+       ("r-rcppeigen" ,r-rcppeigen)
        ("r-rcppprogress" ,r-rcppprogress)
        ("r-reshape2" ,r-reshape2)
        ("r-rocr" ,r-rocr)
@@ -9685,14 +9860,14 @@ microarrays or GRanges for sequencing data.")
 (define-public r-keggrest
   (package
     (name "r-keggrest")
-    (version "1.18.0")
+    (version "1.18.1")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "KEGGREST" version))
        (sha256
         (base32
-         "1i3i88lj57wvpgjf75a23msgfsjv8pr2b4j1faga276p4fsblkhj"))))
+         "02gwmm79djj55a90dzc80hlgwc6bafl7xd7fnx2q59pk945k3z9c"))))
     (properties `((upstream-name . "KEGGREST")))
     (build-system r-build-system)
     (propagated-inputs
@@ -9709,14 +9884,14 @@ microarrays or GRanges for sequencing data.")
 (define-public r-gage
   (package
     (name "r-gage")
-    (version "2.28.0")
+    (version "2.28.2")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "gage" version))
        (sha256
         (base32
-         "1r14p88q3y736pkqm4pdimf1izy1xy3xgivmj3cr4dv65kjny1zk"))))
+         "0h0mlhns9j7cpfksvdlvx9jb7szm3r1dwqb3s4s8p8hmkb9byyii"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-annotationdbi" ,r-annotationdbi)
@@ -9830,14 +10005,14 @@ originally made available by Holmes, Harris, and Quince, 2012, PLoS ONE 7(2):
 (define-public r-ensembldb
   (package
     (name "r-ensembldb")
-    (version "2.2.0")
+    (version "2.2.2")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "ensembldb" version))
        (sha256
         (base32
-         "1w0lca3ws5j770bmls91cn93lznvv2pc8s42nybdzz3vdxjvb4m1"))))
+         "1yngndkf3588z91z0a2fvkg423p26ajm6xv1p27x0l9mzhhaqq3k"))))
     (build-system r-build-system)
     (propagated-inputs
      `(("r-annotationdbi" ,r-annotationdbi)
@@ -9999,14 +10174,14 @@ interval to data view, mismatch pileup, and several splicing summaries.")
 (define-public r-gprofiler
   (package
     (name "r-gprofiler")
-    (version "0.6.1")
+    (version "0.6.4")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "gProfileR" version))
        (sha256
         (base32
-         "1qix15d0wa9nspdclcawml94mng4qmr2jciv7d24py315wfsvv8p"))))
+         "1cka02zbz1rbppm782qpxk1xn9qxbrv2gp5rgf970j906hxm2y0b"))))
     (properties `((upstream-name . "gProfileR")))
     (build-system r-build-system)
     (propagated-inputs
@@ -10238,14 +10413,14 @@ family of feature/genome hypotheses.")
 (define-public r-gviz
   (package
     (name "r-gviz")
-    (version "1.22.2")
+    (version "1.22.3")
     (source
      (origin
        (method url-fetch)
        (uri (bioconductor-uri "Gviz" version))
        (sha256
         (base32
-         "173n99mc95sij2vb8n3xd016x7mxhjs961q3l29xkg1lrnnm2sva"))))
+         "1grjzrjpzkw572pbvpsvdnfkfgwybl0cnjd7nnk2xdr26wnbsi9a"))))
     (properties `((upstream-name . "Gviz")))
     (build-system r-build-system)
     (propagated-inputs
@@ -10424,6 +10599,328 @@ one to make sensible significance cut-offs.  The software can be applied to
 problems in genomics, brain imaging, astrophysics, and data mining.")
     ;; Any version of the LGPL.
     (license license:lgpl3+)))
+
+(define-public r-hdf5array
+  (package
+    (name "r-hdf5array")
+    (version "1.6.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "HDF5Array" version))
+       (sha256
+        (base32
+         "0kcdza41saqv6vlpvqd841awbiwkg84lh0plx6c7fmfgbqv7a0jh"))))
+    (properties `((upstream-name . "HDF5Array")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-biocgenerics" ,r-biocgenerics)
+       ("r-delayedarray" ,r-delayedarray)
+       ("r-iranges" ,r-iranges)
+       ("r-rhdf5" ,r-rhdf5)
+       ("r-s4vectors" ,r-s4vectors)))
+    (home-page "https://bioconductor.org/packages/HDF5Array")
+    (synopsis "HDF5 back end for DelayedArray objects")
+    (description "This package provides an array-like container for convenient
+access and manipulation of HDF5 datasets.  It supports delayed operations and
+block processing.")
+    (license license:artistic2.0)))
+
+(define-public r-rhdf5lib
+  (package
+    (name "r-rhdf5lib")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "Rhdf5lib" version))
+       (sha256
+        (base32
+         "0kkc4rprjbqn2wvbx4d49kk9l91vihccxbl4843qr1wqk6v33r1w"))))
+    (properties `((upstream-name . "Rhdf5lib")))
+    (build-system r-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'do-not-use-bundled-hdf5
+           (lambda* (#:key inputs #:allow-other-keys)
+             (for-each delete-file '("configure" "configure.ac"))
+             ;; Do not make other packages link with the proprietary libsz.
+             (substitute* "R/zzz.R"
+               (("'%s/libhdf5_cpp.a %s/libhdf5.a %s/libsz.a'")
+                "'%s/libhdf5_cpp.a %s/libhdf5.a %s/libhdf5.a'")
+               (("'%s/libhdf5.a %s/libsz.a'")
+                "'%s/libhdf5.a %s/libhdf5.a'"))
+             (with-directory-excursion "src"
+               (invoke "tar" "xvf" (assoc-ref inputs "hdf5-source"))
+               (rename-file (string-append "hdf5-" ,(package-version hdf5))
+                            "hdf5")
+               ;; Remove timestamp and host system information to make
+               ;; the build reproducible.
+               (substitute* "hdf5/src/libhdf5.settings.in"
+                 (("Configured on: @CONFIG_DATE@")
+                  "Configured on: Guix")
+                 (("Uname information:.*")
+                  "Uname information: Linux\n")
+                 ;; Remove unnecessary store reference.
+                 (("C Compiler:.*")
+                  "C Compiler: GCC\n"))
+               (rename-file "Makevars.in" "Makevars")
+               (substitute* "Makevars"
+                 (("HDF5_CXX_LIB=.*")
+                  (string-append "HDF5_CXX_LIB="
+                                 (assoc-ref inputs "hdf5") "/lib/libhdf5_cpp.a\n"))
+                 (("HDF5_LIB=.*")
+                  (string-append "HDF5_LIB="
+                                 (assoc-ref inputs "hdf5") "/lib/libhdf5.a\n"))
+                 (("HDF5_CXX_INCLUDE=.*") "HDF5_CXX_INCLUDE=./hdf5/c++/src\n")
+                 (("HDF5_INCLUDE=.*") "HDF5_INCLUDE=./hdf5/src\n")
+                 ;; szip is non-free software
+                 (("cp \\$\\{SZIP_LIB\\}.*") "")
+                 (("PKG_LIBS = \\$\\{HDF5_LIB\\} \\$\\{SZIP_LIB\\}")
+                  "PKG_LIBS = ${HDF5_LIB}\n")))
+             #t)))))
+    (inputs
+     `(("zlib" ,zlib)))
+    (propagated-inputs
+     `(("hdf5" ,hdf5)))
+    (native-inputs
+     `(("hdf5-source" ,(package-source hdf5))))
+    (home-page "https://bioconductor.org/packages/Rhdf5lib")
+    (synopsis "HDF5 library as an R package")
+    (description "This package provides C and C++ HDF5 libraries for use in R
+packages.")
+    (license license:artistic2.0)))
+
+(define-public r-beachmat
+  (package
+    (name "r-beachmat")
+    (version "1.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "beachmat" version))
+       (sha256
+        (base32
+         "0b6dzja5fbx4dawb7ixj67mlhw4fy62pfp20mfp918fy96zmdwqz"))))
+    (build-system r-build-system)
+    (inputs
+     `(("hdf5" ,hdf5)))
+    (propagated-inputs
+     `(("r-delayedarray" ,r-delayedarray)
+       ("r-hdf5array" ,r-hdf5array)
+       ("r-rcpp" ,r-rcpp)
+       ("r-rhdf5" ,r-rhdf5)
+       ("r-rhdf5lib" ,r-rhdf5lib)))
+    (home-page "https://bioconductor.org/packages/beachmat")
+    (synopsis "Compiling Bioconductor to handle each matrix type")
+    (description "This package provides a consistent C++ class interface for a
+variety of commonly used matrix types, including sparse and HDF5-backed
+matrices.")
+    (license license:gpl3)))
+
+(define-public r-singlecellexperiment
+  (package
+    (name "r-singlecellexperiment")
+    (version "1.0.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "SingleCellExperiment" version))
+       (sha256
+        (base32
+         "1r276i97w64a5vdlg6952gkj7bls909p42zl8fn8yz87cdwyaars"))))
+    (properties
+     `((upstream-name . "SingleCellExperiment")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-biocgenerics" ,r-biocgenerics)
+       ("r-s4vectors" ,r-s4vectors)
+       ("r-summarizedexperiment" ,r-summarizedexperiment)))
+    (home-page "https://bioconductor.org/packages/SingleCellExperiment")
+    (synopsis "S4 classes for single cell data")
+    (description "This package defines an S4 class for storing data from
+single-cell experiments.  This includes specialized methods to store and
+retrieve spike-in information, dimensionality reduction coordinates and size
+factors for each cell, along with the usual metadata for genes and
+libraries.")
+    (license license:gpl3)))
+
+(define-public r-scater
+  (package
+    (name "r-scater")
+    (version "1.6.3")
+    (source (origin
+              (method url-fetch)
+              (uri (bioconductor-uri "scater" version))
+              (sha256
+               (base32
+                "0q3s96gf8saa1dq2fvmpl0jyj7bx3wrdfck3hanb8pxkcir2p7dn"))))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-beachmat" ,r-beachmat)
+       ("r-biobase" ,r-biobase)
+       ("r-biocgenerics" ,r-biocgenerics)
+       ("r-biomart" ,r-biomart)
+       ("r-data-table" ,r-data-table)
+       ("r-dplyr" ,r-dplyr)
+       ("r-edger" ,r-edger)
+       ("r-ggbeeswarm" ,r-ggbeeswarm)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-limma" ,r-limma)
+       ("r-matrix" ,r-matrix)
+       ("r-matrixstats" ,r-matrixstats)
+       ("r-plyr" ,r-plyr)
+       ("r-rcpp" ,r-rcpp)
+       ("r-reshape2" ,r-reshape2)
+       ("r-rhdf5" ,r-rhdf5)
+       ("r-rhdf5lib" ,r-rhdf5lib)
+       ("r-rjson" ,r-rjson)
+       ("r-s4vectors" ,r-s4vectors)
+       ("r-shiny" ,r-shiny)
+       ("r-shinydashboard" ,r-shinydashboard)
+       ("r-singlecellexperiment" ,r-singlecellexperiment)
+       ("r-summarizedexperiment" ,r-summarizedexperiment)
+       ("r-tximport" ,r-tximport)
+       ("r-viridis" ,r-viridis)))
+    (home-page "https://github.com/davismcc/scater")
+    (synopsis "Single-cell analysis toolkit for gene expression data in R")
+    (description "This package provides a collection of tools for doing
+various analyses of single-cell RNA-seq gene expression data, with a focus on
+quality control.")
+    (license license:gpl2+)))
+
+(define-public r-scran
+  (package
+    (name "r-scran")
+    (version "1.6.8")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "scran" version))
+       (sha256
+        (base32
+         "07wniyrh2fhhkz28v0bfgpvpi1hkkn2cvhacrvvvck142j79944x"))))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-beachmat" ,r-beachmat)
+       ("r-biocgenerics" ,r-biocgenerics)
+       ("r-biocparallel" ,r-biocparallel)
+       ("r-dt" ,r-dt)
+       ("r-dynamictreecut" ,r-dynamictreecut)
+       ("r-edger" ,r-edger)
+       ("r-fnn" ,r-fnn)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-igraph" ,r-igraph)
+       ("r-limma" ,r-limma)
+       ("r-matrix" ,r-matrix)
+       ("r-rcpp" ,r-rcpp)
+       ("r-rhdf5lib" ,r-rhdf5lib)
+       ("r-s4vectors" ,r-s4vectors)
+       ("r-scater" ,r-scater)
+       ("r-shiny" ,r-shiny)
+       ("r-singlecellexperiment" ,r-singlecellexperiment)
+       ("r-statmod" ,r-statmod)
+       ("r-summarizedexperiment" ,r-summarizedexperiment)
+       ("r-viridis" ,r-viridis)
+       ("r-zoo" ,r-zoo)))
+    (home-page "https://bioconductor.org/packages/scran")
+    (synopsis "Methods for single-cell RNA-Seq data analysis")
+    (description "This package implements a variety of low-level analyses of
+single-cell RNA-seq data.  Methods are provided for normalization of
+cell-specific biases, assignment of cell cycle phase, and detection of highly
+variable and significantly correlated genes.")
+    (license license:gpl3)))
+
+(define-public r-delayedmatrixstats
+  (package
+    (name "r-delayedmatrixstats")
+    (version "1.0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (bioconductor-uri "DelayedMatrixStats" version))
+       (sha256
+        (base32
+         "1cxjbjdq9hg9cm95rci0al7a4pk2h73ym276ahw9q4977zbg6381"))))
+    (properties
+     `((upstream-name . "DelayedMatrixStats")))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-delayedarray" ,r-delayedarray)
+       ("r-iranges" ,r-iranges)
+       ("r-matrix" ,r-matrix)
+       ("r-matrixstats" ,r-matrixstats)
+       ("r-s4vectors" ,r-s4vectors)))
+    (home-page "https://github.com/PeteHaitch/DelayedMatrixStats")
+    (synopsis "Functions that apply to rows and columns of DelayedMatrix objects")
+    (description
+     "This package provides a port of the @code{matrixStats} API for use with
+@code{DelayedMatrix} objects from the @code{DelayedArray} package.  It
+contains high-performing functions operating on rows and columns of
+@code{DelayedMatrix} objects, e.g. @code{colMedians}, @code{rowMedians},
+@code{colRanks}, @code{rowRanks}, @code{colSds}, and @code{rowSds}.  Functions
+are optimized per data type and for subsetted calculations such that both
+memory usage and processing time is minimized.")
+    (license license:expat)))
+
+(define-public r-phangorn
+  (package
+    (name "r-phangorn")
+    (version "2.4.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "phangorn" version))
+       (sha256
+        (base32
+         "0xc8k552nxczy19jr0xjjagrzc8x6lafasgk2c099ls8bc1yml1i"))))
+    (build-system r-build-system)
+    (propagated-inputs
+     `(("r-ape" ,r-ape)
+       ("r-fastmatch" ,r-fastmatch)
+       ("r-igraph" ,r-igraph)
+       ("r-magrittr" ,r-magrittr)
+       ("r-matrix" ,r-matrix)
+       ("r-quadprog" ,r-quadprog)
+       ("r-rcpp" ,r-rcpp)))
+    (home-page "https://github.com/KlausVigo/phangorn")
+    (synopsis "Phylogenetic analysis in R")
+    (description
+     "Phangorn is a package for phylogenetic analysis in R.  It supports
+estimation of phylogenetic trees and networks using Maximum Likelihood,
+Maximum Parsimony, distance methods and Hadamard conjugation.")
+    (license license:gpl2+)))
+
+(define-public r-dropbead
+  (let ((commit "d746c6f3b32110428ea56d6a0001ce52a251c247")
+        (revision "2"))
+    (package
+      (name "r-dropbead")
+      (version (string-append "0-" revision "." (string-take commit 7)))
+      (source
+       (origin
+         (method git-fetch)
+         (uri (git-reference
+               (url "https://github.com/rajewsky-lab/dropbead.git")
+               (commit commit)))
+         (file-name (git-file-name name version))
+         (sha256
+          (base32
+           "0sbzma49aiiyw8b0jpr7fnhzys9nsqmp4hy4hdz1gzyg1lhnca26"))))
+      (build-system r-build-system)
+      (propagated-inputs
+       `(("r-ggplot2" ,r-ggplot2)
+         ("r-rcolorbrewer" ,r-rcolorbrewer)
+         ("r-gridextra" ,r-gridextra)
+         ("r-gplots" ,r-gplots)
+         ("r-plyr" ,r-plyr)))
+      (home-page "https://github.com/rajewsky-lab/dropbead")
+      (synopsis "Basic exploration and analysis of Drop-seq data")
+      (description "This package offers a quick and straight-forward way to
+explore and perform basic analysis of single cell sequencing data coming from
+droplet sequencing.  It has been particularly tailored for Drop-seq.")
+      (license license:gpl3))))
 
 (define htslib-for-sambamba
   (let ((commit "2f3c3ea7b301f9b45737a793c0b2dcf0240e5ee5"))
@@ -10923,7 +11420,7 @@ models.  TADbit is complemented by TADkit for visualizing 3D models.")
        ("tcsh" ,tcsh)
        ("perl" ,perl)
        ("libpng" ,libpng)
-       ("mysql" ,mysql)
+       ("mariadb" ,mariadb)
        ("openssl" ,openssl)))
     (home-page "http://genome.cse.ucsc.edu/index.html")
     (synopsis "Assorted bioinformatics utilities")
@@ -11017,7 +11514,7 @@ Browser.")
          (delete 'configure)
          (delete 'build)
          (replace 'install
-           (lambda* (#:key outputs #:allow-other-keys)
+           (lambda* (#:key inputs outputs #:allow-other-keys)
              (let ((bin (string-append (assoc-ref outputs "out")
                                        "/bin"))
                    (docdir  (string-append (assoc-ref outputs "out")
@@ -11040,7 +11537,16 @@ Browser.")
                          scripts)
                (for-each (lambda (file) (install-file file docdir))
                          docs)
+               ;; Fix references to gunzip
+               (substitute* (map (lambda (file)
+                                   (string-append bin "/" file))
+                                 scripts)
+                 (("\"gunzip -c")
+                  (string-append "\"" (assoc-ref inputs "gzip")
+                                 "/bin/gunzip -c")))
                #t))))))
+    (inputs
+     `(("gzip" ,gzip)))
     (home-page "http://www.bioinformatics.babraham.ac.uk/projects/bismark/")
     (synopsis "Map bisulfite treated sequence reads and analyze methylation")
     (description "Bismark is a program to map bisulfite treated sequencing
@@ -11135,3 +11641,1398 @@ for alignment.  Pseudoalignment of reads preserves the key information needed
 for quantification, and kallisto is therefore not only fast, but also as
 accurate as existing quantification tools.")
     (license license:bsd-2)))
+
+(define-public libgff
+  (package
+    (name "libgff")
+    (version "1.0")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append
+                    "https://github.com/Kingsford-Group/"
+                    "libgff/archive/v" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0vc4nxyhlm6g9vvmx5l4lfs5pnvixsv1hiiy4kddf2y3p6jna8ls"))))
+    (build-system cmake-build-system)
+    (arguments `(#:tests? #f))          ; no tests included
+    (home-page "https://github.com/Kingsford-Group/libgff")
+    (synopsis "Parser library for reading/writing GFF files")
+    (description "This is a simple \"libraryfication\" of the GFF/GTF parsing
+code that is used in the Cufflinks codebase.  The goal of this library is to
+provide this functionality without the necessity of drawing in a heavy-weight
+dependency like SeqAn.")
+    (license (license:x11-style "http://www.boost.org/LICENSE_1_0.txt"))))
+
+(define-public libdivsufsort
+  (package
+    (name "libdivsufsort")
+    (version "2.0.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/y-256/libdivsufsort.git")
+                    (commit version)))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0fgdz9fzihlvjjrxy01md1bv9vh12rkgkwbm90b1hj5xpbaqp7z2"))))
+    (build-system cmake-build-system)
+    (arguments
+     '(#:tests? #f                      ; there are no tests
+       #:configure-flags
+       ;; Needed for rapmap and sailfish.
+       '("-DBUILD_DIVSUFSORT64=ON")))
+    (home-page "https://github.com/y-256/libdivsufsort")
+    (synopsis "Lightweight suffix-sorting library")
+    (description "libdivsufsort is a software library that implements a
+lightweight suffix array construction algorithm.  This library provides a
+simple and an efficient C API to construct a suffix array and a
+Burrows-Wheeler transformed string from a given string over a constant-size
+alphabet.  The algorithm runs in O(n log n) worst-case time using only 5n+O(1)
+bytes of memory space, where n is the length of the string.")
+    (license license:expat)))
+
+(define-public sailfish
+  (package
+    (name "sailfish")
+    (version "0.10.1")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append "https://github.com/kingsfordgroup/"
+                              "sailfish/archive/v" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1inn60dxiwsz8g9w7kvfhjxj4bwfb0r12dyhpzzhfbig712dkmm0"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete bundled headers for eigen3.
+                  (delete-file-recursively "include/eigen3/")
+                  #t))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DBOOST_INCLUDEDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/include/")
+             (string-append "-DBOOST_LIBRARYDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/lib/")
+             (string-append "-DBoost_LIBRARIES="
+                            "-lboost_iostreams "
+                            "-lboost_filesystem "
+                            "-lboost_system "
+                            "-lboost_thread "
+                            "-lboost_timer "
+                            "-lboost_chrono "
+                            "-lboost_program_options")
+             "-DBoost_FOUND=TRUE"
+             ;; Don't download RapMap---we already have it!
+             "-DFETCHED_RAPMAP=1")
+       ;; Tests must be run after installation and the location of the test
+       ;; data file must be overridden.  But the tests fail.  It looks like
+       ;; they are not really meant to be run.
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         ;; Boost cannot be found, even though it's right there.
+         (add-after 'unpack 'do-not-look-for-boost
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("find_package\\(Boost 1\\.53\\.0") "#"))))
+         (add-after 'unpack 'do-not-assign-to-macro
+           (lambda _
+             (substitute* "include/spdlog/details/format.cc"
+               (("const unsigned CHAR_WIDTH = 1;") ""))))
+         (add-after 'unpack 'prepare-rapmap
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((src "external/install/src/rapmap/")
+                   (include "external/install/include/rapmap/")
+                   (rapmap (assoc-ref inputs "rapmap")))
+               (mkdir-p "/tmp/rapmap")
+               (system* "tar" "xf"
+                        (assoc-ref inputs "rapmap")
+                        "-C" "/tmp/rapmap"
+                        "--strip-components=1")
+               (mkdir-p src)
+               (mkdir-p include)
+               (for-each (lambda (file)
+                           (install-file file src))
+                         (find-files "/tmp/rapmap/src" "\\.(c|cpp)"))
+               (copy-recursively "/tmp/rapmap/include" include))))
+         (add-after 'unpack 'use-system-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* '("src/SailfishIndexer.cpp"
+                            "src/SailfishUtils.cpp"
+                            "src/SailfishQuantify.cpp"
+                            "src/FASTAParser.cpp"
+                            "include/PCA.hpp"
+                            "include/SailfishUtils.hpp"
+                            "include/SailfishIndex.hpp"
+                            "include/CollapsedEMOptimizer.hpp"
+                            "src/CollapsedEMOptimizer.cpp")
+               (("#include \"jellyfish/config.h\"") ""))
+             (substitute* "src/CMakeLists.txt"
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/include/jellyfish-2.2..")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/include/jellyfish-" ,(package-version jellyfish)))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libjellyfish-2.0.a")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/lib/libjellyfish-2.0.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort.so"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort64.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort64.so")))
+             (substitute* "CMakeLists.txt"
+               ;; Don't prefer static libs
+               (("SET\\(CMAKE_FIND_LIBRARY_SUFFIXES.*") "")
+               (("find_package\\(Jellyfish.*") "")
+               (("ExternalProject_Add\\(libjellyfish") "message(")
+               (("ExternalProject_Add\\(libgff") "message(")
+               (("ExternalProject_Add\\(libsparsehash") "message(")
+               (("ExternalProject_Add\\(libdivsufsort") "message("))
+
+             ;; Ensure that Eigen headers can be found
+             (setenv "CPLUS_INCLUDE_PATH"
+                     (string-append (getenv "CPLUS_INCLUDE_PATH")
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3")))))))
+    (inputs
+     `(("boost" ,boost)
+       ("eigen" ,eigen)
+       ("jemalloc" ,jemalloc)
+       ("jellyfish" ,jellyfish)
+       ("sparsehash" ,sparsehash)
+       ("rapmap" ,(origin
+                    (method git-fetch)
+                    (uri (git-reference
+                          (url "https://github.com/COMBINE-lab/RapMap.git")
+                          (commit (string-append "sf-v" version))))
+                    (file-name (string-append "rapmap-sf-v" version "-checkout"))
+                    (sha256
+                     (base32
+                      "1hv79l5i576ykv5a1srj2p0q36yvyl5966m0fcy2lbi169ipjakf"))
+                    (modules '((guix build utils)))
+                    ;; These files are expected to be excluded.
+                    (snippet
+                     '(begin (delete-file-recursively "include/spdlog")
+                             (for-each delete-file '("include/xxhash.h"
+                                                     "src/xxhash.c"))))))
+       ("libdivsufsort" ,libdivsufsort)
+       ("libgff" ,libgff)
+       ("tbb" ,tbb)
+       ("zlib" ,zlib)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "http://www.cs.cmu.edu/~ckingsf/software/sailfish")
+    (synopsis "Mapping-based isoform quantification from RNA-Seq reads")
+    (description "Sailfish is a tool for genomic transcript quantification
+from RNA-seq data.  It requires a set of target transcripts (either from a
+reference or de-novo assembly) to quantify.  All you need to run sailfish is a
+fasta file containing your reference transcripts and a (set of) fasta/fastq
+file(s) containing your reads.")
+    (license license:gpl3+)))
+
+(define libstadenio-for-salmon
+  (package
+    (name "libstadenio")
+    (version "1.14.8")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/staden-io_lib.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1x8kxxqxl892vwfbprlbyfwkkv7c34ggkc94892x9x0g37x5nbwx"))))
+    (build-system gnu-build-system)
+    (arguments '(#:parallel-tests? #f)) ; not supported
+    (inputs
+     `(("zlib" ,zlib)))
+    (native-inputs
+     `(("perl" ,perl)))                 ; for tests
+    (home-page "https://github.com/COMBINE-lab/staden-io_lib")
+    (synopsis "General purpose trace and experiment file library")
+    (description "This package provides a library of file reading and writing
+code to provide a general purpose Trace file (and Experiment File) reading
+interface.
+
+The following file formats are supported:
+
+@enumerate
+@item SCF trace files
+@item ABI trace files
+@item ALF trace files
+@item ZTR trace files
+@item SFF trace archives
+@item SRF trace archives
+@item Experiment files
+@item Plain text files
+@item SAM/BAM sequence files
+@item CRAM sequence files
+@end enumerate\n")
+    (license license:bsd-3)))
+
+(define spdlog-for-salmon
+  (package
+    (name "spdlog")
+    (version "0.14.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/spdlog.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "13730429gwlabi432ilpnja3sfvy0nn2719vnhhmii34xcdyc57q"))))
+    (build-system cmake-build-system)
+    (home-page "https://github.com/COMBINE-lab/spdlog")
+    (synopsis "Very fast C++ logging library")
+    (description "Spdlog is a very fast header-only C++ logging library with
+performance as its primary goal.")
+    (license license:expat)))
+
+;; This is a modified variant of bwa for use with Salmon. It installs a
+;; library to avoid having to build this as part of Salmon.
+(define bwa-for-salmon
+  (package (inherit bwa)
+    (name "bwa")
+    (version "0.7.12.5")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/bwa.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append "bwa-for-salmon-" version "-checkout"))
+              (sha256
+               (base32
+                "1z2qa64y0c5hky10510x137mnzlhz6k8qf27csw4w9j6qihq95gb"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f ;no "check" target
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (bin (string-append out "/bin"))
+                    (lib (string-append out "/lib"))
+                    (doc (string-append out "/share/doc/bwa"))
+                    (man (string-append out "/share/man/man1"))
+                    (inc (string-append out "/include/bwa")))
+               (install-file "bwa" bin)
+               (install-file "README.md" doc)
+               (install-file "bwa.1" man)
+               (install-file "libbwa.a" lib)
+               (mkdir-p lib)
+               (mkdir-p inc)
+               (for-each (lambda (file)
+                           (install-file file inc))
+                         (find-files "." "\\.h$")))
+             #t))
+         ;; no "configure" script
+         (delete 'configure))))))
+
+(define-public salmon
+  (package
+    (name "salmon")
+    (version "0.9.1")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/COMBINE-lab/salmon.git")
+                    (commit (string-append "v" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1zi1ff4i7y2ykk0vdzysgwzzzv166vg2x77pj1mf4baclavxj87a"))
+              (modules '((guix build utils)))
+              (snippet
+               '(begin
+                  ;; Delete bundled headers for eigen3.
+                  (delete-file-recursively "include/eigen3/")
+                  #t))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "-DBOOST_INCLUDEDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/include/")
+             (string-append "-DBOOST_LIBRARYDIR="
+                            (assoc-ref %build-inputs "boost")
+                            "/lib/")
+             (string-append "-DBoost_LIBRARIES="
+                            "-lboost_iostreams "
+                            "-lboost_filesystem "
+                            "-lboost_system "
+                            "-lboost_thread "
+                            "-lboost_timer "
+                            "-lboost_chrono "
+                            "-lboost_program_options")
+             "-DBoost_FOUND=TRUE"
+             "-DTBB_LIBRARIES=tbb tbbmalloc"
+             ;; Don't download RapMap---we already have it!
+             "-DFETCHED_RAPMAP=1")
+       #:phases
+       (modify-phases %standard-phases
+         ;; Boost cannot be found, even though it's right there.
+         (add-after 'unpack 'do-not-look-for-boost
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "CMakeLists.txt"
+               (("find_package\\(Boost 1\\.53\\.0") "#"))))
+         (add-after 'unpack 'do-not-phone-home
+           (lambda _
+             (substitute* "src/Salmon.cpp"
+               (("getVersionMessage\\(\\)") "\"\""))))
+         (add-after 'unpack 'prepare-rapmap
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((src "external/install/src/rapmap/")
+                   (include "external/install/include/rapmap/")
+                   (rapmap (assoc-ref inputs "rapmap")))
+               (mkdir-p src)
+               (mkdir-p include)
+               (for-each (lambda (file)
+                           (install-file file src))
+                         (find-files (string-append rapmap "/src") "\\.(c|cpp)"))
+               (copy-recursively (string-append rapmap "/include") include)
+               (for-each delete-file '("external/install/include/rapmap/xxhash.h"
+                                       "external/install/include/rapmap/FastxParser.hpp"
+                                       "external/install/include/rapmap/concurrentqueue.h"
+                                       "external/install/include/rapmap/FastxParserThreadUtils.hpp"
+                                       "external/install/src/rapmap/FastxParser.cpp"
+                                       "external/install/src/rapmap/xxhash.c")))))
+         (add-after 'unpack 'use-system-libraries
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "src/CMakeLists.txt"
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/include/jellyfish-2.2..")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/include/jellyfish-" ,(package-version jellyfish)))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libjellyfish-2.0.a")
+                (string-append (assoc-ref inputs "jellyfish")
+                               "/lib/libjellyfish-2.0.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort.so"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libstaden-read.a")
+                (string-append (assoc-ref inputs "libstadenio-for-salmon")
+                               "/lib/libstaden-read.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libbwa.a")
+                (string-append (assoc-ref inputs "bwa") "/lib/libbwa.a"))
+               (("\\$\\{GAT_SOURCE_DIR\\}/external/install/lib/libdivsufsort64.a")
+                (string-append (assoc-ref inputs "libdivsufsort")
+                               "/lib/libdivsufsort64.so")))
+             (substitute* "CMakeLists.txt"
+               ;; Don't prefer static libs
+               (("SET\\(CMAKE_FIND_LIBRARY_SUFFIXES.*") "")
+               (("set\\(TBB_LIBRARIES") "message(")
+               (("find_package\\(Jellyfish.*") "")
+               (("ExternalProject_Add\\(libcereal") "message(")
+               (("ExternalProject_Add\\(libbwa") "message(")
+               (("ExternalProject_Add\\(libjellyfish") "message(")
+               (("ExternalProject_Add\\(libgff") "message(")
+               (("ExternalProject_Add\\(libtbb") "message(")
+               (("ExternalProject_Add\\(libspdlog") "message(")
+               (("ExternalProject_Add\\(libdivsufsort") "message(")
+               (("ExternalProject_Add\\(libstadenio") "message(")
+               (("ExternalProject_Add_Step\\(") "message("))
+
+             ;; Ensure that all headers can be found
+             (setenv "CPLUS_INCLUDE_PATH"
+                     (string-append (getenv "CPLUS_INCLUDE_PATH")
+                                    ":"
+                                    (assoc-ref inputs "bwa")
+                                    "/include/bwa"
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3"))
+             (setenv "CPATH"
+                     (string-append (assoc-ref inputs "bwa")
+                                    "/include/bwa"
+                                    ":"
+                                    (assoc-ref inputs "eigen")
+                                    "/include/eigen3"))
+             #t))
+         ;; CMAKE_INSTALL_PREFIX does not exist when the tests are
+         ;; run.  It only exists after the install phase.
+         (add-after 'unpack 'fix-tests
+           (lambda _
+             (substitute* "src/CMakeLists.txt"
+               (("DTOPLEVEL_DIR=\\$\\{CMAKE_INSTALL_PREFIX")
+                "DTOPLEVEL_DIR=${GAT_SOURCE_DIR"))
+             #t)))))
+    (inputs
+     `(("boost" ,boost)
+       ("bwa" ,bwa-for-salmon)
+       ("bzip2" ,bzip2)
+       ("cereal" ,cereal)
+       ("eigen" ,eigen)
+       ("rapmap" ,(origin
+                    (method git-fetch)
+                    (uri (git-reference
+                          (url "https://github.com/COMBINE-lab/RapMap.git")
+                          (commit (string-append "salmon-v" version))))
+                    (file-name (string-append "rapmap-salmon-v" version "-checkout"))
+                    (sha256
+                     (base32
+                      "1yc12yqsz6f0r8sg1qnk57xg34aqwc9jbqq6gd5ys28xw3plj98p"))))
+       ("jemalloc" ,jemalloc)
+       ("jellyfish" ,jellyfish)
+       ("libgff" ,libgff)
+       ("tbb" ,tbb)
+       ("libdivsufsort" ,libdivsufsort)
+       ("libstadenio-for-salmon" ,libstadenio-for-salmon)
+       ("spdlog-for-salmon" ,spdlog-for-salmon)
+       ("xz" ,xz)
+       ("zlib" ,zlib)))
+    (home-page "https://github.com/COMBINE-lab/salmon")
+    (synopsis "Quantification from RNA-seq reads using lightweight alignments")
+    (description "Salmon is a program to produce highly-accurate,
+transcript-level quantification estimates from RNA-seq data.  Salmon achieves
+its accuracy and speed via a number of different innovations, including the
+use of lightweight alignments (accurate but fast-to-compute proxies for
+traditional read alignments) and massively-parallel stochastic collapsed
+variational inference.")
+    (license license:gpl3+)))
+
+(define-public python-loompy
+  (package
+    (name "python-loompy")
+    (version "2.0.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "loompy" version))
+       (sha256
+        (base32
+         "1drgv8j1hxqzzpnfg272x9djb6j8qr798w1pc2x8ikmfgyd9gh51"))))
+    (build-system python-build-system)
+    ;; There are no tests
+    (arguments '(#:tests? #f))
+    (propagated-inputs
+     `(("python-h5py" ,python-h5py)
+       ("python-numpy" ,python-numpy)
+       ("python-scipy" ,python-scipy)
+       ("python-typing" ,python-typing)))
+    (home-page "https://github.com/linnarsson-lab/loompy")
+    (synopsis "Work with .loom files for single-cell RNA-seq data")
+    (description "The loom file format is an efficient format for very large
+omics datasets, consisting of a main matrix, optional additional layers, a
+variable number of row and column annotations.  Loom also supports sparse
+graphs.  This library makes it easy to work with @file{.loom} files for
+single-cell RNA-seq data.")
+    (license license:bsd-3)))
+
+;; We cannot use the latest commit because it requires Java 9.
+(define-public java-forester
+  (let ((commit "86b07efe302d5094b42deed9260f719a4c4ac2e6")
+        (revision "1"))
+    (package
+      (name "java-forester")
+      (version (string-append "0-" revision "." (string-take commit 7)))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/cmzmasek/forester.git")
+                      (commit commit)))
+                (file-name (string-append name "-" version "-checkout"))
+                (sha256
+                 (base32
+                  "0vxavc1yrf84yrnf20dq26hi0lglidk8d382xrxsy4qmlbjd276z"))
+                (modules '((guix build utils)))
+                (snippet
+                 '(begin
+                    ;; Delete bundled jars and pre-built classes
+                    (delete-file-recursively "forester/java/resources")
+                    (delete-file-recursively "forester/java/classes")
+                    (for-each delete-file (find-files "forester/java/" "\\.jar$"))
+                    ;; Delete bundled applications
+                    (delete-file-recursively "forester_applications")
+                    #t))))
+      (build-system ant-build-system)
+      (arguments
+       `(#:tests? #f ; there are none
+         #:jdk ,icedtea-8
+         #:modules ((guix build ant-build-system)
+                    (guix build utils)
+                    (guix build java-utils)
+                    (sxml simple)
+                    (sxml transform))
+         #:phases
+         (modify-phases %standard-phases
+           (add-after 'unpack 'chdir
+             (lambda _ (chdir "forester/java") #t))
+           (add-after 'chdir 'fix-dependencies
+             (lambda _
+               (chmod "build.xml" #o664)
+               (call-with-output-file "build.xml.new"
+                 (lambda (port)
+                   (sxml->xml
+                    (pre-post-order
+                     (with-input-from-file "build.xml"
+                       (lambda _ (xml->sxml #:trim-whitespace? #t)))
+                     `(;; Remove all unjar tags to avoid repacking classes.
+                       (unjar     . ,(lambda _ '()))
+                       (*default* . ,(lambda (tag . kids) `(,tag ,@kids)))
+                       (*text*    . ,(lambda (_ txt) txt))))
+                    port)))
+               (rename-file "build.xml.new" "build.xml")
+               #t))
+           ;; FIXME: itext is difficult to package as it depends on a few
+           ;; unpackaged libraries.
+           (add-after 'chdir 'remove-dependency-on-unpackaged-itext
+             (lambda _
+               (delete-file "src/org/forester/archaeopteryx/PdfExporter.java")
+               (substitute* "src/org/forester/archaeopteryx/MainFrame.java"
+                 (("pdf_written_to = PdfExporter.*")
+                  "throw new IOException(\"PDF export is not available.\");"))
+               #t))
+           ;; There is no install target
+           (replace 'install (install-jars ".")))))
+      (propagated-inputs
+       `(("java-commons-codec" ,java-commons-codec)
+         ("java-openchart2" ,java-openchart2)))
+      (home-page "https://sites.google.com/site/cmzmasek/home/software/forester")
+      (synopsis "Phylogenomics libraries for Java")
+      (description "Forester is a collection of Java libraries for
+phylogenomics and evolutionary biology research.  It includes support for
+reading, writing, and exporting phylogenetic trees.")
+      (license license:lgpl2.1+))))
+
+(define-public java-forester-1.005
+  (package
+    (name "java-forester")
+    (version "1.005")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "http://search.maven.org/remotecontent?"
+                                  "filepath=org/biojava/thirdparty/forester/"
+                                  version "/forester-" version "-sources.jar"))
+              (file-name (string-append name "-" version ".jar"))
+              (sha256
+               (base32
+                "04r8qv4rk3p71z4ajrvp11py1z46qrx0047j3zzs79s6lnsm3lcv"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:tests? #f ; there are none
+       #:jdk ,icedtea-8
+       #:modules ((guix build ant-build-system)
+                  (guix build utils)
+                  (guix build java-utils)
+                  (sxml simple)
+                  (sxml transform))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'fix-dependencies
+           (lambda* (#:key inputs #:allow-other-keys)
+             (call-with-output-file "build.xml"
+               (lambda (port)
+                 (sxml->xml
+                  (pre-post-order
+                   (with-input-from-file "src/build.xml"
+                     (lambda _ (xml->sxml #:trim-whitespace? #t)))
+                   `(;; Remove all unjar tags to avoid repacking classes.
+                     (unjar     . ,(lambda _ '()))
+                     (*default* . ,(lambda (tag . kids) `(,tag ,@kids)))
+                     (*text*    . ,(lambda (_ txt) txt))))
+                  port)))
+             (copy-file (assoc-ref inputs "synth_look_and_feel_1.xml")
+                        "synth_look_and_feel_1.xml")
+             (copy-file (assoc-ref inputs "phyloxml.xsd")
+                        "phyloxml.xsd")
+             (substitute* "build.xml"
+               (("../resources/synth_laf/synth_look_and_feel_1.xml")
+                "synth_look_and_feel_1.xml")
+               (("../resources/phyloxml_schema/1.10/phyloxml.xsd")
+                "phyloxml.xsd"))
+             #t))
+         ;; FIXME: itext is difficult to package as it depends on a few
+         ;; unpackaged libraries.
+         (add-after 'unpack 'remove-dependency-on-unpackaged-itext
+           (lambda _
+             (delete-file "src/org/forester/archaeopteryx/PdfExporter.java")
+             (substitute* '("src/org/forester/archaeopteryx/MainFrame.java"
+                            "src/org/forester/archaeopteryx/MainFrameApplication.java")
+               (("pdf_written_to = PdfExporter.*")
+                "throw new IOException(\"PDF export is not available.\"); /*")
+               ((".getPrintSizeX\\(\\), getOptions\\(\\).getPrintSizeY\\(\\) \\);") "*/")
+               (("getCurrentTreePanel\\(\\).getHeight\\(\\) \\);") "*/"))
+             #t))
+         (add-after 'unpack 'delete-pre-built-classes
+           (lambda _ (delete-file-recursively "src/classes") #t))
+         ;; There is no install target
+         (replace 'install (install-jars ".")))))
+    (propagated-inputs
+     `(("java-commons-codec" ,java-commons-codec)
+       ("java-openchart2" ,java-openchart2)))
+    ;; The source archive does not contain the resources.
+    (native-inputs
+     `(("phyloxml.xsd"
+        ,(origin
+           (method url-fetch)
+           (uri (string-append "https://raw.githubusercontent.com/cmzmasek/forester/"
+                               "b61cc2dcede0bede317db362472333115756b8c6/"
+                               "forester/resources/phyloxml_schema/1.10/phyloxml.xsd"))
+           (file-name (string-append name "-phyloxml-" version ".xsd"))
+           (sha256
+            (base32
+             "1zxc4m8sn4n389nqdnpxa8d0k17qnr3pm2y5y6g6vh4k0zm52npv"))))
+       ("synth_look_and_feel_1.xml"
+        ,(origin
+           (method url-fetch)
+           (uri (string-append "https://raw.githubusercontent.com/cmzmasek/forester/"
+                               "29e04321615da6b35c1e15c60e52caf3f21d8e6a/"
+                               "forester/java/classes/resources/synth_look_and_feel_1.xml"))
+           (file-name (string-append name "-synth-look-and-feel-" version ".xml"))
+           (sha256
+            (base32
+             "1gv5602gv4k7y7713y75a4jvj7i9s7nildsbdl7n9q10sc2ikg8h"))))))
+    (home-page "https://sites.google.com/site/cmzmasek/home/software/forester")
+    (synopsis "Phylogenomics libraries for Java")
+    (description "Forester is a collection of Java libraries for
+phylogenomics and evolutionary biology research.  It includes support for
+reading, writing, and exporting phylogenetic trees.")
+    (license license:lgpl2.1+)))
+
+(define-public java-biojava-core
+  (package
+    (name "java-biojava-core")
+    (version "4.2.11")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/biojava/biojava")
+                    (commit (string-append "biojava-" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1bvryh2bpsvash8ln79cmc9sqm8qw72hz4xzwqxcrjm8ssxszhqk"))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:jdk ,icedtea-8
+       #:jar-name "biojava-core.jar"
+       #:source-dir "biojava-core/src/main/java/"
+       #:test-dir "biojava-core/src/test"
+       ;; These tests seem to require internet access.
+       #:test-exclude (list "**/SearchIOTest.java"
+                            "**/BlastXMLParserTest.java"
+                            "**/GenbankCookbookTest.java"
+                            "**/GenbankProxySequenceReaderTest.java")
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively "biojava-core/src/main/resources"
+                               "build/classes")
+             #t))
+         (add-before 'check 'copy-test-resources
+           (lambda _
+             (copy-recursively "biojava-core/src/test/resources"
+                               "build/test-classes")
+             #t)))))
+    (propagated-inputs
+     `(("java-log4j-api" ,java-log4j-api)
+       ("java-log4j-core" ,java-log4j-core)
+       ("java-slf4j-api" ,java-slf4j-api)
+       ("java-slf4j-simple" ,java-slf4j-simple)))
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("java-hamcrest-core" ,java-hamcrest-core)))
+    (home-page "http://biojava.org")
+    (synopsis "Core libraries of Java framework for processing biological data")
+    (description "BioJava is a project dedicated to providing a Java framework
+for processing biological data.  It provides analytical and statistical
+routines, parsers for common file formats, reference implementations of
+popular algorithms, and allows the manipulation of sequences and 3D
+structures.  The goal of the biojava project is to facilitate rapid
+application development for bioinformatics.
+
+This package provides the core libraries.")
+    (license license:lgpl2.1+)))
+
+(define-public java-biojava-phylo
+  (package (inherit java-biojava-core)
+    (name "java-biojava-phylo")
+    (build-system ant-build-system)
+    (arguments
+     `(#:jdk ,icedtea-8
+       #:jar-name "biojava-phylo.jar"
+       #:source-dir "biojava-phylo/src/main/java/"
+       #:test-dir "biojava-phylo/src/test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively "biojava-phylo/src/main/resources"
+                               "build/classes")
+             #t))
+         (add-before 'check 'copy-test-resources
+           (lambda _
+             (copy-recursively "biojava-phylo/src/test/resources"
+                               "build/test-classes")
+             #t)))))
+    (propagated-inputs
+     `(("java-log4j-api" ,java-log4j-api)
+       ("java-log4j-core" ,java-log4j-core)
+       ("java-slf4j-api" ,java-slf4j-api)
+       ("java-slf4j-simple" ,java-slf4j-simple)
+       ("java-biojava-core" ,java-biojava-core)
+       ("java-forester" ,java-forester)))
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("java-hamcrest-core" ,java-hamcrest-core)))
+    (home-page "http://biojava.org")
+    (synopsis "Biojava interface to the forester phylogenomics library")
+    (description "The phylo module provides a biojava interface layer to the
+forester phylogenomics library for constructing phylogenetic trees.")))
+
+(define-public java-biojava-alignment
+  (package (inherit java-biojava-core)
+    (name "java-biojava-alignment")
+    (build-system ant-build-system)
+    (arguments
+     `(#:jdk ,icedtea-8
+       #:jar-name "biojava-alignment.jar"
+       #:source-dir "biojava-alignment/src/main/java/"
+       #:test-dir "biojava-alignment/src/test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively "biojava-alignment/src/main/resources"
+                               "build/classes")
+             #t))
+         (add-before 'check 'copy-test-resources
+           (lambda _
+             (copy-recursively "biojava-alignment/src/test/resources"
+                               "build/test-classes")
+             #t)))))
+    (propagated-inputs
+     `(("java-log4j-api" ,java-log4j-api)
+       ("java-log4j-core" ,java-log4j-core)
+       ("java-slf4j-api" ,java-slf4j-api)
+       ("java-slf4j-simple" ,java-slf4j-simple)
+       ("java-biojava-core" ,java-biojava-core)
+       ("java-biojava-phylo" ,java-biojava-phylo)
+       ("java-forester" ,java-forester)))
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("java-hamcrest-core" ,java-hamcrest-core)))
+    (home-page "http://biojava.org")
+    (synopsis "Biojava API for genetic sequence alignment")
+    (description "The alignment module of BioJava provides an API that
+contains
+
+@itemize
+@item implementations of dynamic programming algorithms for sequence
+  alignment;
+@item reading and writing of popular alignment file formats;
+@item a single-, or multi- threaded multiple sequence alignment algorithm.
+@end itemize\n")))
+
+(define-public java-biojava-core-4.0
+  (package (inherit java-biojava-core)
+    (name "java-biojava-core")
+    (version "4.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/biojava/biojava")
+                    (commit (string-append "biojava-" version))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "13675f6y9aqi7bi2lk3s1z7a22ynccjiqwa8izh7p97xi9wsfmd8"))))))
+
+(define-public java-biojava-phylo-4.0
+  (package (inherit java-biojava-core-4.0)
+    (name "java-biojava-phylo")
+    (build-system ant-build-system)
+    (arguments
+     `(#:jdk ,icedtea-8
+       #:jar-name "biojava-phylo.jar"
+       #:source-dir "biojava-phylo/src/main/java/"
+       #:test-dir "biojava-phylo/src/test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively "biojava-phylo/src/main/resources"
+                               "build/classes")
+             #t))
+         (add-before 'check 'copy-test-resources
+           (lambda _
+             (copy-recursively "biojava-phylo/src/test/resources"
+                               "build/test-classes")
+             #t)))))
+    (propagated-inputs
+     `(("java-log4j-api" ,java-log4j-api)
+       ("java-log4j-core" ,java-log4j-core)
+       ("java-slf4j-api" ,java-slf4j-api)
+       ("java-slf4j-simple" ,java-slf4j-simple)
+       ("java-biojava-core" ,java-biojava-core-4.0)
+       ("java-forester" ,java-forester-1.005)))
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("java-hamcrest-core" ,java-hamcrest-core)))
+    (home-page "http://biojava.org")
+    (synopsis "Biojava interface to the forester phylogenomics library")
+    (description "The phylo module provides a biojava interface layer to the
+forester phylogenomics library for constructing phylogenetic trees.")))
+
+(define-public java-biojava-alignment-4.0
+  (package (inherit java-biojava-core-4.0)
+    (name "java-biojava-alignment")
+    (build-system ant-build-system)
+    (arguments
+     `(#:jdk ,icedtea-8
+       #:jar-name "biojava-alignment.jar"
+       #:source-dir "biojava-alignment/src/main/java/"
+       #:test-dir "biojava-alignment/src/test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'copy-resources
+           (lambda _
+             (copy-recursively "biojava-alignment/src/main/resources"
+                               "build/classes")
+             #t))
+         (add-before 'check 'copy-test-resources
+           (lambda _
+             (copy-recursively "biojava-alignment/src/test/resources"
+                               "build/test-classes")
+             #t)))))
+    (propagated-inputs
+     `(("java-log4j-api" ,java-log4j-api)
+       ("java-log4j-core" ,java-log4j-core)
+       ("java-slf4j-api" ,java-slf4j-api)
+       ("java-slf4j-simple" ,java-slf4j-simple)
+       ("java-biojava-core" ,java-biojava-core-4.0)
+       ("java-biojava-phylo" ,java-biojava-phylo-4.0)
+       ("java-forester" ,java-forester-1.005)))
+    (native-inputs
+     `(("java-junit" ,java-junit)
+       ("java-hamcrest-core" ,java-hamcrest-core)))
+    (home-page "http://biojava.org")
+    (synopsis "Biojava API for genetic sequence alignment")
+    (description "The alignment module of BioJava provides an API that
+contains
+
+@itemize
+@item implementations of dynamic programming algorithms for sequence
+  alignment;
+@item reading and writing of popular alignment file formats;
+@item a single-, or multi- threaded multiple sequence alignment algorithm.
+@end itemize\n")))
+
+(define-public dropseq-tools
+  (package
+    (name "dropseq-tools")
+    (version "1.13")
+    (source
+     (origin
+       (method url-fetch)
+       (uri "http://mccarrolllab.com/download/1276/")
+       (file-name (string-append "dropseq-tools-" version ".zip"))
+       (sha256
+        (base32
+         "0yrffckxqk5l8b5xb6z4laq157zd9mdypr2p4b4vq2bhjzi1sj0s"))
+       ;; Delete bundled libraries
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (for-each delete-file (find-files "jar/lib" "\\.jar$"))
+           (delete-file-recursively "3rdParty")))))
+    (build-system ant-build-system)
+    (arguments
+     `(#:tests? #f                      ; test data are not included
+       #:test-target "test"
+       #:build-target "all"
+       #:source-dir "public/src/"
+       #:jdk ,icedtea-8
+       #:make-flags
+       (list (string-append "-Dpicard.executable.dir="
+                            (assoc-ref %build-inputs "java-picard")
+                            "/share/java/"))
+       #:modules ((ice-9 match)
+                  (srfi srfi-1)
+                  (guix build utils)
+                  (guix build java-utils)
+                  (guix build ant-build-system))
+       #:phases
+       (modify-phases %standard-phases
+         ;; All dependencies must be linked to "lib", because that's where
+         ;; they will be searched for when the Class-Path property of the
+         ;; manifest is computed.
+         (add-after 'unpack 'record-references
+	   (lambda* (#:key inputs #:allow-other-keys)
+             (mkdir-p "jar/lib")
+             (let ((dirs (filter-map (match-lambda
+                                       ((name . dir)
+                                        (if (and (string-prefix? "java-" name)
+                                                 (not (string=? name "java-testng")))
+                                            dir #f)))
+                                     inputs)))
+               (for-each (lambda (jar)
+                           (symlink jar (string-append "jar/lib/" (basename jar))))
+                         (append-map (lambda (dir) (find-files dir "\\.jar$"))
+                                     dirs)))
+	     #t))
+         ;; There is no installation target
+         (replace 'install
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let* ((out     (assoc-ref outputs "out"))
+                    (bin     (string-append out "/bin"))
+                    (share   (string-append out "/share/java/"))
+                    (lib     (string-append share "/lib/"))
+                    (scripts (list "BAMTagHistogram"
+                                   "BAMTagofTagCounts"
+                                   "BaseDistributionAtReadPosition"
+                                   "CollapseBarcodesInPlace"
+                                   "CollapseTagWithContext"
+                                   "ConvertToRefFlat"
+                                   "CreateIntervalsFiles"
+                                   "DetectBeadSynthesisErrors"
+                                   "DigitalExpression"
+                                   "Drop-seq_alignment.sh"
+                                   "FilterBAM"
+                                   "FilterBAMByTag"
+                                   "GatherGeneGCLength"
+                                   "GatherMolecularBarcodeDistributionByGene"
+                                   "GatherReadQualityMetrics"
+                                   "PolyATrimmer"
+                                   "ReduceGTF"
+                                   "SelectCellsByNumTranscripts"
+                                   "SingleCellRnaSeqMetricsCollector"
+                                   "TagBamWithReadSequenceExtended"
+                                   "TagReadWithGeneExon"
+                                   "TagReadWithInterval"
+                                   "TrimStartingSequence"
+                                   "ValidateReference")))
+               (for-each mkdir-p (list bin share lib))
+               (install-file "dist/dropseq.jar" share)
+               (for-each (lambda (script)
+                           (chmod script #o555)
+                           (install-file script bin))
+                         scripts)
+               (substitute* (map (lambda (script)
+                                   (string-append bin "/" script))
+                                 scripts)
+                 (("^java") (which "java"))
+                 (("jar_deploy_dir=.*")
+                  (string-append "jar_deploy_dir=" share "\n"))))
+             #t))
+         ;; FIXME: We do this after stripping jars because we don't want it to
+         ;; copy all these jars and strip them.  We only want to install
+         ;; links.  Arguably, this is a problem with the ant-build-system.
+         (add-after 'strip-jar-timestamps 'install-links
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out     (assoc-ref outputs "out"))
+                    (share   (string-append out "/share/java/"))
+                    (lib     (string-append share "/lib/")))
+               (for-each (lambda (jar)
+                           (symlink (readlink jar)
+                                    (string-append lib (basename jar))))
+                         (find-files "jar/lib" "\\.jar$")))
+             #t)))))
+    (inputs
+     `(("jdk" ,icedtea-8)
+       ("java-picard" ,java-picard-2.10.3)
+       ("java-log4j-1.2-api" ,java-log4j-1.2-api)
+       ("java-commons-math3" ,java-commons-math3)
+       ("java-commons-jexl2" ,java-commons-jexl-2)
+       ("java-commons-collections4" ,java-commons-collections4)
+       ("java-commons-lang2" ,java-commons-lang)
+       ("java-commons-io" ,java-commons-io)
+       ("java-snappy-1.0.3-rc3" ,java-snappy-1)
+       ("java-guava" ,java-guava)
+       ("java-la4j" ,java-la4j)
+       ("java-biojava-core" ,java-biojava-core-4.0)
+       ("java-biojava-alignment" ,java-biojava-alignment-4.0)
+       ("java-jdistlib" ,java-jdistlib)
+       ("java-simple-xml" ,java-simple-xml)
+       ("java-snakeyaml" ,java-snakeyaml)))
+    (native-inputs
+     `(("unzip" ,unzip)
+       ("java-testng" ,java-testng)))
+    (home-page "http://mccarrolllab.com/dropseq/")
+    (synopsis "Tools for Drop-seq analyses")
+    (description "Drop-seq is a technology to enable biologists to
+analyze RNA expression genome-wide in thousands of individual cells at
+once.  This package provides tools to perform Drop-seq analyses.")
+    (license license:expat)))
+
+(define-public pigx-rnaseq
+  (package
+    (name "pigx-rnaseq")
+    (version "0.0.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/BIMSBbioinfo/pigx_rnaseq/"
+                                  "releases/download/v" version
+                                  "/pigx_rnaseq-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0pz080k4ajlc4rlznkn3najy2a6874gb56rf9g4ag9wqz31q174j"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:parallel-tests? #f             ; not supported
+       #:phases
+       (modify-phases %standard-phases
+         ;; "test.sh" runs STAR, which requires excessive amounts of memory.
+         (add-after 'unpack 'disable-resource-intensive-test
+           (lambda _
+             (substitute* "Makefile.in"
+               (("(^  tests/test_trim_galore/test.sh).*" _ m) m)
+               (("^  test.sh") ""))
+             #t))
+         (add-after 'install 'wrap-executable
+           ;; Make sure the executable finds all R modules.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/pigx-rnaseq")
+                 `("R_LIBS_SITE" ":" = (,(getenv "R_LIBS_SITE")))
+                 `("PYTHONPATH"  ":" = (,(getenv "PYTHONPATH")))))
+             #t)))))
+    (inputs
+     `(("gzip" ,gzip)
+       ("snakemake" ,snakemake)
+       ("fastqc" ,fastqc)
+       ("multiqc" ,multiqc)
+       ("star" ,star)
+       ("trim-galore" ,trim-galore)
+       ("htseq" ,htseq)
+       ("samtools" ,samtools)
+       ("bedtools" ,bedtools)
+       ("r-minimal" ,r-minimal)
+       ("r-rmarkdown" ,r-rmarkdown)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-ggrepel" ,r-ggrepel)
+       ("r-gprofiler" ,r-gprofiler)
+       ("r-deseq2" ,r-deseq2)
+       ("r-dt" ,r-dt)
+       ("r-knitr" ,r-knitr)
+       ("r-pheatmap" ,r-pheatmap)
+       ("r-corrplot" ,r-corrplot)
+       ("r-reshape2" ,r-reshape2)
+       ("r-plotly" ,r-plotly)
+       ("r-scales" ,r-scales)
+       ("r-summarizedexperiment" ,r-summarizedexperiment)
+       ("r-crosstalk" ,r-crosstalk)
+       ("r-tximport" ,r-tximport)
+       ("r-rtracklayer" ,r-rtracklayer)
+       ("r-rjson" ,r-rjson)
+       ("salmon" ,salmon)
+       ("ghc-pandoc" ,ghc-pandoc-1)
+       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc-with-pandoc-1)
+       ("python-wrapper" ,python-wrapper)
+       ("python-pyyaml" ,python-pyyaml)))
+    (home-page "http://bioinformatics.mdc-berlin.de/pigx/")
+    (synopsis "Analysis pipeline for RNA sequencing experiments")
+    (description "PiGX RNAseq is an analysis pipeline for preprocessing and
+reporting for RNA sequencing experiments.  It is easy to use and produces high
+quality reports.  The inputs are reads files from the sequencing experiment,
+and a configuration file which describes the experiment.  In addition to
+quality control of the experiment, the pipeline produces a differential
+expression report comparing samples in an easily configurable manner.")
+    (license license:gpl3+)))
+
+(define-public pigx-chipseq
+  (package
+    (name "pigx-chipseq")
+    (version "0.0.10")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/BIMSBbioinfo/pigx_chipseq/"
+                                  "releases/download/v" version
+                                  "/pigx_chipseq-" version ".tar.gz"))
+              (sha256
+               (base32
+                "13w99bkr0w4j28ms0yzpl1x6fkpdqay0vh495q3x20bcilsjwnf1"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; parts of the tests rely on access to the network
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-executable
+           ;; Make sure the executable finds all R modules.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/pigx-chipseq")
+                 `("R_LIBS_SITE" ":" = (,(getenv "R_LIBS_SITE")))
+                 `("PYTHONPATH"  ":" = (,(getenv "PYTHONPATH")))))
+             #t)))))
+    (inputs
+     `(("grep" ,grep)
+       ("coreutils" ,coreutils)
+       ("r-minimal" ,r-minimal)
+       ("r-argparser" ,r-argparser)
+       ("r-biocparallel" ,r-biocparallel)
+       ("r-biostrings" ,r-biostrings)
+       ("r-chipseq" ,r-chipseq)
+       ("r-data-table" ,r-data-table)
+       ("r-dplyr" ,r-dplyr)
+       ("r-genomation" ,r-genomation)
+       ("r-genomicalignments" ,r-genomicalignments)
+       ("r-genomicranges" ,r-genomicranges)
+       ("r-rsamtools" ,r-rsamtools)
+       ("r-rtracklayer" ,r-rtracklayer)
+       ("r-s4vectors" ,r-s4vectors)
+       ("r-stringr" ,r-stringr)
+       ("r-tibble" ,r-tibble)
+       ("r-tidyr" ,r-tidyr)
+       ("r-jsonlite" ,r-jsonlite)
+       ("r-heatmaply" ,r-heatmaply)
+       ("r-htmlwidgets" ,r-htmlwidgets)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-plotly" ,r-plotly)
+       ("r-rmarkdown" ,r-rmarkdown)
+       ("python-wrapper" ,python-wrapper)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-magic" ,python-magic)
+       ("python-xlrd" ,python-xlrd)
+       ("trim-galore" ,trim-galore)
+       ("macs" ,macs)
+       ("multiqc" ,multiqc)
+       ("perl" ,perl)
+       ("ghc-pandoc" ,ghc-pandoc-1)
+       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc-with-pandoc-1)
+       ("fastqc" ,fastqc)
+       ("bowtie" ,bowtie)
+       ("idr" ,idr)
+       ("snakemake" ,snakemake)
+       ("samtools" ,samtools)
+       ("bedtools" ,bedtools)
+       ("kentutils" ,kentutils)))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
+    (home-page "http://bioinformatics.mdc-berlin.de/pigx/")
+    (synopsis "Analysis pipeline for ChIP sequencing experiments")
+    (description "PiGX ChIPseq is an analysis pipeline for preprocessing, peak
+calling and reporting for ChIP sequencing experiments.  It is easy to use and
+produces high quality reports.  The inputs are reads files from the sequencing
+experiment, and a configuration file which describes the experiment.  In
+addition to quality control of the experiment, the pipeline enables to set up
+multiple peak calling analysis and allows the generation of a UCSC track hub
+in an easily configurable manner.")
+    (license license:gpl3+)))
+
+(define-public pigx-bsseq
+  (package
+    (name "pigx-bsseq")
+    (version "0.0.8")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/BIMSBbioinfo/pigx_bsseq/"
+                                  "releases/download/v" version
+                                  "/pigx_bsseq-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0irlnlhhw9fd4ha7hksrxn3y7j76mz5qq1wjswbs9p364laqg69y"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'set-timezone
+           ;; The readr package is picky about timezones.
+           (lambda* (#:key inputs #:allow-other-keys)
+             (setenv "TZ" "UTC+1")
+             (setenv "TZDIR"
+                     (string-append (assoc-ref inputs "tzdata")
+                                    "/share/zoneinfo"))
+             #t))
+         (add-after 'install 'wrap-executable
+           ;; Make sure the executable finds all R modules.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/pigx-bsseq")
+                 `("R_LIBS_SITE" ":" = (,(getenv "R_LIBS_SITE")))
+                 `("PYTHONPATH"  ":" = (,(getenv "PYTHONPATH")))))
+             #t)))))
+    (native-inputs
+     `(("tzdata" ,tzdata)))
+    (inputs
+     `(("coreutils" ,coreutils)
+       ("sed" ,sed)
+       ("grep" ,grep)
+       ("r-minimal" ,r-minimal)
+       ("r-annotationhub" ,r-annotationhub)
+       ("r-dt" ,r-dt)
+       ("r-genomation" ,r-genomation)
+       ("r-methylkit" ,r-methylkit)
+       ("r-rtracklayer" ,r-rtracklayer)
+       ("r-rmarkdown" ,r-rmarkdown)
+       ("r-bookdown" ,r-bookdown)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-ggbio" ,r-ggbio)
+       ("ghc-pandoc" ,ghc-pandoc-1)
+       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc-with-pandoc-1)
+       ("python-wrapper" ,python-wrapper)
+       ("python-pyyaml" ,python-pyyaml)
+       ("snakemake" ,snakemake)
+       ("bismark" ,bismark)
+       ("fastqc" ,fastqc)
+       ("bowtie" ,bowtie)
+       ("trim-galore" ,trim-galore)
+       ("cutadapt" ,cutadapt)
+       ("samtools" ,samtools)))
+    (home-page "http://bioinformatics.mdc-berlin.de/pigx/")
+    (synopsis "Bisulfite sequencing pipeline from fastq to methylation reports")
+    (description "PiGx BSseq is a data processing pipeline for raw fastq read
+data of bisulfite experiments; it produces reports on aggregate methylation
+and coverage and can be used to produce information on differential
+methylation and segmentation.")
+    (license license:gpl3+)))
+
+(define-public pigx-scrnaseq
+  (package
+    (name "pigx-scrnaseq")
+    (version "0.0.3")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/BIMSBbioinfo/pigx_scrnaseq/"
+                                  "releases/download/v" version
+                                  "/pigx_scrnaseq-" version ".tar.gz"))
+              (sha256
+               (base32
+                "12qdq0nj1wdkyighdxj6924bmbpd1a0b3gam6w64l4hiqrv5sijz"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:configure-flags
+       (list (string-append "PICARDJAR=" (assoc-ref %build-inputs "java-picard")
+			    "/share/java/picard.jar")
+	     (string-append "DROPSEQJAR=" (assoc-ref %build-inputs "dropseq-tools")
+			    "/share/java/dropseq.jar"))
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'install 'wrap-executable
+           ;; Make sure the executable finds all R modules.
+           (lambda* (#:key inputs outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (wrap-program (string-append out "/bin/pigx-scrnaseq")
+                 `("R_LIBS_SITE" ":" = (,(getenv "R_LIBS_SITE")))
+                 `("PYTHONPATH"  ":" = (,(getenv "PYTHONPATH")))))
+             #t)))))
+    (inputs
+     `(("coreutils" ,coreutils)
+       ("perl" ,perl)
+       ("dropseq-tools" ,dropseq-tools)
+       ("fastqc" ,fastqc)
+       ("java-picard" ,java-picard)
+       ("java" ,icedtea-8)
+       ("python-wrapper" ,python-wrapper)
+       ("python-pyyaml" ,python-pyyaml)
+       ("python-pandas" ,python-pandas)
+       ("python-numpy" ,python-numpy)
+       ("python-loompy" ,python-loompy)
+       ("ghc-pandoc" ,ghc-pandoc-1)
+       ("ghc-pandoc-citeproc" ,ghc-pandoc-citeproc-with-pandoc-1)
+       ("snakemake" ,snakemake)
+       ("star" ,star)
+       ("r-minimal" ,r-minimal)
+       ("r-argparser" ,r-argparser)
+       ("r-cowplot" ,r-cowplot)
+       ("r-data-table" ,r-data-table)
+       ("r-delayedarray" ,r-delayedarray)
+       ("r-delayedmatrixstats" ,r-delayedmatrixstats)
+       ("r-dplyr" ,r-dplyr)
+       ("r-dropbead" ,r-dropbead)
+       ("r-dt" ,r-dt)
+       ("r-genomicalignments" ,r-genomicalignments)
+       ("r-genomicfiles" ,r-genomicfiles)
+       ("r-genomicranges" ,r-genomicranges)
+       ("r-ggplot2" ,r-ggplot2)
+       ("r-hdf5array" ,r-hdf5array)
+       ("r-pheatmap" ,r-pheatmap)
+       ("r-rmarkdown" ,r-rmarkdown)
+       ("r-rsamtools" ,r-rsamtools)
+       ("r-rtracklayer" ,r-rtracklayer)
+       ("r-rtsne" ,r-rtsne)
+       ("r-scater" ,r-scater)
+       ("r-scran" ,r-scran)
+       ("r-singlecellexperiment" ,r-singlecellexperiment)
+       ("r-stringr" ,r-stringr)
+       ("r-yaml" ,r-yaml)))
+    (home-page "http://bioinformatics.mdc-berlin.de/pigx/")
+    (synopsis "Analysis pipeline for single-cell RNA sequencing experiments")
+    (description "PiGX scRNAseq is an analysis pipeline for preprocessing and
+quality control for single cell RNA sequencing experiments.  The inputs are
+read files from the sequencing experiment, and a configuration file which
+describes the experiment.  It produces processed files for downstream analysis
+and interactive quality reports.  The pipeline is designed to work with UMI
+based methods.")
+    (license license:gpl3+)))
+
+(define-public pigx
+  (package
+    (name "pigx")
+    (version "0.0.2")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "https://github.com/BIMSBbioinfo/pigx/"
+                                  "releases/download/v" version
+                                  "/pigx-" version ".tar.gz"))
+              (sha256
+               (base32
+                "0sb708sl42h3s5z872jb1w70bbqplwapnsc1wm27zcsvi7li4gw8"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("python" ,python)
+       ("pigx-bsseq" ,pigx-bsseq)
+       ("pigx-chipseq" ,pigx-chipseq)
+       ("pigx-rnaseq" ,pigx-rnaseq)
+       ("pigx-scrnaseq" ,pigx-scrnaseq)))
+    (home-page "http://bioinformatics.mdc-berlin.de/pigx/")
+    (synopsis "Analysis pipelines for genomics")
+    (description "PiGx is a collection of genomics pipelines.  It includes the
+following pipelines:
+
+@itemize
+@item PiGx BSseq for raw fastq read data of bisulfite experiments
+@item PiGx RNAseq for RNAseq samples
+@item PiGx scRNAseq for single cell dropseq analysis
+@item PiGx ChIPseq for reads from ChIPseq experiments
+@end itemize
+
+All pipelines are easily configured with a simple sample sheet and a
+descriptive settings file.  The result is a set of comprehensive, interactive
+HTML reports with interesting findings about your samples.")
+    (license license:gpl3+)))
+
+(define-public r-diversitree
+  (package
+    (name "r-diversitree")
+    (version "0.9-10")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (cran-uri "diversitree" version))
+        (sha256
+         (base32
+          "0gh4rcrp0an3jh8915i1fsxlgyfk7njywgbd5ln5r2jhr085kpz7"))))
+    (build-system r-build-system)
+    (native-inputs
+     `(("gfortran" ,gfortran)))
+    (inputs `(("fftw" ,fftw) ("gsl" ,gsl)))
+    (propagated-inputs
+     `(("r-ape" ,r-ape)
+       ("r-desolve" ,r-desolve)
+       ("r-rcpp" ,r-rcpp)
+       ("r-suplex" ,r-subplex)))
+    (home-page "https://www.zoology.ubc.ca/prog/diversitree")
+    (synopsis "Comparative 'phylogenetic' analyses of diversification")
+    (description "This package contains a number of comparative \"phylogenetic\"
+methods, mostly focusing on analysing diversification and character evolution.
+Contains implementations of \"BiSSE\" (Binary State Speciation and Extinction)
+and its unresolved tree extensions, \"MuSSE\" (Multiple State Speciation and
+Extinction), \"QuaSSE\", \"GeoSSE\", and \"BiSSE-ness\" Other included methods
+include Markov models of discrete and continuous trait evolution and constant
+rate speciation and extinction.")
+    (license license:gpl2+)))

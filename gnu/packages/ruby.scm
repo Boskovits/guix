@@ -5,7 +5,7 @@
 ;;; Copyright © 2014, 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2015 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015, 2016, 2017 Ben Woodcroft <donttrustben@gmail.com>
-;;; Copyright © 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
@@ -36,6 +36,8 @@
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages java)
   #:use-module (gnu packages libffi)
+  #:use-module (gnu packages maths)
+  #:use-module (gnu packages networking)
   #:use-module (gnu packages python)
   #:use-module (gnu packages ragel)
   #:use-module (gnu packages tls)
@@ -62,6 +64,7 @@
        (sha256
         (base32
          "0l9bv67dgsphk42lmiskhrnh47hbyj6rfg2rcjx22xivpx07srr3"))
+       (patches (search-patches "ruby-rubygems-276-for-ruby24.patch"))
        (modules '((guix build utils)))
        (snippet `(begin
                    ;; Remove bundled libffi
@@ -96,9 +99,7 @@
     (native-search-paths
      (list (search-path-specification
             (variable "GEM_PATH")
-            (files (list (string-append "lib/ruby/gems/"
-                                        (version-major+minor version)
-                                        ".0"))))))
+            (files (list (string-append "lib/ruby/vendor_ruby"))))))
     (synopsis "Programming language interpreter")
     (description "Ruby is a dynamic object-oriented programming language with
 a focus on simplicity and productivity.")
@@ -162,13 +163,7 @@ a focus on simplicity and productivity.")
                             "lib/mkmf.rb"
                             "process.c")
                (("/bin/sh") (which "sh")))
-             #t)))))
-    (native-search-paths
-     (list (search-path-specification
-            (variable "GEM_PATH")
-            (files (list (string-append "lib/ruby/gems/"
-                                        (version-major+minor version)
-                                        ".0"))))))))
+             #t)))))))
 
 (define-public ruby-1.8
   (package (inherit ruby)
@@ -197,11 +192,6 @@ a focus on simplicity and productivity.")
                             "process.c")
                (("/bin/sh") (which "sh")))
              #t)))))))
-
-(define (gem-directory ruby-version)
-  "Return the relative gem install directory for RUBY-VERSION."
-  (string-append "/lib/ruby/gems/" (version-major+minor ruby-version)
-                 ".0/gems"))
 
 (define-public ruby-highline
   (package
@@ -290,6 +280,62 @@ transliteration to ASCII, flexible defaults, bulk lookup, lambdas as
 translation data, custom key/scope separator, custom exception handlers, and
 an extensible architecture with a swappable backend.")
     (home-page "https://github.com/svenfuchs/i18n")
+    (license license:expat)))
+
+(define-public ruby-iruby
+  (package
+    (name "ruby-iruby")
+    (version "0.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "iruby" version))
+       (sha256
+        (base32
+         "1wdf2c0x8y6cya0n3y0p3p7b1sxkb2fdavdn2k58rf4rs37s7rzn"))))
+    (build-system ruby-build-system)
+    (arguments
+     ;; TODO: Tests currently fail.
+     ;;
+     ;; Finished in 1.764405s, 1.1335 runs/s, 5.1009 assertions/s.
+     ;;
+     ;;   1) Failure:
+     ;; IntegrationTest#test_interaction [/tmp/guix-build-ruby-iruby-0.3.drv-0/gem/test/integration_test.rb:25]:
+     ;; In [ expected
+     ;;
+     ;; 2 runs, 9 assertions, 1 failures, 0 errors, 0 skips
+     '(#:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-ipython
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "lib/iruby/command.rb"
+               (("version = `")
+                (string-append
+                 "version = `"
+                 (assoc-ref inputs "python-ipython")
+                 "/bin/"))
+               (("Kernel\\.exec\\('")
+                (string-append
+                 "Kernel.exec('"
+                 (assoc-ref inputs "python-ipython")
+                 "/bin/")))
+             #t)))))
+    (inputs
+     `(("python-ipython" ,python-ipython)))
+    (propagated-inputs
+     `(("ruby-bond" ,ruby-bond)
+       ("ruby-data_uri" ,ruby-data_uri)
+       ("ruby-mimemagic" ,ruby-mimemagic)
+       ("ruby-multi-json" ,ruby-multi-json)
+       ("ruby-cztop" ,ruby-cztop)
+       ;; Optional inputs
+       ("ruby-pry" ,ruby-pry)))
+    (synopsis "Ruby kernel for Jupyter/IPython")
+    (description
+     "This package provides a Ruby kernel for Jupyter/IPython frontends (e.g.
+notebook).")
+    (home-page "https://github.com/SciRuby/iruby")
     (license license:expat)))
 
 ;; RSpec is the dominant testing library for Ruby projects.  Even RSpec's
@@ -620,6 +666,72 @@ line of code.")
     ;; of the Expat license.
     (license license:bsd-3)))
 
+(define-public ruby-asciidoctor
+  (package
+  (name "ruby-asciidoctor")
+  (version "1.5.6.1")
+  (source
+    (origin
+      (method url-fetch)
+      (uri (rubygems-uri "asciidoctor" version))
+      (sha256
+        (base32
+          "1jnf9y8q5asfdzilp8vcqafrc2faj719df4yh1993mh6jd0iqdy4"))))
+  (build-system ruby-build-system)
+  (arguments
+   `(#:test-target "test:all"
+     #:phases
+     (modify-phases %standard-phases
+       (add-before 'check 'remove-circular-tests
+         (lambda _
+           ;; Remove tests that require circular dependencies to load or pass.
+           (delete-file "test/invoker_test.rb")
+           (delete-file "test/converter_test.rb")
+           (delete-file "test/options_test.rb")
+           #t)))))
+  (native-inputs
+   `(("ruby-minitest" ,ruby-minitest)
+     ("ruby-nokogiri" ,ruby-nokogiri)
+     ("ruby-asciimath" ,ruby-asciimath)
+     ("ruby-coderay" ,ruby-coderay)))
+  (synopsis "Converter from AsciiDoc content to other formats")
+  (description
+    "Asciidoctor is a text processor and publishing toolchain for converting
+AsciiDoc content to HTML5, DocBook 5 (or 4.5) and other formats.")
+  (home-page "http://asciidoctor.org")
+  (license license:expat)))
+
+(define-public ruby-sporkmonger-rack-mount
+  ;; Testing the addressable gem requires a newer commit than that released, so
+  ;; use an up to date version.
+  (let ((revision "1")
+        (commit "076aa2c47d9a4c081f1e9bcb56a826a9e72bd5c3"))
+    (package
+      (name "ruby-sporkmonger-rack-mount")
+      (version (git-version "0.8.3" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/sporkmonger/rack-mount.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "1scx273g3xd93424x9lxc4zyvcp2niknbw5mkz6wkivpf7xsyxdq"))))
+      (build-system ruby-build-system)
+      (arguments
+       ;; Tests currently fail so disable them.
+       ;; https://github.com/sporkmonger/rack-mount/pull/1
+       `(#:tests? #f))
+      (propagated-inputs `(("ruby-rack" ,ruby-rack)))
+      (synopsis "Stackable dynamic tree based Rack router")
+      (description
+       "@code{Rack::Mount} supports Rack's @code{X-Cascade} convention to
+continue trying routes if the response returns pass.  This allows multiple
+routes to be nested or stacked on top of each other.")
+      (home-page "https://github.com/sporkmonger/rack-mount")
+      (license license:expat))))
+
 (define-public ruby-ci-reporter
   (package
     (name "ruby-ci-reporter")
@@ -646,6 +758,84 @@ read by a continuous integration system that understands Ant's JUnit report
 format.")
     (home-page "https://github.com/nicksieger/ci_reporter")
     (license license:expat)))
+
+(define-public ruby-czmq-ffi-gen
+  (package
+    (name "ruby-czmq-ffi-gen")
+    (version "0.13.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "czmq-ffi-gen" version))
+       (sha256
+        (base32
+         "1yf719dmf4mwks1hqdsy6i5kzfvlsha69sfnhb2fr2cgk2snbys3"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(#:tests? #f ;; Tests are not included in the release on rubygems.org
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-lib_dirs
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "lib/czmq-ffi-gen/czmq/ffi.rb"
+               (("lib\\_dirs = \\[.*\\]")
+                (string-append "lib_dirs = ['"
+                               (assoc-ref inputs "czmq") "/lib"
+                               "']")))
+             (substitute* "lib/czmq-ffi-gen/libzmq.rb"
+               (("lib\\_dirs = \\[.*\\]")
+                (string-append "lib_dirs = ['"
+                               (assoc-ref inputs "zeromq") "/lib"
+                               "']"))))))))
+    (inputs
+     `(("zeromq" ,zeromq)
+       ("czmq" ,czmq)))
+    (propagated-inputs `(("ruby-ffi" ,ruby-ffi)))
+    (synopsis "Low-level Ruby bindings for CZMQ (generated using zproject)")
+    (description
+     "These Ruby bindings are not intended to be directly used, but rather
+used by higher level bindings like those provided by CZTop.")
+    (home-page
+     "https://github.com/paddor/czmq-ffi-gen")
+    (license license:isc)))
+
+(define-public ruby-cztop
+  (package
+    (name "ruby-cztop")
+    (version "0.12.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "cztop" version))
+       (sha256
+        (base32
+         "0yqbpaiw5d7f271d73lyrsh8xpx6n4zi6xqwfgi00dacxrq3s3fa"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(#:test-target "spec"
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'patch-lib_paths
+           (lambda* (#:key inputs #:allow-other-keys)
+             (substitute* "lib/cztop/poller/zmq.rb"
+               (("lib\\_paths = \\[.*\\]")
+                (string-append "lib_paths = ['"
+                               (assoc-ref inputs "zeromq") "/lib"
+                               "']"))))))))
+    (native-inputs
+     `(("bundler" ,bundler)
+       ("ruby-rspec" ,ruby-rspec)))
+    (inputs
+     `(("zeromq" ,zeromq)))
+    (propagated-inputs
+     `(("ruby-czmq-ffi-gen" ,ruby-czmq-ffi-gen)))
+    (synopsis "CZMQ Ruby bindings")
+    (description
+     "CZMQ Ruby bindings, based on the generated low-level FFI bindings of
+CZMQ.  The focus of of CZTop is on being easy to use and providing first class
+support for security mechanisms.")
+    (home-page "https://github.com/paddor/cztop")
+    (license license:isc)))
 
 (define-public ruby-saikuro-treemap
   (package
@@ -700,6 +890,29 @@ complexity.")
 functions.")
     (home-page "https://github.com/ahoward/options")
     (license license:ruby)))
+
+(define-public ruby-erubis
+  (package
+    (name "ruby-erubis")
+    (version "2.7.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "erubis" version))
+       (sha256
+        (base32
+         "1fj827xqjs91yqsydf0zmfyw9p4l2jz5yikg3mppz6d7fi8kyrb3"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(#:tests? #f)) ; tests do not run properly with Ruby 2.0
+    (synopsis "Implementation of embedded Ruby (eRuby)")
+    (description
+     "Erubis is a fast implementation of embedded Ruby (eRuby) with several
+features such as multi-language support, auto escaping, auto trimming spaces
+around @code{<% %>}, a changeable embedded pattern, and Ruby on Rails
+support.")
+    (home-page "http://www.kuwata-lab.com/erubis/")
+    (license license:expat)))
 
 (define-public ruby-orderedhash
   (package
@@ -1106,6 +1319,30 @@ features.")
     (home-page "https://github.com/chneukirchen/bacon")
     (license license:expat)))
 
+(define-public ruby-bacon-bits
+  (package
+    (name "ruby-bacon-bits")
+    (version "0.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "bacon-bits" version))
+       (sha256
+        (base32
+         "1ghpj8ja94lhi8rgi872hqk4fd2amz2k7g9znd64z5dj7v6l0dmx"))))
+    (build-system ruby-build-system)
+    (arguments
+     ;; No tests
+     '(#:tests? #f))
+    (propagated-inputs `(("ruby-bacon" ,ruby-bacon)))
+    (synopsis "Extensions to Bacon, for disabling tests, before and after
+blocks and more")
+    (description
+     "This extends the bacon testing framework with useful extensions to
+disable tests, have before and after blocks that run once and more.")
+    (home-page "https://github.com/cldwalker/bacon-bits")
+    (license license:expat)))
+
 (define-public ruby-connection-pool
   (package
     (name "ruby-connection-pool")
@@ -1302,13 +1539,11 @@ It allows writing tests, checking results and automated testing in Ruby.")
        (modify-phases %standard-phases
          (add-after 'unpack 'add-test-unit-to-search-path
            (lambda* (#:key inputs #:allow-other-keys)
-             (let* ((test-unit (assoc-ref inputs "ruby-test-unit"))
-                    (test-unit-home (gem-home test-unit
-                                              ,(package-version ruby))))
+             (let* ((test-unit (assoc-ref inputs "ruby-test-unit")))
                (substitute* "Rakefile"
                  (("t\\.libs << \"test\"" line)
                   (string-append line "; t.libs << \""
-                                 test-unit-home
+                                 test-unit "/lib/ruby/vendor_ruby"
                                  "/gems/test-unit-"
                                  ,(package-version ruby-test-unit)
                                  "/lib\""))))
@@ -1351,6 +1586,34 @@ as a base class when writing classes that depend upon
     (home-page "https://github.com/masover/blankslate")
     (license license:expat)))
 
+(define-public ruby-bond
+  (package
+    (name "ruby-bond")
+    (version "0.5.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "bond" version))
+       (sha256
+        (base32
+         "1r19ifc4skyl2gxnifrxa5jvbbay9fb2in79ppgv02b6n4bhsw90"))))
+    (build-system ruby-build-system)
+    (native-inputs
+     `(("ruby-bacon" ,ruby-bacon)
+       ("ruby-bacon-bits" ,ruby-bacon-bits)
+       ("ruby-mocha-on-bacon" ,ruby-mocha-on-bacon)))
+    (synopsis "Bond can provide custom autocompletion for arguments, methods
+and more")
+    (description
+     "Bond can autocomplete argument(s) to methods, uniquely completing per
+module, per method and per argument.  Bond provides a configuration system and
+a DSL for creating custom completions and completion rules.  Bond can also
+load completions that ship with gems.  Bond is able to offer more than irb's
+completion since it uses the full line of input when completing as opposed to
+irb's last-word approach.")
+    (home-page "http://tagaholic.me/bond/")
+    (license license:expat)))
+
 (define-public ruby-instantiator
   (package
     (name "ruby-instantiator")
@@ -1367,13 +1630,11 @@ as a base class when writing classes that depend upon
        (modify-phases %standard-phases
          (add-after 'unpack 'add-test-unit-to-search-path
            (lambda* (#:key inputs #:allow-other-keys)
-             (let* ((test-unit (assoc-ref inputs "ruby-test-unit"))
-                    (test-unit-home (gem-home test-unit ,(package-version
-                                                          ruby))))
+             (let* ((test-unit (assoc-ref inputs "ruby-test-unit")))
                (substitute* "Rakefile"
                  (("t\\.libs << \"test\"" line)
                   (string-append line "; t.libs << \""
-                                 test-unit-home
+                                 test-unit "/lib/ruby/vendor_ruby"
                                  "/gems/test-unit-"
                                  ,(package-version ruby-test-unit)
                                  "/lib\""))))
@@ -1406,13 +1667,11 @@ knowing anything about the constructor.")
        (modify-phases %standard-phases
          (add-after 'unpack 'add-test-unit-to-search-path
           (lambda* (#:key inputs #:allow-other-keys)
-            (let* ((test-unit (assoc-ref inputs "ruby-test-unit"))
-                   (test-unit-home (gem-home test-unit ,(package-version
-                                                         ruby))))
+            (let* ((test-unit (assoc-ref inputs "ruby-test-unit")))
               (substitute* "Rakefile"
                 (("t\\.libs << \"test\"" line)
                  (string-append line "; t.libs << \""
-                                test-unit-home
+                                test-unit "/lib/ruby/vendor_ruby"
                                 "/gems/test-unit-"
                                 ,(package-version ruby-test-unit)
                                 "/lib\""))))
@@ -1479,13 +1738,11 @@ conversion to (X)HTML.")
        (modify-phases %standard-phases
          (add-after 'unpack 'add-test-unit-to-search-path
           (lambda* (#:key inputs #:allow-other-keys)
-            (let* ((test-unit (assoc-ref inputs "ruby-test-unit"))
-                   (test-unit-home (gem-home test-unit
-                                             ,(package-version ruby))))
+            (let* ((test-unit (assoc-ref inputs "ruby-test-unit")))
               (substitute* "Rakefile"
                 (("t\\.libs << 'test'" line)
                  (string-append line "; t.libs << \""
-                                test-unit-home
+                                test-unit "/lib/ruby/vendor_ruby"
                                 "/gems/test-unit-"
                                 ,(package-version ruby-test-unit)
                                 "/lib\""))))
@@ -1520,6 +1777,30 @@ conversion to (X)HTML.")
      "Mocha is a mocking and stubbing library with JMock/SchMock syntax, which
 allows mocking and stubbing of methods on real (non-mock) classes.")
     (home-page "http://gofreerange.com/mocha/docs")
+    (license license:expat)))
+
+(define-public ruby-mocha-on-bacon
+  (package
+    (name "ruby-mocha-on-bacon")
+    (version "0.2.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "mocha-on-bacon" version))
+       (sha256
+        (base32
+         "1h49b33rq889hn8x3wp9byczl91va16jh1w4d2wyy4yj23icdrcp"))))
+    (build-system ruby-build-system)
+    (arguments
+     ;; rubygems.org release missing tests
+     '(#:tests? #f))
+    (propagated-inputs `(("ruby-mocha" ,ruby-mocha)))
+    (synopsis "Mocha adapter for Bacon")
+    (description
+     "This package provides a Mocha adapter for Bacon, allowing you to use the
+Mocha stubbing and mocking library with Bacon, a small RSpec clone.")
+    (home-page
+     "https://github.com/alloy/mocha-on-bacon")
     (license license:expat)))
 
 (define-public ruby-net-ssh
@@ -1830,6 +2111,26 @@ run as a daemon and to be controlled by simple start/stop/restart commands.")
     (home-page "https://github.com/thuehlinger/daemons")
     (license license:expat)))
 
+(define-public ruby-data_uri
+  (package
+    (name "ruby-data_uri")
+    (version "0.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "data_uri" version))
+       (sha256
+        (base32
+         "0fzkxgdxrlbfl4537y3n9mjxbm28kir639gcw3x47ffchwsgdcky"))))
+    (build-system ruby-build-system)
+    (synopsis "URI class for parsing data URIs")
+    (description
+     "Data @acronym{URI, universal resource idenfitier}s allow resources to be
+embedded inside a URI.  The URI::Data class provides support for parsing these
+URIs using the normal URI.parse method.")
+    (home-page "https://github.com/dball/data_uri")
+    (license license:expat)))
+
 (define-public ruby-git
   (package
     (name "ruby-git")
@@ -1850,9 +2151,10 @@ run as a daemon and to be controlled by simple start/stop/restart commands.")
                       ;; store.
                       (let ((git    (string-append (assoc-ref inputs "git")
                                                    "/bin/git"))
-                            (config (string-append (getenv "GEM_HOME")
-                                                   "/gems/git-" ,version
-                                                   "/lib/git/config.rb")))
+                            (config (string-append
+                                     (assoc-ref outputs "out")
+                                     "/lib/ruby/vendor_ruby/gems/git-"
+                                     ,version "/lib/git/config.rb")))
                         (substitute* (list config)
                           (("'git'")
                            (string-append "'" git "'")))
@@ -2037,13 +2339,11 @@ to reproduce user environments.")
            ;; 'pkg-config' is not included in the GEM_PATH during
            ;; installation, so we add it directly to the load path.
            (lambda* (#:key inputs #:allow-other-keys)
-             (let* ((pkg-config (assoc-ref inputs "ruby-pkg-config"))
-                    (pkg-config-home (gem-home pkg-config
-                                               ,(package-version ruby))))
+             (let* ((pkg-config (assoc-ref inputs "ruby-pkg-config")))
                (substitute* "ext/nokogiri/extconf.rb"
                  (("gem 'pkg-config'.*")
                   (string-append "$:.unshift '"
-                                 pkg-config-home
+                                 pkg-config "/lib/ruby/vendor_ruby"
                                  "/gems/pkg-config-"
                                  ,(package-version ruby-pkg-config)
                                  "/lib'\n"))))
@@ -2450,13 +2750,11 @@ development of Ruby gems.")
        (modify-phases %standard-phases
          (add-after 'unpack 'fix-test-include-path
           (lambda* (#:key inputs #:allow-other-keys)
-             (let* ((minitest (assoc-ref inputs "ruby-minitest-4"))
-                    (minitest-home (gem-home minitest
-                                             ,(package-version ruby))))
+             (let* ((minitest (assoc-ref inputs "ruby-minitest-4")))
                (substitute* "Rakefile"
                  (("Hoe\\.add_include_dirs .*")
                   (string-append "Hoe.add_include_dirs \""
-                                 minitest-home
+                                 minitest "/lib/ruby/vendor_ruby"
                                  "/gems/minitest-"
                                  ,(package-version ruby-minitest-4)
                                  "/lib" "\""))))
@@ -2784,7 +3082,7 @@ access the result as a Nokogiri parsed document.")
 (define-public ruby-sanitize
   (package
     (name "ruby-sanitize")
-    (version "4.0.0")
+    (version "4.6.3")
     (source (origin
               (method url-fetch)
               ;; The gem does not include the Rakefile, so we download the
@@ -2794,7 +3092,7 @@ access the result as a Nokogiri parsed document.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "055xnj38l60gxnnng76kpy2l2jbrp0byjdyq17jw79w7l4b40znr"))))
+                "1fmqppwif3cm8h79006jfzkdnlxxzlry9kzk03psk0d5xpg55ycc"))))
     (build-system ruby-build-system)
     (propagated-inputs
      `(("ruby-crass" ,ruby-crass)
@@ -2856,15 +3154,7 @@ alternative to Marshal for Object serialization. ")
          ;; existing gemspec.
          (replace 'build
           (lambda _
-            (zero? (system* "gem" "build" "redcloth.gemspec"))))
-         ;; Make sure that the "redcloth" executable finds required Ruby
-         ;; libraries.
-         (add-after 'install 'wrap-bin-redcloth
-          (lambda* (#:key outputs #:allow-other-keys)
-            (wrap-program (string-append (assoc-ref outputs "out")
-                                         "/bin/redcloth")
-              `("GEM_HOME" ":" prefix (,(getenv "GEM_HOME"))))
-            #t)))))
+            (zero? (system* "gem" "build" "redcloth.gemspec")))))))
     (native-inputs
      `(("bundler" ,bundler)
        ("ruby-diff-lcs" ,ruby-diff-lcs)
@@ -2894,7 +3184,7 @@ alternative to Marshal for Object serialization. ")
        ("ruby-hoe" ,ruby-hoe)
        ("ruby-rspec" ,ruby-rspec)))
     (inputs
-     `(("postgresql" ,postgresql)))
+     `(("postgresql" ,postgresql-9.6)))
     (synopsis "Ruby interface to PostgreSQL")
     (description "Pg is the Ruby interface to the PostgreSQL RDBMS.  It works
 with PostgreSQL 8.4 and later.")
@@ -3092,6 +3382,106 @@ it unifies the API for web servers, web frameworks, and software in between
 into a single method call.")
     (home-page "https://rack.github.io/")
     (license license:expat)))
+
+(define-public ruby-rack-test
+  (package
+    (name "ruby-rack-test")
+    (version "0.8.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "rack-test" version))
+       (sha256
+        (base32
+         "14ij39zywvr1i9f6jsixfg4zxi2q1m1n1nydvf47f0b6sfc9mv1g"))))
+    (build-system ruby-build-system)
+    (arguments
+     ;; Disable tests because of circular dependencies: requires sinatra,
+     ;; which requires rack-protection, which requires rack-test.  Instead
+     ;; simply require the library.
+     `(#:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda _
+             (invoke "ruby" "-Ilib" "-r" "rack/test"))))))
+    (propagated-inputs
+     `(("ruby-rack" ,ruby-rack)))
+    (synopsis "Testing API for Rack applications")
+    (description
+     "Rack::Test is a small, simple testing API for Rack applications.  It can
+be used on its own or as a reusable starting point for Web frameworks and
+testing libraries to build on.")
+    (home-page "https://github.com/rack-test/rack-test")
+    (license license:expat)))
+
+(define-public ruby-rack-protection
+  (package
+    (name "ruby-rack-protection")
+    (version "2.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "rack-protection" version))
+       (sha256
+        (base32
+         "0ywmgh7x8ljf7jfnq5hmfzki3f803waji3fcvi107w7mlyflbng7"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(;; Tests missing from the gem
+       #:tests? #f))
+    (propagated-inputs
+     `(("ruby-rack" ,ruby-rack)))
+    (native-inputs
+     `(("bundler" ,bundler)
+       ("ruby-rspec" ,ruby-rspec-2)
+       ("ruby-rack-test" ,ruby-rack-test)))
+    (synopsis "Rack middleware that protects against typical web attacks")
+    (description "Rack middleware that can be used to protect against typical
+web attacks.  It can protect all Rack apps, including Rails.  For instance, it
+protects against cross site request forgery, cross site scripting,
+clickjacking, directory traversal, session hijacking and IP spoofing.")
+    (home-page "https://github.com/sinatra/sinatra/tree/master/rack-protection")
+    (license license:expat)))
+
+(define-public ruby-contest
+  (package
+    (name "ruby-contest")
+    (version "0.1.3")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "contest" version))
+       (sha256
+        (base32
+         "1p9f2292b7b0fbrcjswvj9v01z7ig5ig52328wyqcabgb553qsdf"))))
+    (build-system ruby-build-system)
+    (synopsis "Write declarative tests using nested contexts")
+    (description
+     "Contest allows writing declarative @code{Test::Unit} tests using nested
+contexts without performance penalties.")
+    (home-page "https://github.com/citrusbyte/contest")
+    (license license:expat)))
+
+(define-public ruby-creole
+  (package
+    (name "ruby-creole")
+    (version "0.5.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "creole" version))
+       (sha256
+        (base32
+         "00rcscz16idp6dx0dk5yi5i0fz593i3r6anbn5bg2q07v3i025wm"))))
+    (build-system ruby-build-system)
+    (native-inputs
+     `(("ruby-bacon" ,ruby-bacon)))
+    (synopsis "Creole markup language converter")
+    (description
+     "Creole is a lightweight markup language and this library for converting
+creole to @code{HTML}.")
+    (home-page "https://github.com/minad/creole")
+    (license license:ruby)))
 
 (define-public ruby-docile
   (package
@@ -3326,6 +3716,55 @@ used to create both network servers and clients.")
     (home-page "http://rubyeventmachine.com")
     (license (list license:ruby license:gpl3)))) ; GPLv3 only AFAICT
 
+(define-public ruby-ruby-engine
+  (package
+    (name "ruby-ruby-engine")
+    (version "1.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "ruby_engine" version))
+       (sha256
+        (base32
+         "1d0sd4q50zkcqhr395wj1wpn2ql52r0fpwhzjfvi1bljml7k546v"))))
+    (build-system ruby-build-system)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'check 'clean-up
+           (lambda _
+             (delete-file "Gemfile.lock")
+             (substitute* "ruby_engine.gemspec"
+               ;; Remove unnecessary imports that would entail further
+               ;; dependencies.
+               ((".*<rdoc.*") "")
+               ((".*<rubygems-tasks.*") "")
+               ;; Remove extraneous .gem file
+               (("\\\"pkg/ruby_engine-1.0.0.gem\\\",") "")
+               ;; Soften rake dependency
+               (("%q<rake>.freeze, \\[\\\"~> 10.0\\\"\\]")
+                "%q<rake>.freeze, [\">= 10.0\"]")
+               ;; Soften the rspec dependency
+               (("%q<rspec>.freeze, \\[\\\"~> 2.4\\\"\\]")
+                "%q<rspec>.freeze, [\">= 2.4\"]"))
+             (substitute* "Rakefile"
+               (("require 'rubygems/tasks'") "")
+               (("Gem::Tasks.new") ""))
+             ;; Remove extraneous .gem file that otherwise gets installed.
+             (delete-file "pkg/ruby_engine-1.0.0.gem")
+             #t)))))
+    (native-inputs
+     `(("bundler" ,bundler)
+       ("ruby-rake" ,ruby-rake)
+       ("ruby-rspec" ,ruby-rspec)))
+    (synopsis "Simplifies checking for Ruby implementation")
+    (description
+     "@code{ruby_engine} provides an RubyEngine class that can be used to
+check which implementation of Ruby is in use.  It can provide the interpreter
+name and provides query methods such as @{RubyEngine.mri?}.")
+    (home-page "https://github.com/janlelis/ruby_engine")
+    (license license:expat)))
+
 (define-public ruby-turn
   (package
     (name "ruby-turn")
@@ -3357,6 +3796,33 @@ colorful and informative.  TURN displays each test on a separate line with
 failures being displayed immediately instead of at the end of the tests.  Note
 that TURN is no longer being maintained.")
     (home-page "http://rubygems.org/gems/turn")
+    (license license:expat)))
+
+(define-public ruby-mimemagic
+  (package
+    (name "ruby-mimemagic")
+    (version "0.3.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "mimemagic" version))
+       (sha256
+        (base32
+         "00ibc1mhvdfyfyl103xwb45621nwyqxf124cni5hyfhag0fn1c3q"))))
+    (build-system ruby-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         ;; This phase breaks the tests, as it patches some of the test data.
+         (delete 'patch-source-shebangs))))
+    (native-inputs
+     `(("ruby-bacon" ,ruby-bacon)))
+    (synopsis "Ruby library for MIME detection by extension or content")
+    (description
+     "@acronym{MIME, Multipurpose Internet Mail Extensions} detection by
+extension or content, using the freedesktop.org.xml shared-mime-info
+database.")
+    (home-page "https://github.com/minad/mimemagic")
     (license license:expat)))
 
 (define-public ruby-mime-types-data
@@ -3450,6 +3916,13 @@ neither too verbose nor too minimal.")
     (arguments
      `(#:phases
        (modify-phases %standard-phases
+         (add-before 'check 'adjust-failing-test
+           (lambda _
+             ;; XXX: This test fails with SQLite versions >= 3.21.
+             ;; See <https://github.com/sparklemotion/sqlite3-ruby/issues/226>.
+             (substitute* "test/test_integration_resultset.rb"
+               (("\"integer\", \"text\"") "\"INTEGER\", \"text\""))
+             #t))
          (add-before 'check 'add-gemtest-file
            ;; This file exists in the repository but is not distributed.
            (lambda _ (zero? (system* "touch" ".gemtest")))))))
@@ -3712,13 +4185,7 @@ It has built-in support for the legacy @code{cookies.txt} and
                   (system* "ruby"
                            "-Ilib"
                            "test/runner.rb"))
-                 #t)))
-         (add-after 'install 'wrap-bin-httpclient
-           (lambda* (#:key outputs #:allow-other-keys)
-             (wrap-program (string-append (assoc-ref outputs "out")
-                                          "/bin/httpclient")
-               `("GEM_HOME" ":" prefix (,(getenv "GEM_HOME"))))
-             #t)))))
+                 #t))))))
     (native-inputs
      `(("ruby-rack" ,ruby-rack)))
     (synopsis
@@ -3760,9 +4227,9 @@ requests either using arguments or with an interactive prompt.")
          (add-before 'validate-runpath 'replace-broken-symlink
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                    (file (string-append out
-                                         ,(gem-directory (package-version ruby))
-                                         "/ansi-" ,version "/lib/ansi.yml")))
+                    (file (string-append
+                           out "/lib/ruby/vendor_ruby/gems/ansi-"
+                           ,version "/lib/ansi.yml")))
                ;; XXX: This symlink is broken since ruby 2.4.
                ;; https://lists.gnu.org/archive/html/guix-devel/2017-06/msg00034.html
                (delete-file file)
@@ -3960,9 +4427,9 @@ requirement specifications systems like Cucumber.")
          (add-before 'validate-runpath 'replace-broken-symlink
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
-                    (file (string-append out
-                                         ,(gem-directory (package-version ruby))
-                                         "/ae-" ,version "/lib/ae.yml")))
+                    (file (string-append
+                           out "/lib/ruby/vendor_ruby/gems/ae-"
+                           ,version "/lib/ae.yml")))
                ;; XXX: This symlink is broken since ruby 2.4.
                ;; https://lists.gnu.org/archive/html/guix-devel/2017-06/msg00034.html
                (delete-file file)
@@ -4492,4 +4959,25 @@ smart typographic punctuation HTML entities.")
 thing this library does today is convert org-mode files to HTML or Textile or
 Markdown.")
     (home-page "https://github.com/wallyqs/org-ruby")
+    (license license:expat)))
+
+(define-public ruby-rake
+  (package
+    (name "ruby-rake")
+    (version "12.3.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (rubygems-uri "rake" version))
+       (sha256
+        (base32
+         "190p7cs8zdn07mjj6xwwsdna3g0r98zs4crz7jh2j2q5b0nbxgjf"))))
+    (build-system ruby-build-system)
+    (native-inputs
+     `(("bundler" ,bundler)))
+    (synopsis "Rake is a Make-like program implemented in Ruby")
+    (description
+     "Rake is a Make-like program where tasks and dependencies are specified
+in standard Ruby syntax.")
+    (home-page "https://github.com/ruby/rake")
     (license license:expat)))

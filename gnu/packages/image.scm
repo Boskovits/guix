@@ -7,16 +7,16 @@
 ;;; Copyright © 2015 Taylan Ulrich Bayırlı/Kammer <taylanbayirli@gmail.com>
 ;;; Copyright © 2015 Amirouche Boubekki <amirouche@hypermove.net>
 ;;; Copyright © 2014, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Leo Famulari <leo@famulari.name>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2016, 2017 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2016, 2017 Kei Kebreau <kkebreau@posteo.net>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -59,6 +59,7 @@
   #:use-module (gnu packages python)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
+  #:use-module (gnu packages qt)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
@@ -391,6 +392,7 @@ extracting icontainer icon files.")
   (package
    (name "libtiff")
    (version "4.0.9")
+   (replacement libtiff/fixed)
    (source
      (origin
        (method url-fetch)
@@ -419,6 +421,17 @@ collection of tools for doing simple manipulations of TIFF images.")
    (license (license:non-copyleft "file://COPYRIGHT"
                                   "See COPYRIGHT in the distribution."))
    (home-page "http://www.simplesystems.org/libtiff/")))
+
+(define libtiff/fixed
+  (package
+    (inherit libtiff)
+    (source
+      (origin
+        (inherit (package-source libtiff))
+        (patches
+          (append (origin-patches (package-source libtiff))
+                  (search-patches "libtiff-CVE-2017-9935.patch"
+                                  "libtiff-CVE-2017-18013.patch")))))))
 
 (define-public leptonica
   (package
@@ -561,7 +574,9 @@ error-resilience, a Java-viewer for j2k-images, ...")
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1md83dip8rf29y40cm5r7nn19705f54iraz6545zhwa6y8zyq9yz"))))
+                "1md83dip8rf29y40cm5r7nn19705f54iraz6545zhwa6y8zyq9yz"))
+              (patches (search-patches
+                        "giflib-make-reallocarray-private.patch"))))
     (build-system gnu-build-system)
     (outputs '("bin"                    ; utility programs
                "out"))                  ; library
@@ -621,7 +636,7 @@ compose, and analyze GIF images.")
 (define-public imlib2
   (package
     (name "imlib2")
-    (version "1.4.10")
+    (version "1.5.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -629,7 +644,7 @@ compose, and analyze GIF images.")
                     "/imlib2-" version ".tar.bz2"))
               (sha256
                (base32
-                "0wm2q2xlkbm71k7mw2jyzbxgzylrkcj5yh6nq58w5gybhp98qs9z"))))
+                "1bms2iwmvnvpz5jqq3r52glarqkafif47zbh1ykz8hw85d2mfkps"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkgconfig" ,pkg-config)))
@@ -1079,29 +1094,28 @@ installed as @code{stb_image}.")
 (define-public optipng
   (package
     (name "optipng")
-    (version "0.7.6")
+    (version "0.7.7")
     (source
      (origin
        (method url-fetch)
        (uri (string-append "http://prdownloads.sourceforge.net/optipng/optipng-"
                            version ".tar.gz"))
-       (patches (search-patches "optipng-CVE-2017-1000229.patch"))
        (sha256
         (base32
-         "105yk5qykvhiahzag67gm36s2kplxf6qn5hay02md0nkrcgn6w28"))))
+         "0lj4clb851fzpaq446wgj0sfy922zs5l5misbpwv6w7qrqrz4cjg"))))
     (build-system gnu-build-system)
     (inputs
      `(("zlib" ,zlib)))
     (arguments
      '(#:phases
        (modify-phases %standard-phases
-         ;; configure script does not accept arguments CONFIG_SHELL and SHELL
          (replace 'configure
            (lambda* (#:key outputs #:allow-other-keys)
-             (zero? (system* "sh" "configure"
-                             (string-append "--prefix=" (assoc-ref outputs "out")))))))))
-    (synopsis "Optimizer that recompresses PNG image files to a
-smaller size")
+             ;; configure script doesn't accept arguments CONFIG_SHELL and SHELL
+             (invoke "sh" "configure"
+                     (string-append "--prefix=" (assoc-ref outputs "out")))
+             #t)))))
+    (synopsis "Optimizer that recompresses PNG image files to a smaller size")
     (description "OptiPNG is a PNG optimizer that recompresses image
 files to a smaller size, without losing any information.  This program
 also converts external formats (BMP, GIF, PNM and TIFF) to optimized
@@ -1219,3 +1233,86 @@ medical image data, e.g. magnetic resonance image (MRI) and functional MRI
     (synopsis "Color picker")
     (description "Gpick is an advanced color picker and palette editing tool.")
     (license license:bsd-3)))
+
+(define-public libiptcdata
+  (package
+    (name "libiptcdata")
+    (version "1.0.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/" name "/" name "/"
+                                  version "/" name "-" version ".tar.gz"))
+              (sha256
+               (base32
+                "03pfvkmmx762iydq0q207x2028d275pbdysfsgpmrr0ywy63pxkr"))))
+    (build-system gnu-build-system)
+    (home-page "http://libiptcdata.sourceforge.net/")
+    (synopsis "IPTC metadata manipulation library")
+    (description "Libiptcdata is a C library for manipulating the International
+Press Telecommunications Council (IPTC) metadata stored within multimedia files
+such as images.  This metadata can include captions and keywords, often used by
+popular photo management applications.  The library provides routines for
+parsing, viewing, modifying, and saving this metadata.")
+    (license license:lgpl2.0+)))
+
+(define-public flameshot
+  (package
+    (name "flameshot")
+    (version "0.5.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/lupoDharkael/flameshot/archive/"
+                           "v" version ".tar.gz"))
+       (file-name (string-append name "-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0kp451bqgssvg8n3sg60s3fifplm9l5kxiij0yxkl864p2mhw8im"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("qttools" ,qttools)))
+    (inputs
+     `(("qtbase" ,qtbase)))
+    (arguments
+     `(#:tests? #f ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'configure
+           (lambda* (#:key outputs #:allow-other-keys)
+             (invoke "qmake"
+                     "CONFIG+=packaging"
+                     (string-append "BASEDIR=" (assoc-ref outputs "out"))
+                     "PREFIX=/"))))))
+    (home-page "https://github.com/lupoDharkael/flameshot")
+    (synopsis "Powerful yet simple to use screenshot software")
+    (description "Flameshot is a screenshot program.
+Features:
+
+@itemize
+@item Customizable appearance.
+@item Easy to use.
+@item In-app screenshot edition.
+@item DBus interface.
+@item Upload to Imgur.
+@end itemize\n")
+    (license license:gpl3+)))
+
+(define-public r-jpeg
+  (package
+   (name "r-jpeg")
+   (version "0.1-8")
+   (source
+     (origin
+       (method url-fetch)
+       (uri (cran-uri "jpeg" version))
+       (sha256
+        (base32
+         "05hawv5qcb82ljc1l2nchx1wah8mq2k2kfkhpzyww554ngzbwcnh"))))
+   (build-system r-build-system)
+   (inputs `(("libjpeg" ,libjpeg)))
+   (home-page "http://www.rforge.net/jpeg/")
+   (synopsis "Read and write JPEG images with R")
+   (description "This package provides a way to read, write and display bitmap
+images stored in the JPEG format with R.  It can read and write both files and
+in-memory raw vectors.")
+   (license license:gpl2+)))

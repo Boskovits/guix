@@ -4,11 +4,11 @@
 ;;; Copyright © 2014, 2015, 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2016 Roel Janssen <roel@gnu.org>
-;;; Coypright © 2016 ng0 <ng0@we.make.ritual.n0.is>
-;;; Coypright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Coypright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
-;;; Coypright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
-;;; Coypright © 2016 Julien Lepiller <julien@lepiller.eu>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
+;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2016 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2016 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
@@ -323,7 +323,6 @@ reading and editing of existing PDF files.")
                (base32
                 "0r4viisycj39kaz4281cmkr7n9w5q96dmlf7nf45n8zq8qy2npw3"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (propagated-inputs `(("girara" ,girara)))
     (inputs `(("libarchive" ,libarchive)
               ("zathura" ,zathura)))
     (build-system gnu-build-system)
@@ -353,7 +352,6 @@ using libarchive.")
                (base32
                 "1x4knqja8pw2a5cb3y2209nr3iddj1z8nwasy48v5nprj61fdxqj"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (propagated-inputs `(("girara" ,girara)))
     (inputs `(("libspectre" ,libspectre)
               ("zathura" ,zathura)))
     (build-system gnu-build-system)
@@ -383,7 +381,6 @@ using libspectre.")
                (base32
                 "1sbfdsyp50qc85xc4458sn4w1rv1qbygdwmcr5kjlfpsmdq98vhd"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (propagated-inputs `(("girara" ,girara)))
     (inputs
      `(("djvulibre" ,djvulibre)
        ("zathura" ,zathura)))
@@ -414,7 +411,6 @@ using the DjVuLibre library.")
                (base32
                 "0xkajc3is7ncmb2fmymbzfgrran2bz12i7zsm1vvxhxds728h7ck"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (propagated-inputs `(("girara" ,girara)))
     (inputs
      `(("jbig2dec" ,jbig2dec)
        ("libjpeg" ,libjpeg)
@@ -448,7 +444,6 @@ by using the @code{mupdf} rendering library.")
                (base32
                 "1m55m7s7f8ng8a7lmcw9z4n5zv7xk4vp9n6fp9j84z6rk2imf7a2"))))
     (native-inputs `(("pkg-config" ,pkg-config)))
-    (propagated-inputs `(("girara" ,girara)))
     (inputs
      `(("poppler" ,poppler)
        ("zathura" ,zathura)))
@@ -486,7 +481,7 @@ by using the poppler rendering engine.")
 
                      ;; For tests.
                      ("check" ,check)
-                     ("xorg-server" ,xorg-server)))
+                     ("xorg-server" ,xorg-server-1.19.3)))
     (inputs `(("sqlite" ,sqlite)))
     ;; Listed in 'Requires.private' of 'zathura.pc'.
     (propagated-inputs `(("cairo" ,cairo)
@@ -501,6 +496,7 @@ by using the poppler rendering engine.")
        `(,(string-append "PREFIX=" (assoc-ref %outputs "out"))
          "CC=gcc" "COLOR=0")
        #:test-target "test"
+       #:disallowed-references (,xorg-server-1.19.3)
        #:phases (modify-phases %standard-phases
                   (delete 'configure)
                   (add-before 'check 'start-xserver
@@ -509,6 +505,11 @@ by using the poppler rendering engine.")
                       (let ((xorg-server (assoc-ref inputs "xorg-server"))
                             (display ":1"))
                         (setenv "DISPLAY" display)
+
+                        ;; On busy machines, tests may take longer than
+                        ;; the default of four seconds.
+                        (setenv "CK_DEFAULT_TIMEOUT" "20")
+
                         ;; Don't fail due to missing '/etc/machine-id'.
                         (setenv "DBUS_FATAL_WARNINGS" "0")
                         (zero? (system (string-append xorg-server "/bin/Xvfb "
@@ -572,7 +573,8 @@ extracting content or merging files.")
         (method url-fetch)
         (uri (string-append "https://mupdf.com/downloads/archive/"
                             name "-" version "-source.tar.xz"))
-        (patches (search-patches "mupdf-build-with-latest-openjpeg.patch"))
+        (patches (search-patches "mupdf-build-with-latest-openjpeg.patch"
+                                 "mupdf-CVE-2017-17858.patch"))
         (sha256
          (base32
           "0b9j0gqbc3jhmx87r6idcsh8lnb30840c3hyx6dk2gdjqqh3hysp"))

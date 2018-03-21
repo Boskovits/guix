@@ -44,7 +44,7 @@
 (define-public wget
   (package
     (name "wget")
-    (version "1.19.2")
+    (version "1.19.4")
     (source
      (origin
       (method url-fetch)
@@ -52,7 +52,7 @@
                           version ".tar.lz"))
       (sha256
        (base32
-        "01yzal7xm85543x02bij3capnigr063d6c5vc039f8n5s9d796nm"))))
+        "16jmcqcasx3q9k4azssryli9qyxfq0sfijw998g8zp58cnwzzh1g"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases (modify-phases %standard-phases
@@ -152,21 +152,21 @@ online pastebin services.")
           (zero? (system* "sh" "./bootstrap"
                           "--gnulib-srcdir=gnulib"
                           "--no-git")))))))
-   (inputs `(("autoconf", autoconf)
-             ("automake", automake)
-             ("doxygen", doxygen)
-             ("flex", flex)
-             ("gettext", gettext-minimal)
-             ("gnutls", gnutls/dane)
-             ("libiconv", libiconv)
-             ("libidn2", libidn2)
-             ("libmicrohttpd", libmicrohttpd)
-             ("libpsl", libpsl)
-             ("libtool", libtool)
-             ("pcre2", pcre2)
-             ("python", python)))
+   (inputs `(("autoconf" ,autoconf)
+             ("automake" ,automake)
+             ("doxygen" ,doxygen)
+             ("flex" ,flex)
+             ("gettext" ,gettext-minimal)
+             ("gnutls" ,gnutls/dane)
+             ("libiconv" ,libiconv)
+             ("libidn2" ,libidn2)
+             ("libmicrohttpd" ,libmicrohttpd)
+             ("libpsl" ,libpsl)
+             ("libtool" ,libtool)
+             ("pcre2" ,pcre2)
+             ("python" ,python)))
    ;; TODO: Add libbrotlidec, libnghttp2.
-   (native-inputs `(("pkg-config", pkg-config)))
+   (native-inputs `(("pkg-config" ,pkg-config)))
    (home-page "https://gitlab.com/gnuwget/wget2")
    (synopsis "Successor of GNU Wget")
    (description "GNU Wget2 is the successor of GNU Wget, a file and recursive

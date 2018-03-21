@@ -7,7 +7,7 @@
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Andy Wingo <wingo@igalia.com>
 ;;; Copyright © 2017 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -54,6 +54,7 @@
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gperf)
+  #:use-module (gnu packages gnupg)
   #:use-module (gnu packages gnuzilla)
   #:use-module (gnu packages gstreamer)
   #:use-module (gnu packages gtk)
@@ -189,7 +190,7 @@ into other word processors.")
 (define-public libe-book
   (package
     (name "libe-book")
-    (version "0.1.2")
+    (version "0.1.3")
     (source
       (origin
         (method url-fetch)
@@ -197,7 +198,7 @@ into other word processors.")
                             version "/libe-book-" version ".tar.xz"))
         (sha256
           (base32
-            "1v48pd32r2pfysr3a3igc4ivcf6vvb26jq4pdkcnq75p70alp2bz"))))
+            "1yg1vws1wggzhjw672bpgh2x541g5i9wryf67g51m0r79zrqz3by"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("cppunit" ,cppunit)
@@ -205,6 +206,7 @@ into other word processors.")
        ("pkg-config" ,pkg-config)))
     (propagated-inputs ; in Requires or Requires.private field of .pkg
      `(("icu4c" ,icu4c)
+       ("liblangtag" ,liblangtag)
        ("librevenge" ,librevenge)
        ("libxml2" ,libxml2)))
     (inputs
@@ -294,14 +296,14 @@ as Alfresco or Nuxeo.")
 (define-public libabw
   (package
     (name "libabw")
-    (version "0.1.1")
+    (version "0.1.2")
     (source
      (origin
       (method url-fetch)
-      (uri (string-append "http://dev-www.libreoffice.org/src/" name "/"
+      (uri (string-append "https://dev-www.libreoffice.org/src/" name "/"
                           name "-" version ".tar.xz"))
       (sha256 (base32
-               "0zi1zj4fpxgpglbbb5n1kg3dmhqq5rpf46lli89r5daavp19iing"))))
+               "11949iscdb99f2jplxjd39282jxcrf2fw0sqbh5dl7gqb96r8whb"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -427,7 +429,7 @@ standard 21.0.2.")
       (sha256 (base32
                "1j6sjwkyhqvsgyw938bxxfwkzzi1mahk66g5342lv6j89jfvrz8k"))))
     (build-system gnu-build-system)
-    (home-page "http://www.freedesktop.org/wiki/Software/libexttextcat/")
+    (home-page "https://www.freedesktop.org/wiki/Software/libexttextcat/")
     (synopsis "Text Categorization library")
     (description "Libexttextcat is an N-Gram-Based Text Categorization
 library primarily intended for language guessing.")
@@ -467,14 +469,14 @@ Aldus/Macromedia/Adobe FreeHand documents.")
 (define-public libmspub
   (package
     (name "libmspub")
-    (version "0.1.2")
+    (version "0.1.4")
     (source
      (origin
       (method url-fetch)
-      (uri (string-append "http://dev-www.libreoffice.org/src/" name "/"
+      (uri (string-append "https://dev-www.libreoffice.org/src/" name "/"
                           name "-" version ".tar.xz"))
       (sha256 (base32
-               "03sn6lxpr49sdq6j8q7fw7yjybyfahhs03z80388mh105pwapfmh"))))
+               "1fhkn013gzg59f4z7rldpbi0nj7lgdqzxanspsqa6axvmahw2dpg"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -494,14 +496,14 @@ Microsoft Publisher documents of all versions.")
 (define-public libpagemaker
   (package
     (name "libpagemaker")
-    (version "0.0.3")
+    (version "0.0.4")
     (source
      (origin
       (method url-fetch)
-      (uri (string-append "http://dev-www.libreoffice.org/src/" name "/"
+      (uri (string-append "https://dev-www.libreoffice.org/src/" name "/"
                           name "-" version ".tar.xz"))
       (sha256 (base32
-               "1minj0q14d44qfas81a8lkpgj288h5xlkjp084sfx17xv9axr5nq"))))
+               "17ai8ajffr0ixxmmcv3k5vgjlcsix38ldb4fw2arild70pbsrbb6"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("doxygen" ,doxygen)
@@ -839,22 +841,10 @@ and to return information on pronunciations, meanings and synonyms.")
     (license (non-copyleft "file://COPYING"
                            "See COPYING in the distribution."))))
 
-;; LibreOffice requires an xmlsec source tarball; it does not even check
-;; for the presence of an externally compiled library.
-(define xmlsec-src-libreoffice
-  (origin
-    (method url-fetch)
-    (uri
-      (string-append
-       "http://dev-www.libreoffice.org/src/"
-       "86b1daaa438f5a7bea9a52d7b9799ac0-xmlsec1-1.2.23.tar.gz"))
-    (sha256 (base32
-             "17qfw5crkqn4v6xbkjxrjvcccfc00dy053892wrwv54qdk8n7m21"))))
-
 (define-public libreoffice
   (package
     (name "libreoffice")
-    (version "5.3.7.2")
+    (version "5.4.5.1")
     (source
      (origin
       (method url-fetch)
@@ -863,16 +853,11 @@ and to return information on pronunciations, meanings and synonyms.")
           "https://download.documentfoundation.org/libreoffice/src/"
           (version-prefix version 3) "/libreoffice-" version ".tar.xz"))
       (sha256 (base32
-               "0z7fssp0jcj09wxad1wmhy69n71a2mwl933lxp9dz5sdvzncxmy3"))))
+               "167bh6jgyhfcvn3g7xghkg4nb99h91diypdlry5df21xs8bis5gb"))))
     (build-system gnu-build-system)
     (native-inputs
-     `(;; autoreconf is run by the LibreOffice build system, since after
-       ;; unpacking the external xmlsec tarball, it applies a series of
-       ;; patches to Makefile.am, configure.in, config.guess and config.sub.
-       ("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("bison" ,bison)
-       ("cppunit" ,cppunit)
+     `(("bison" ,bison)
+       ("cppunit" ,cppunit-1.14)
        ("flex" ,flex)
        ("pkg-config" ,pkg-config)
        ("python" ,python-wrapper)
@@ -888,6 +873,7 @@ and to return information on pronunciations, meanings and synonyms.")
        ("glew" ,glew)
        ("glm" ,glm)
        ("gperf" ,gperf)
+       ("gpgme" ,gpgme)
        ("graphite2" ,graphite2)
        ("gst-plugins-base" ,gst-plugins-base)
        ("gtk+" ,gtk+)
@@ -897,12 +883,14 @@ and to return information on pronunciations, meanings and synonyms.")
        ("libabw" ,libabw)
        ("libcdr" ,libcdr)
        ("libcmis" ,libcmis)
-       ("libjpeg" ,libjpeg)
+       ("libjpeg-turbo" ,libjpeg-turbo)
        ("libe-book" ,libe-book)
        ("libetonyek" ,libetonyek)
        ("libexttextcat" ,libexttextcat)
        ("libfreehand" ,libfreehand)
        ("liblangtag" ,liblangtag)
+       ;; XXX: Perhaps this should be propagated from xmlsec.
+       ("libltdl" ,libltdl)
        ("libmspub" ,libmspub)
        ("libmwaw" ,libmwaw)
        ("libodfgen" ,libodfgen)
@@ -935,7 +923,7 @@ and to return information on pronunciations, meanings and synonyms.")
        ("unixodbc" ,unixodbc)
        ("unzip" ,unzip)
        ("vigra" ,vigra)
-       ("xmlsec-src" ,xmlsec-src-libreoffice)
+       ("xmlsec" ,xmlsec-nss)
        ("zip" ,zip)))
     (arguments
      `(#:tests? #f ; Building the tests already fails.
@@ -944,26 +932,33 @@ and to return information on pronunciations, meanings and synonyms.")
          (modify-phases %standard-phases
            (add-before 'configure 'prepare-src
              (lambda* (#:key inputs #:allow-other-keys)
-               (let ((xmlsec (assoc-ref inputs "xmlsec-src")))
+               (let ((gpgme (assoc-ref inputs "gpgme")))
+                 (substitute*
+                   "sdext/source/pdfimport/xpdfwrapper/pdfioutdev_gpl.cxx"
+                   ;; This header was renamed in Poppler 0.62.0.
+                   (("UTF8.h") "UnicodeMapFuncs.h")
+                   ;; And mapUCS2() was renamed to mapUTF16().
+                   (("UCS2") "UTF16"))
                  (substitute*
                    (list "sysui/CustomTarget_share.mk"
                          "solenv/gbuild/gbuild.mk"
                          "solenv/gbuild/platform/unxgcc.mk")
                    (("/bin/sh") (which "sh")))
-                 (mkdir "external/tarballs")
-                 (symlink
-                   xmlsec
-                   (string-append "external/tarballs/"
-                                  "86b1daaa438f5a7bea9a52d7b9799ac0-"
-                                  "xmlsec1-1.2.23.tar.gz"))
-                 ;; The following is required for building xmlsec from the
-                 ;; unpatched external tarball; since "configure" starts with
-                 ;; "/bin/sh", it needs to be executed by a command invoking
-                 ;; the shell.
-                 (setenv "SHELL" (which "bash"))
-                 (setenv "CONFIG_SHELL" (which "bash"))
-                 (substitute* "external/libxmlsec/ExternalProject_xmlsec.mk"
-                   (("./configure") "$(CONFIG_SHELL) ./configure" ))
+
+                 ;; GPGME++ headers are installed in a gpgme++ subdirectory,
+                 ;; but files in "xmlsecurity/source/gpg/" expect to find them
+                 ;; on the include path without a prefix.
+                 (substitute* "xmlsecurity/Library_xsec_xmlsec.mk"
+                   (("\\$\\$\\(INCLUDE\\)")
+                    (string-append "$$(INCLUDE) -I" gpgme "/include/gpgme++")))
+
+                 ;; XXX: When GTK2 is disabled, one header file is not included.
+                 ;; This is likely fixed in later versions.  See also
+                 ;; <https://bugs.gentoo.org/641812>.
+                 (substitute* "vcl/unx/gtk3/gtk3gtkframe.cxx"
+                   (("#include <unx/gtk/gtkgdi.hxx>")
+                    "#include <unx/gtk/gtkgdi.hxx>\n#include <unx/gtk/gtksalmenu.hxx>"))
+
                  #t)))
            (add-after 'install 'bin-and-desktop-install
              ;; Create 'soffice' and 'libreoffice' symlinks to the executable
@@ -1037,6 +1032,10 @@ and to return information on pronunciations, meanings and synonyms.")
           "--disable-coinmp"
           "--disable-firebird-sdbc" ; embedded firebird
           "--disable-gltf"
+          ;; XXX: PDFium support requires fetching an external tarball and
+          ;; patching the build scripts to work with GCC5.  Try enabling this
+          ;; when our default compiler is >=GCC 6.
+          "--disable-pdfium"
           "--disable-gtk" ; disable use of GTK+ 2
           "--without-doxygen")))
     (home-page "https://www.libreoffice.org/")

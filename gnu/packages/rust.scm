@@ -1,10 +1,11 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 Eric Le Bihan <eric.le.bihan.dev@free.fr>
-;;; Copyright © 2016 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017 Nikolai Merinov <nikolai.merinov@member.fsf.org>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -89,7 +90,8 @@
 
 (define* (cargo-version rustc-version #:optional (patch 0))
   ;; Computes the cargo version that matches the rustc version.
-  ;; https://github.com/rust-lang/cargo#Releases
+  ;; This has so far continued to follow a predictable pattern:
+  ;; https://github.com/rust-lang/cargo/blob/50a46f47/README.md#releases
   (increment-rust-version rustc-version 0 patch))
 
 (define* (rustc-version bootstrap-version #:optional (patch 0))

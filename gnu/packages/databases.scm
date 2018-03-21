@@ -3,33 +3,35 @@
 ;;; Copyright © 2012, 2013, 2014, 2015, 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2013, 2017 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2014, 2016 David Thompson <davet@gnu.org>
-;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
+;;; Copyright © 2014, 2015, 2016, 2018 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2015 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016 Sou Bunnbu <iyzsong@gmail.com>
 ;;; Copyright © 2015 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2015 Eric Dvorsak <eric@dvorsak.fr>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016, 2017 Roel Janssen <roel@gnu.org>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
 ;;; Copyright © 2016 Andy Patterson <ajpatter@uwaterloo.ca>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
-;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2016, 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Julien Lepiller <julien@lepiller.eu>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Jelle Licht <jlicht@fsfe.org>
 ;;; Copyright © 2017 Adriano Peluso <catonano@gmail.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Ben Woodcroft <donttrustben@gmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Kristofer Buffington <kristoferbuffington@gmail.com>
+;;; Copyright © 2018 Amirouche Boubekki <amirouche@hypermove.net>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -48,6 +50,7 @@
 
 (define-module (gnu packages databases)
   #:use-module (gnu packages)
+  #:use-module (gnu packages admin)
   #:use-module (gnu packages algebra)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages avahi)
@@ -56,6 +59,7 @@
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
+  #:use-module (gnu packages cmake)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages curl)
@@ -66,6 +70,7 @@
   #:use-module (gnu packages gnupg)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages time)
+  #:use-module (gnu packages golang)
   #:use-module (gnu packages jemalloc)
   #:use-module (gnu packages language)
   #:use-module (gnu packages libevent)
@@ -85,14 +90,18 @@
   #:use-module (gnu packages serialization)
   #:use-module (gnu packages statistics)
   #:use-module (gnu packages tcl)
+  #:use-module (gnu packages terminals)
+  #:use-module (gnu packages textutils)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages valgrind)
+  #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system go)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (guix build-system ruby)
@@ -111,7 +120,7 @@
     (version "1.1.6")
     (source (origin
       (method url-fetch)
-      (uri (string-append "https://github.com/garlik/4store/archive/v"
+      (uri (string-append "https://github.com/4store/4store/archive/v"
                           version ".tar.gz"))
       (file-name (string-append name "-" version ".tar.gz"))
       (sha256
@@ -144,7 +153,7 @@
            (lambda _
              (zero? (system* "sh" "autogen.sh")))))))
     ;; http://www.4store.org has been down for a while now.
-    (home-page "https://github.com/garlik/4store")
+    (home-page "https://github.com/4store/4store")
     (synopsis "Clustered RDF storage and query engine")
     (description "4store is a RDF/SPARQL store written in C, supporting
 either single machines or networked clusters.")
@@ -171,6 +180,50 @@ either single machines or networked clusters.")
 store key/value pairs in a file in a manner similar to the Unix dbm library
 and provides interfaces to the traditional file format.")
     (license license:gpl3+)))
+
+(define-public go-gopkg.in-mgo.v2
+  (package
+    (name "go-gopkg.in-mgo.v2")
+    (version "2016.08.01")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/go-mgo/mgo")
+                    (commit (string-append "r" version))))
+              (file-name (git-file-name name version))
+              (sha256
+               (base32
+                "0rwbi1z63w43b0z9srm8m7iz1fdwx7bq7n2mz862d6liiaqa59jd"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "gopkg.in/mgo.v2"
+       ;; TODO: The tests fail as MongoDB fails to start
+       ;; Error parsing command line: unrecognised option '--chunkSize'
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'reset-gzip-timestamps)
+         (add-before 'check 'start-mongodb
+           (lambda* (#:key tests? #:allow-other-keys)
+             (or (not tests?)
+                 (with-directory-excursion "src/gopkg.in/mgo.v2"
+                   (invoke "make" "startdb")))))
+         (add-after 'check 'stop'mongodb
+           (lambda* (#:key tests? #:allow-other-keys)
+             (or (not tests?)
+                 (with-directory-excursion "src/gopkg.in/mgo.v2"
+                   (invoke "make" "stopdb"))))))))
+    (native-inputs
+     `(("go-gopkg.in-check.v1" ,go-gopkg.in-check.v1)
+       ("mongodb" ,mongodb)
+       ("daemontools" ,daemontools)))
+    (synopsis "@code{mgo} offers a rich MongoDB driver for Go.")
+    (description
+     "@code{mgo} (pronounced as mango) is a MongoDB driver for the Go language.
+It implements a rich selection of features under a simple API following
+standard Go idioms.")
+    (home-page "http://labix.org/mgo")
+    (license license:bsd-2)))
 
 (define-public bdb
   (package
@@ -290,18 +343,7 @@ SQL, Key/Value, XML/XQuery or Java Object storage for their data model.")
          "020yk7f1hw48clmf5501z3xv9shsdchyymcv0y2cci2c1xvr1mim"))))
     (build-system ruby-build-system)
     (arguments
-     '(#:tests? #f ;; No testsuite.
-       #:phases
-       (modify-phases %standard-phases
-         (add-after 'install 'wrap-bin-es_dump_restore
-           (lambda* (#:key outputs #:allow-other-keys)
-             (wrap-program (string-append (assoc-ref outputs "out")
-                                          "/bin/es_dump_restore")
-               `("GEM_PATH" ":" prefix (,(string-append
-                                          (getenv "GEM_PATH")
-                                          ":"
-                                          (getenv "GEM_HOME")))))
-             #t)))))
+     '(#:tests? #f)) ;; No testsuite.
     (propagated-inputs
      `(("ruby-httpclient" ,ruby-httpclient)
        ("ruby-multi-json" ,ruby-multi-json)
@@ -357,14 +399,15 @@ mapping from string keys to string values.")
 (define-public memcached
   (package
     (name "memcached")
-    (version "1.5.0")
+    (version "1.5.6")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
              "https://memcached.org/files/memcached-" version ".tar.gz"))
        (sha256
-        (base32 "0chwc0g7wfvcad36z8pf2jbgygdnm9nm1l6pwjsn3d2b089gh0f0"))))
+        (base32
+         "00szy9d4szaixi260dcd4846zci04y0sd47ia2lzg0bxkn2ywxcn"))))
     (build-system gnu-build-system)
     (inputs
      `(("libevent" ,libevent)
@@ -474,8 +517,8 @@ applications.")
                    ;; individual executable files, with some being hundreds of
                    ;; megabytes in size.
                    (begin
-		     (apply
-                      invoke `("scons" ,@common-options "dbtest" "unittests"))
+                     (apply
+                       invoke `("scons" ,@common-options "dbtest" "unittests"))
                      (substitute* "build/unittests.txt"
                        ;; TODO: Don't run the async_stream_test, as it hangs
                        (("^build\\/opt\\/mongo\\/executor\\/async\\_stream\\_test\n$")
@@ -484,8 +527,8 @@ applications.")
                        ;; Expected 0UL != disks.size() (0 != 0) @src/mongo/util/procparser_test.cpp:476
                        (("^build\\/opt\\/mongo\\/util\\/procparser\\_test\n$")
                         ""))
-		     (invoke "python" "buildscripts/resmoke.py"
-			     "--suites=dbtest,unittests"
+                     (invoke "python" "buildscripts/resmoke.py"
+                             "--suites=dbtest,unittests"
                              (format #f  "--jobs=~a" (parallel-job-count)))))))
            (replace 'install
              (lambda _
@@ -508,7 +551,7 @@ RDBMS systems (which are deep in functionality).")
 (define-public mysql
   (package
     (name "mysql")
-    (version "5.7.20")
+    (version "5.7.21")
     (source (origin
              (method url-fetch)
              (uri (list (string-append
@@ -520,7 +563,7 @@ RDBMS systems (which are deep in functionality).")
                           name "-" version ".tar.gz")))
              (sha256
               (base32
-               "11v4g3igigv3zvknv67qml8in6fjrbs2vnr3q6bg6f62nydm95sk"))))
+               "1dq9bgnajf7cq3mrjkwv6w5nwslhs26lkrw56i7w4fbsq9wm087s"))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags
@@ -660,14 +703,14 @@ as a drop-in replacement of MySQL.")
 (define-public postgresql
   (package
     (name "postgresql")
-    (version "10.1")
+    (version "10.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://ftp.postgresql.org/pub/source/v"
                                   version "/postgresql-" version ".tar.bz2"))
               (sha256
                (base32
-                "04z7lm4h94625vbncwv98svycqr942n3q47ailqaczkszqjlxjrw"))))
+                "06lkcwsf851z49zqcws5yc77s2yrbaazf2nvbk38hpp31rw6i8kf"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags '("--with-uuid=e2fs")
@@ -705,14 +748,14 @@ pictures, sounds, or video.")
   (package
     (inherit postgresql)
     (name "postgresql")
-    (version "9.6.6")
+    (version "9.6.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://ftp.postgresql.org/pub/source/v"
                                   version "/postgresql-" version ".tar.bz2"))
               (sha256
                (base32
-                "0m417h30s18rwa7yzkqqcdb22ifpcda2fpg2cyx8bxvjp3ydz71r"))))))
+                "0w7bwf19wbdd3jjbjv03cnx56qka4801srcbsayk9v792awv7zga"))))))
 
 (define-public qdbm
   (package
@@ -801,7 +844,7 @@ types are supported, as is encryption.")
 (define-public rocksdb
   (package
     (name "rocksdb")
-    (version "5.2.1")
+    (version "5.10.4")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/facebook/rocksdb"
@@ -809,18 +852,28 @@ types are supported, as is encryption.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1v2q05bl56sfp51m09z7g6489hkfq4vf6b4qgfg3d96ylgmay9yb"))
+                "0hp7jxr99vyc57n708hiqk4lks9a9zmjgfjc21mx6v1rmabj2944"))
               (modules '((guix build utils)))
               (snippet
                '(begin
                   ;; TODO: unbundle gtest.
                   (delete-file "build_tools/gnu_parallel")
+                  (substitute* "Makefile"
+                    (("build_tools/gnu_parallel") "parallel"))
                   #t))))
     (build-system gnu-build-system)
     (arguments
-     `(#:make-flags (list "CC=gcc"
+     `(#:make-flags (list "CC=gcc" "V=1"
+                          ;; Ceph requires that RTTI is enabled.
+                          "USE_RTTI=1"
                           (string-append "INSTALL_PATH="
-                                         (assoc-ref %outputs "out")))
+                                         (assoc-ref %outputs "out"))
+
+                          ;; Running the full test suite takes hours and require
+                          ;; a lot of disk space.  Instead we only run a subset
+                          ;; (see .travis.yml and Makefile).
+                          "ROCKSDBTESTS_END=db_tailing_iter_test")
+       #:test-target "check_some"
        ;; Many tests fail on 32-bit platforms. There are multiple reports about
        ;; this upstream, but it's not going to be supported any time soon.
        #:tests? (let ((system ,(or (%current-target-system)
@@ -832,7 +885,6 @@ types are supported, as is encryption.")
          (add-after 'unpack 'patch-Makefile
            (lambda _
              (substitute* "Makefile"
-               (("build_tools/gnu_parallel") "parallel")
                ;; Don't depend on the static library when installing.
                (("install: install-static")
                 "install: install-shared")
@@ -849,20 +901,20 @@ types are supported, as is encryption.")
          (add-before 'check 'disable-failing-tests
            (lambda _
              (substitute* "Makefile"
-               ;; This test fails with GCC-5 and is unmaintained.
-               ;; https://github.com/facebook/rocksdb/issues/2148
-               (("^[[:blank:]]+spatial_db_test[[:blank:]]+\\\\") "\\")
                ;; These tests reliably fail due to "Too many open files".
                (("^[[:blank:]]+env_test[[:blank:]]+\\\\") "\\")
                (("^[[:blank:]]+persistent_cache_test[[:blank:]]+\\\\") "\\"))
              #t))
-         (add-after 'check 'build-release-libraries
+         (add-after 'check 'build
            ;; The default build target is a debug build for tests. The
-           ;; install target depends on "shared_lib" and "static_lib"
-           ;; targets for release builds so we build them here for clarity.
-           ;; TODO: Add debug output.
-           (lambda* (#:key (make-flags '()) #:allow-other-keys)
-             (zero? (apply system* "make" "shared_lib" make-flags)))))))
+           ;; install target depends on the "shared_lib" release target
+           ;; so we build it here for clarity.
+           (lambda* (#:key (make-flags '()) parallel-build? #:allow-other-keys)
+               (apply invoke "make" "shared_lib"
+                      `(,@(if parallel-build?
+                              `("-j" ,(number->string (parallel-job-count)))
+                              '())
+                        ,@make-flags)))))))
     (native-inputs
      `(("parallel" ,parallel)
        ("perl" ,perl)
@@ -886,8 +938,9 @@ between @dfn{Write-Amplification-Factor} (WAF), @dfn{Read-Amplification-Factor}
 (RAF) and @dfn{Space-Amplification-Factor} (SAF).  It has multi-threaded
 compactions, making it specially suitable for storing multiple terabytes of
 data in a single database.  RocksDB is partially based on @code{LevelDB}.")
-    ;; RocksDB is BSD-3 and the JNI adapter is Apache 2.0.
-    (license (list license:bsd-3 license:asl2.0))))
+    ;; RocksDB is dual licensed under GPL2 and ASL 2.0.  Some header
+    ;; files carry the 3-clause BSD license.
+    (license (list license:gpl2 license:asl2.0 license:bsd-3))))
 
 (define-public sparql-query
   (package
@@ -988,6 +1041,15 @@ zero-configuration, transactional SQL database engine.  SQLite is the most
 widely deployed SQL database engine in the world.  The source code for SQLite
 is in the public domain.")
    (license license:public-domain)))
+
+;; This is used by Tracker.
+(define-public sqlite-with-fts5
+  (package (inherit sqlite)
+    (name "sqlite-with-fts5")
+    (arguments
+     (substitute-keyword-arguments (package-arguments sqlite)
+       ((#:configure-flags flags)
+        `(cons "--enable-fts5" ,flags))))))
 
 ;; This is used by Clementine.
 (define-public sqlite-with-fts3
@@ -1225,7 +1287,7 @@ columns, primary keys, unique constraints and relationships.")
 (define-public perl-dbd-pg
   (package
     (name "perl-dbd-pg")
-    (version "3.7.0")
+    (version "3.7.4")
     (source
      (origin
        (method url-fetch)
@@ -1233,7 +1295,7 @@ columns, primary keys, unique constraints and relationships.")
                            "DBD-Pg-" version ".tar.gz"))
        (sha256
         (base32
-         "0nb4wmkhq1q9f4g42sxy1m3d0xjqd3plqkxpmzni43ygr5ch8vp3"))))
+         "0gkqlvbmzbdm0g4k328nlkjdg3wrjm5i2n9jxj1i8sqxkm79rylz"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-dbi" ,perl-dbi)))
@@ -1297,7 +1359,7 @@ module, and nothing else.")
 (define-public perl-sql-abstract
   (package
     (name "perl-sql-abstract")
-    (version "1.84")
+    (version "1.85")
     (source
      (origin
        (method url-fetch)
@@ -1305,7 +1367,7 @@ module, and nothing else.")
                            "SQL-Abstract-" version ".tar.gz"))
        (sha256
         (base32
-         "0xayvgv6nic61jm3nhg41rzwgm8h83wfyazvpaks0z7asjillpv5"))))
+         "1aycggrvppy2zgkwwn85jkdz93n5gsx4dambrjk67k5067hayi4z"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-module-install" ,perl-module-install)
@@ -1549,19 +1611,19 @@ trees (LSM), for sustained throughput under random insert workloads.")
 (define-public guile-wiredtiger
   (package
     (name "guile-wiredtiger")
-    (version "20171113.6cbc51da")
+    (version "0.6.3")
     (source (origin
               (method git-fetch)
               (uri (git-reference
                     (url "https://framagit.org/a-guile-mind/guile-wiredtiger.git")
-                    (commit "6cbc51dab95d28fe31ae025fbdd88f3ecbf2111b")))
+                    (commit "070ed68139d99c279f058a6c293f00292d35dbd7")))
               (file-name (string-append name "-" version "-checkout"))
               (sha256
                (base32
-                "0x3qwpgch5pg0k21kc792h4y6b36a8xd1zkfq8ar2l2mqmpzkzyd"))))
+                "14rna97wsylajzxfif95wnblq85csgcfc666gh5dl0ssgd7x8llh"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:tests? #f
+     '(#:parallel-tests? #f  ;; tests can't be run in parallel, yet.
        #:configure-flags
        (list (string-append "--with-libwiredtiger-prefix="
                             (assoc-ref %build-inputs "wiredtiger")))
@@ -1570,15 +1632,9 @@ trees (LSM), for sustained throughput under random insert workloads.")
        (modify-phases %standard-phases
          (add-after 'unpack 'bootstrap
            (lambda _
-             (zero? (system* "sh" "bootstrap"))))
-         (add-before 'bootstrap 'remove-bundled-dependencies
-           (lambda _
-             ;; TODO: Remove microkanren.scm when we have a separate package
-             ;; for it.
-             (delete-file "htmlprag.scm")
-             (substitute* "Makefile.am"
-               (("htmlprag\\.scm") ""))
-             #t)))))
+             (invoke "sh" "bootstrap"))))))
+    ;; TODO: Remove microkanren.scm when we have a separate package
+    ;; for it.
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)
@@ -1588,10 +1644,10 @@ trees (LSM), for sustained throughput under random insert workloads.")
        ("guile" ,guile-2.2)))
     (propagated-inputs
      `(("guile-lib" ,guile-lib)))                 ;for (htmlprag)
-    (synopsis "Wired Tiger bindings for GNU Guile")
+    (synopsis "WiredTiger bindings for GNU Guile")
     (description
      "This package provides Guile bindings to the WiredTiger ``NoSQL''
-database.")
+database.  Various higher level database abstractions.")
     (home-page "https://framagit.org/a-guile-mind/guile-wiredtiger")
     (license license:gpl3+)))
 
@@ -2000,14 +2056,14 @@ and web services platform functionality.")
 (define-public r-rmysql
   (package
     (name "r-rmysql")
-    (version "0.10.13")
+    (version "0.10.14")
     (source
      (origin
        (method url-fetch)
        (uri (cran-uri "RMySQL" version))
        (sha256
         (base32
-         "1j0vr2l4s02cg2hzgr3pla96pjj4h85sxw28lidy58rg5awnsf82"))))
+         "01891kn263b02y6addgpy3gn5axg7m10bqbqv7dg9yx9k85am590"))))
     (properties `((upstream-name . "RMySQL")))
     (build-system r-build-system)
     (native-inputs
@@ -2198,17 +2254,21 @@ SQLAlchemy Database Toolkit for Python.")
 (define-public python-pickleshare
   (package
     (name "python-pickleshare")
-    (version "0.5")
+    (version "0.7.4")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://pypi.python.org/packages/source/p/"
-                           "pickleshare/pickleshare-" version ".tar.gz"))
+       (uri (pypi-uri "pickleshare" version))
        (sha256
-        (base32 "11ljr90j3p6qswdrbl7p4cjb2i93f6vn0vx9anzpshsx0d2mggn0"))))
+        (base32 "0yvk14dzxk7g6qpr7iw23vzqbsr0dh4ij4xynkhnzpfz4xr2bac4"))))
     (build-system python-build-system)
-    (propagated-inputs
-     `(("python-pathpy" ,python-pathpy)))
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (replace 'check
+                    (lambda _
+                      (invoke "pytest"))))))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)))
     (home-page "https://github.com/vivainio/pickleshare")
     (synopsis "Tiny key value database with concurrency support")
     (description
@@ -2219,10 +2279,15 @@ value in database is immediately visible to other processes accessing the same
 database.  Concurrency is possible because the values are stored in separate
 files.  Hence the “database” is a directory where all files are governed by
 PickleShare.")
+    (properties `((python2-variant . ,(delay python2-pickleshare))))
     (license license:expat)))
 
 (define-public python2-pickleshare
-  (package-with-python2 python-pickleshare))
+  (let ((pickleshare (package-with-python2
+                      (strip-python2-variant python-pickleshare))))
+    (package (inherit pickleshare)
+      (propagated-inputs `(("python2-pathlib2" ,python2-pathlib2)
+                           ,@(package-propagated-inputs pickleshare))))))
 
 (define-public python-apsw
   (package
@@ -2233,30 +2298,31 @@ PickleShare.")
         (method url-fetch)
         (uri (string-append "https://github.com/rogerbinns/apsw/archive/"
                             version ".tar.gz"))
+        (file-name (string-append "apsw-" version ".tar.gz"))
         (sha256
           (base32
            "00ai7m2pqi26qaflhz314d8k5i3syw7xzr145fhfl0crhyh6adz2"))))
     (build-system python-build-system)
     (inputs
-      `(("sqlite" ,sqlite)))
+     `(("sqlite" ,sqlite)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
          (replace 'build
            (lambda _
-             (zero?
-              (system* "python" "setup.py" "build" "--enable-all-extensions"))))
+             (invoke "python" "setup.py" "build" "--enable-all-extensions")
+             #t))
          (add-after 'build 'build-test-helper
            (lambda _
-             (zero?
-              (system
-               (string-append "gcc -fPIC -shared -o ./testextension.sqlext "
-                              "-I. -Isqlite3 src/testextension.c") ))))
+             (invoke "gcc" "-fPIC" "-shared" "-o" "./testextension.sqlext"
+                     "-I." "-Isqlite3" "src/testextension.c")
+             #t))
          (delete 'check)
          (add-after 'install 'check
            (lambda* (#:key inputs outputs #:allow-other-keys)
              (add-installed-pythonpath inputs outputs)
-             (zero? (system* "python" "setup.py" "test")))))))
+             (invoke "python" "setup.py" "test")
+             #t)))))
     (home-page "https://github.com/rogerbinns/apsw/")
     (synopsis "Another Python SQLite Wrapper")
     (description "APSW is a Python wrapper for the SQLite
@@ -2572,3 +2638,223 @@ transforms idiomatic python function calls to well-formed SQL queries.")
 
 (define-public python2-sql
   (package-with-python2 python-sql))
+
+(define-public mongo-tools
+  (package
+    (name "mongo-tools")
+    (version "3.4.0")
+    (source
+     (origin (method git-fetch)
+             (uri (git-reference
+                   (url "https://github.com/mongodb/mongo-tools")
+                   (commit (string-append "r" version))))
+             (file-name (git-file-name name version))
+             (sha256
+              (base32
+               "1bcsz5cvj39a7nsxsfqmz9igrw33j6yli9kffigqyscs52amw7x1"))))
+    (build-system go-build-system)
+    (arguments
+     `(#:import-path "github.com/mongodb/mongo-tools"
+       #:modules ((srfi srfi-1)
+                  (guix build go-build-system)
+                  (guix build utils))
+       #:phases
+       (let ((all-tools
+              '("bsondump" "mongodump" "mongoexport" "mongofiles"
+                "mongoimport" "mongooplog" "mongorestore"
+                "mongostat" "mongotop")))
+         (modify-phases %standard-phases
+           (add-after 'unpack 'delete-bundled-source-code
+             (lambda _
+               (delete-file-recursively
+                "src/github.com/mongodb/mongo-tools/vendor")
+               #t))
+           ;; We don't need to install the source code for end-user applications
+           (delete 'install-source)
+           (replace 'build
+             (lambda _
+               (every (lambda (tool)
+                        (let ((command
+                               `("go" "build"
+                                 ;; This is where the tests expect to find the
+                                 ;; executables
+                                 "-o" ,(string-append
+                                        "src/github.com/mongodb/mongo-tools/bin/"
+                                        tool)
+                                 "-v"
+                                 "-tags=\"ssl sasl\""
+                                 "-ldflags"
+                                 "-extldflags=-Wl,-z,now,-z,relro"
+                                 ,(string-append
+                                   "src/github.com/mongodb/mongo-tools/"
+                                   tool "/main/" tool ".go"))))
+                          (simple-format #t "build: running ~A\n"
+                                         (string-join command))
+                          (apply invoke command)))
+                      all-tools)))
+           (replace 'check
+             (lambda _
+               (with-directory-excursion "src"
+                 (every (lambda (tool)
+                          (invoke
+                           "go" "test" "-v"
+                           (string-append "github.com/mongodb/mongo-tools/" tool)))
+                        all-tools))))
+           (replace 'install
+             (lambda* (#:key outputs #:allow-other-keys)
+               (for-each (lambda (tool)
+                           (install-file
+                            (string-append "src/github.com/mongodb/mongo-tools/bin/" tool)
+                            (string-append (assoc-ref outputs "out")
+                                           "/bin")))
+                         all-tools)))))))
+    (native-inputs
+     `(("go-github.com-howeyc-gopass" ,go-github.com-howeyc-gopass)
+       ("go-github.com-jessevdk-go-flags" ,go-github.com-jessevdk-go-flags)
+       ("go-golang.org-x-crypto-ssh-terminal" ,go-golang.org-x-crypto-ssh-terminal)
+       ("go-gopkg.in-mgo.v2" ,go-gopkg.in-mgo.v2)
+       ("go-gopkg.in-tomb.v2" ,go-gopkg.in-tomb.v2)
+       ("go-github.com-nsf-termbox-go" ,go-github.com-nsf-termbox-go)
+       ("go-github.com-smartystreets-goconvey" ,go-github.com-smartystreets-goconvey)))
+    (home-page "https://github.com/mongodb/mongo-tools")
+    (synopsis "Various tools for interacting with MongoDB and BSON")
+    (description
+     "This package includes a collection of tools related to MongoDB.
+@table @code
+@item bsondump
+Display BSON files in a human-readable format
+@item mongoimport
+Convert data from JSON, TSV or CSV and insert them into a collection
+@item mongoexport
+Write an existing collection to CSV or JSON format
+@item mongodump/mongorestore
+Dump MongoDB backups to disk in the BSON format
+@item mongorestore
+Read MongoDB backups in the BSON format, and restore them to a live database
+@item mongostat
+Monitor live MongoDB servers, replica sets, or sharded clusters
+@item mongofiles
+Read, write, delete, or update files in GridFS
+@item mongooplog
+Replay oplog entries between MongoDB servers
+@item mongotop
+Monitor read/write activity on a mongo server
+@end table")
+    (license license:asl2.0)))
+
+(define-public apache-arrow
+  (package
+    (name "apache-arrow")
+    (version "0.7.0")
+    (source
+      (origin
+        (method git-fetch)
+        (uri (git-reference
+               (url "https://github.com/apache/arrow")
+               (commit (string-append "apache-arrow-" version))))
+        (file-name (git-file-name name version))
+        (sha256
+          (base32
+            "1x7sdd8lbs3nfqjql1pcgbkjc19bls56zmgjayshkmablvlc4dy3"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'enter-source-directory
+           (lambda _ (chdir "cpp") #t))
+         (add-after 'unpack 'set-env
+           (lambda _
+             (setenv "BOOST_ROOT" (assoc-ref %build-inputs "boost"))
+             (setenv "BROTLI_HOME" (assoc-ref %build-inputs "brotli"))
+             (setenv "FLATBUFFERS_HOME" (assoc-ref %build-inputs "flatbuffers"))
+             (setenv "JEMALLOC_HOME" (assoc-ref %build-inputs "jemalloc"))
+             (setenv "RAPIDJSON_HOME" (assoc-ref %build-inputs "rapidjson"))
+             #t)))
+       #:build-type "Release"
+       #:configure-flags
+       (list "-DARROW_PYTHON=ON"
+
+             ;; Install to PREFIX/lib (the default is
+             ;; PREFIX/lib64).
+             (string-append "-DCMAKE_INSTALL_LIBDIR="
+                            (assoc-ref %outputs "out")
+                            "/lib")
+
+             ;; XXX These Guix package offer static
+             ;; libraries that are not position independent,
+             ;; and ld fails to link them into the arrow .so
+             "-DARROW_WITH_SNAPPY=OFF"
+             "-DARROW_WITH_ZLIB=OFF"
+             "-DARROW_WITH_ZSTD=OFF"
+             "-DARROW_WITH_LZ4=OFF"
+
+             ;; Building the tests forces on all the
+             ;; optional features and the use of static
+             ;; libraries.
+             "-DARROW_BUILD_TESTS=OFF"
+             "-DARROW_BUILD_STATIC=OFF")))
+    (inputs
+     `(("boost" ,boost)
+       ("rapidjson" ,rapidjson)
+       ("brotli" ,google-brotli)
+       ("flatbuffers" ,flatbuffers)
+       ;; Arrow is not yet compatible with jemalloc >= 5:
+       ;; https://issues.apache.org/jira/browse/ARROW-1141
+       ("jemalloc" ,jemalloc-4.5.0)
+       ("python-3" ,python)
+       ("python-numpy" ,python-numpy)))
+    (home-page "https://arrow.apache.org/")
+    (synopsis "Columnar in-memory analytics")
+    (description "Apache Arrow is a columnar in-memory analytics layer
+designed to accelerate big data. It houses a set of canonical in-memory
+representations of flat and hierarchical data along with multiple
+language-bindings for structure manipulation. It also provides IPC and common
+algorithm implementations.")
+    (license license:asl2.0)))
+
+(define-public python-pyarrow
+  (package
+    (name "python-pyarrow")
+    (version "0.7.0")
+    (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/apache/arrow")
+             (commit (string-append "apache-arrow-" version))))
+       (file-name (git-file-name name version))
+       (sha256
+         (base32
+           "1x7sdd8lbs3nfqjql1pcgbkjc19bls56zmgjayshkmablvlc4dy3"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f ; XXX Test failures related to missing libhdfs, libhdfs3,
+                   ; and "Unsupported numpy type 22".
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'enter-source-directory
+           (lambda _ (chdir "python") #t))
+         (add-after 'unpack 'set-env
+           (lambda _
+             (setenv "ARROW_HOME" (assoc-ref %build-inputs "apache-arrow"))
+             #t)))))
+    (propagated-inputs
+     `(("apache-arrow" ,apache-arrow)
+       ("python-numpy" ,python-numpy)
+       ("python-pandas" ,python-pandas)
+       ("python-six" ,python-six)))
+    (native-inputs
+     `(("cmake" ,cmake)
+       ("python-cython" ,python-cython)
+       ("python-pytest" ,python-pytest)
+       ("python-setuptools-scm" ,python-setuptools-scm)))
+    (home-page "https://arrow.apache.org/docs/python/")
+    (synopsis "Python bindings for Apache Arrow")
+    (description "This library provides a Pythonic API wrapper for the reference
+Arrow C++ implementation, along with tools for interoperability with pandas,
+NumPy, and other traditional Python scientific computing packages.")
+    (license license:asl2.0)))
+
+(define-public python2-pyarrow
+  (package-with-python2 python-pyarrow))

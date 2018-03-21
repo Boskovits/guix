@@ -1,18 +1,19 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2013, 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
-;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 Christopher Baines <mail@cbaines.net>
 ;;; Copyright © 2016 Mike Gerwitz <mtg@gnu.org>
 ;;; Copyright © 2016 Troy Sankey <sankeytms@gmail.com>
 ;;; Copyright © 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Petter <petter@mykolab.ch>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -213,14 +214,14 @@ compatible to GNU Pth.")
 (define-public gnupg
   (package
     (name "gnupg")
-    (version "2.2.4")
+    (version "2.2.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://gnupg/gnupg/gnupg-" version
                                   ".tar.bz2"))
               (sha256
                (base32
-                "1v7j8v2ww1knknbrhw3svfrqkmf9ll58iq0dczbsdpqgg1j3w6j0"))))
+                "0mzgibq4dpxh3i9anmwg12xdjry28y83icafhx3j3djg5niqk89z"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -359,7 +360,7 @@ libskba (working with X.509 certificates and CMS data).")
 (define-public gpgme
   (package
     (name "gpgme")
-    (version "1.9.0")
+    (version "1.10.0")
     (source
      (origin
       (method url-fetch)
@@ -367,7 +368,7 @@ libskba (working with X.509 certificates and CMS data).")
                           ".tar.bz2"))
       (sha256
        (base32
-        "1ssc0gs02r4fasabk7c6v6r865k2j02mpb5g1vkpbmzsigdzwa8v"))))
+        "14q619lxbk64vz7lih5gjb928qm28jrnn1h3yhsrrff3jw8yv3qs"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("gnupg" ,gnupg)))
@@ -376,15 +377,6 @@ libskba (working with X.509 certificates and CMS data).")
      `(("libgpg-error" ,libgpg-error)))
     (inputs
      `(("libassuan" ,libassuan)))
-    (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         (add-after 'configure 'patch-cmake-file
-           (lambda _
-             ;; Work around <https://bugs.gnupg.org/gnupg/issue2877>.
-             (substitute* "lang/cpp/src/GpgmeppConfig.cmake.in"
-               (("@libsuffix@") ".so"))
-             #t)))))
     (home-page "https://www.gnupg.org/related_software/gpgme/")
     (synopsis "Library providing simplified access to GnuPG functionality")
     (description
@@ -626,7 +618,7 @@ PGP keysigning parties.")
                      "1n5bpcfpl9vg1xp6r1jhbyahrgdyxp05b5pria1rh4m0qnv8sifr"))))
    (build-system gnu-build-system)
    (native-inputs
-    `(("autoconf" ,(autoconf-wrapper))
+    `(("autoconf" ,autoconf-wrapper)
       ("automake" ,automake)))
    (inputs `(("perl" ,perl)
              ("perl-text-template" ,perl-text-template)
@@ -937,3 +929,58 @@ keyring content.  Parcimonie is a daemon that fetches one key at a time using
 the Tor network, waits a bit, changes the Tor circuit being used, and starts
 over.")
     (license license:gpl1+)))
+
+(define-public jetring
+  (package
+    (name "jetring")
+    (version "0.25")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "mirror://debian/pool/main/j/" name "/"
+                            name "_" version ".tar.xz"))
+        (sha256
+         (base32
+          "0shcnnw0h31b08vmnvf18ni33dg40w18wv9smb69vkklz3h4jhpw"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (delete 'configure) ; no configure script
+         (add-before 'install 'hardlink-gnupg
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((gpg (string-append (assoc-ref inputs "gnupg")
+                                       "/bin/gpg")))
+               (substitute* (find-files "." "jetring-[[:alpha:]]+$")
+                 (("gpg -") (string-append gpg " -"))
+                 (("\\\"gpg\\\"") (string-append "\"" gpg "\"")))
+               #t)))
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (man (string-append out "/share/man")))
+               (for-each (lambda (file)
+                           (install-file file (string-append out "/bin/")))
+                         (find-files "." "jetring-[[:alpha:]]+$"))
+               (for-each (lambda (file)
+                           (install-file file (string-append man "/man1/")))
+                         (find-files "." ".*\\.1$"))
+               (install-file "jetring.7" (string-append man "/man7/"))
+               #t))))
+       #:tests? #f)) ; no test phase
+    (inputs
+     `(("gnupg" ,gnupg)
+       ("perl" ,perl)))
+    (home-page "https://joeyh.name/code/jetring/")
+    (synopsis "GnuPG keyring maintenance using changesets")
+    (description
+     "Jetring is a collection of tools that allow for gpg keyrings to be
+maintained using changesets.  It was developed with the Debian keyring in mind,
+and aims to solve the problem that a gpg keyring is a binary blob that's hard
+for multiple people to collaboratively edit.
+
+With jetring, changesets can be submitted, reviewed to see exactly what they
+will do, applied, and used to build a keyring.  The origin of every change made
+to the keyring is available for auditing, and gpg signatures can be used for
+integrity guarantees.")
+    (license license:gpl2+)))

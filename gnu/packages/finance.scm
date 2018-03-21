@@ -6,6 +6,9 @@
 ;;; Copyright © 2017 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2017 Theodoros Foradis <theodoros@foradis.org>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
+;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2018 Adriano Peluso <catonano@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -29,6 +32,7 @@
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system python)
+  #:use-module (gnu packages)
   #:use-module (gnu packages base)
   #:use-module (gnu packages boost)
   #:use-module (gnu packages check)
@@ -130,7 +134,9 @@ line client and a client based on Qt.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "12jlv3gsjhrja25q9hrwh73cdacd2l3c2yyn8qnijav9mdhnbw4h"))))
+                "12jlv3gsjhrja25q9hrwh73cdacd2l3c2yyn8qnijav9mdhnbw4h"))
+              (patches (search-patches "ledger-revert-boost-python-fix.patch"
+                                       "ledger-fix-uninitialized.patch"))))
     (build-system cmake-build-system)
     (arguments
      `(#:modules ((guix build cmake-build-system)
@@ -218,7 +224,7 @@ in ability, and easy to use.")
 (define-public geierlein
   (package
     (name "geierlein")
-    (version "0.9.5")
+    (version "0.9.13")
     (source
      (origin
        (method url-fetch)
@@ -227,13 +233,13 @@ in ability, and easy to use.")
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0b11fq8v5w8nxjb20jl4dsfhv76xky6n3sq3k3fbb0m2sq9ikikw"))))
+         "11jfa7mxvvf0ldhx0hsvjbx3xwvzvn2wrfjpms8c7qmrnqhwh4wp"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; would require npm, python and a lot more
        #:phases
         (modify-phases %standard-phases
-          (delete 'configure)
+          (delete 'configure)           ; no configure script
           (add-after 'unpack 'override-target-directory-and-tool-paths
             (lambda* (#:key inputs outputs #:allow-other-keys)
               (substitute* "Makefile"
@@ -252,7 +258,7 @@ in ability, and easy to use.")
               #t)))))
     (inputs
      `(("icecat" ,icecat)))
-    (home-page "http://stesie.github.io/geierlein/")
+    (home-page "https://stesie.github.io/geierlein/")
     (synopsis "Free Elster client, for sending Germany VAT declarations")
     (description
      "Geierlein is a free Elster client, i.e. an application that
@@ -268,7 +274,7 @@ do so.")
 (define-public electrum
   (package
     (name "electrum")
-    (version "3.0")
+    (version "3.0.5")
     (source
      (origin
        (method url-fetch)
@@ -277,7 +283,7 @@ do so.")
                            version ".tar.gz"))
        (sha256
         (base32
-         "184cmpfqcznnm0wfjiarb6dps2vs0s2aykmy2ji7p77x20fbisfi"))
+         "06z0a5p1jg93jialphslip8d72q9yg3651qqaf494gs3h9kw1sv1"))
        (modules '((guix build utils)))
        (snippet
         '(begin
@@ -715,3 +721,34 @@ agent.")
     (description "This package allows using KeepKey as a hardware SSH/GPG
 agent.")
     (license license:lgpl3)))
+
+(define-public python-stdnum
+  (package
+    (name "python-stdnum")
+    (version "1.8.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "python-stdnum" version))
+       (sha256
+        (base32
+         "0hvr47q32xbyiznpmbg4r8rcvxhnf0lwf33hcpnynyik57djy5np"))))
+    (build-system python-build-system)
+    (home-page
+     "https://arthurdejong.org/python-stdnum/")
+    (synopsis
+     "Python module to handle standardized number and code formats")
+    (description
+     "This is a Python library that aims to provide functions to handle,
+parse and validate standard numbers.
+The module supports more than 100 different number formats
+amongst which a great number of VAT and other tax numbers,
+personal identity and company identification codes,
+international standard numbers (ISBN, IBAN, EAN, etc.)
+and various other formats.
+The module also inclused implementations of the Verhoeff,
+Luhn and family of ISO/IEC 7064 check digit algorithms. ")
+    (license license:lgpl2.1+)))
+
+(define-public python2-stdnum
+  (package-with-python2 python-stdnum))

@@ -2,7 +2,7 @@
 ;;; Copyright © 2013 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Fabian Harfert <fhmgufs@web.de>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017, 2018 Nils Gillmann <ng0@n0.is>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -130,7 +130,7 @@ sounds for various system events.")
     ;; The license of the various sounds is given in the 'CREDITS' file.
     (license (list cc-by-sa4.0 cc-by3.0 gpl2 gpl2+))
 
-    (home-page "http://www.freedesktop.org/wiki/Specifications/sound-theme-spec/")))
+    (home-page "https://www.freedesktop.org/wiki/Specifications/sound-theme-spec/")))
 
 (define-public python-pycanberra
   (package
@@ -139,7 +139,7 @@ sounds for various system events.")
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://d.n0.is/releases/pycanberra/"
+       (uri (string-append "https://files.crash.cx/releases/"
                            "pycanberra-" version ".tar.xz"))
        (sha256
         (base32
@@ -152,5 +152,5 @@ sounds for various system events.")
     (synopsis "Ctypes wrapper for the libcanberra API")
     (description
      "Pycanberra is a basic Python wrapper for libcanberra.")
-    (home-page "https://c.n0.is/pycanberra/")
+    (home-page "https://code.crash.cx/pycanberra/log.html")
     (license lgpl2.1+)))

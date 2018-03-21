@@ -6,7 +6,7 @@
 ;;; Copyright © 2015 David Thompson <davet@gnu.org>
 ;;; Copyright © 2015, 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 Hartmut Goebel <h.goebel@crazy-compilers.com>
 ;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
@@ -66,6 +66,7 @@
   (package
     (name "libtasn1")
     (version "4.12")
+    (replacement libtasn1/fixed)
     (source
      (origin
       (method url-fetch)
@@ -85,6 +86,14 @@ for transmitting machine-neutral encodings of data objects in computer
 networking, allowing for formal validation of data according to some
 specifications.")
     (license license:lgpl2.0+)))
+
+(define libtasn1/fixed
+  (package
+    (inherit libtasn1)
+    (source (origin
+              (inherit (package-source libtasn1))
+              (patches (search-patches "libtasn1-CVE-2017-10790.patch"
+                                       "libtasn1-CVE-2018-6003.patch"))))))
 
 (define-public asn1c
   (package
@@ -116,7 +125,7 @@ in intelligent transportation networks.")
 (define-public p11-kit
   (package
     (name "p11-kit")
-    (version "0.23.9")
+    (version "0.23.10")
     (source
      (origin
       (method url-fetch)
@@ -124,7 +133,7 @@ in intelligent transportation networks.")
                           "download/" version "/p11-kit-" version ".tar.gz"))
       (sha256
        (base32
-        "0qyvnkb5hfi94wv3bn67y20hcbbvynvjwxpk7k9sh1si6ff69hg1"))))
+        "0hxfwnyb5yllvlsh0cj6favcph36gm94b6df7zhl7xay48zjl8gr"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -133,7 +142,7 @@ in intelligent transportation networks.")
        ("libtasn1" ,libtasn1)))
     (arguments
      `(#:configure-flags '("--without-trust-paths")))
-    (home-page "http://p11-glue.freedesktop.org/p11-kit.html")
+    (home-page "https://p11-glue.freedesktop.org/p11-kit.html")
     (synopsis "PKCS#11 library")
     (description
      "p11-kit provides a way to load and enumerate PKCS#11 modules.  It
@@ -388,7 +397,7 @@ required structures.")
    (description
     "OpenSSL is an implementation of SSL/TLS.")
    (license license:openssl)
-   (home-page "http://www.openssl.org/")))
+   (home-page "https://www.openssl.org/")))
 
 (define-public openssl-next
   (package
@@ -503,13 +512,13 @@ netcat implementation that supports TLS.")
   (package
     (name "python-acme")
     ;; Remember to update the hash of certbot when updating python-acme.
-    (version "0.20.0")
+    (version "0.22.1")
     (source (origin
               (method url-fetch)
               (uri (pypi-uri "acme" version))
               (sha256
                (base32
-                "1md3llp6640dviv9bzyy7qzn3szxil38645cjqcg7hlcdknil4j5"))))
+                "0cbw062xmaqhmdb5d04d2xs9aacmq1i7yvnd37gw1d71qgxlnmsz"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -534,14 +543,15 @@ netcat implementation that supports TLS.")
        ("python-sphinx-rtd-theme" ,python-sphinx-rtd-theme)
        ("texinfo" ,texinfo)))
     (propagated-inputs
-     `(("python-six" ,python-six)
+     `(("python-josepy" ,python-josepy)
+       ("python-six" ,python-six)
        ("python-requests" ,python-requests)
        ("python-pytz" ,python-pytz)
        ("python-pyrfc3339" ,python-pyrfc3339)
        ("python-pyasn1" ,python-pyasn1)
        ("python-cryptography" ,python-cryptography)
        ("python-pyopenssl" ,python-pyopenssl)))
-    (home-page "https://github.com/letsencrypt/letsencrypt")
+    (home-page "https://github.com/certbot/certbot")
     (synopsis "ACME protocol implementation in Python")
     (description "ACME protocol implementation in Python")
     (license license:asl2.0)))
@@ -557,7 +567,7 @@ netcat implementation that supports TLS.")
               (uri (pypi-uri name version))
               (sha256
                (base32
-                "126y6jg1nyd8js2jchl4dbmpg507hawaxnyw7510qh7vcidm1gya"))))
+                "1d9abvlwi2d4d991dakds7jyrzxcsqkl13sd0clkriav9cdqwhv4"))))
     (build-system python-build-system)
     (arguments
      `(,@(substitute-keyword-arguments (package-arguments python-acme)
@@ -777,7 +787,7 @@ then ported to the GNU / Linux environment.")
 (define-public mbedtls-apache
   (package
     (name "mbedtls-apache")
-    (version "2.6.0")
+    (version "2.7.0")
     (source
      (origin
        (method url-fetch)
@@ -787,7 +797,15 @@ then ported to the GNU / Linux environment.")
                            version "-apache.tgz"))
        (sha256
         (base32
-         "11wnj34rfqxjggmdgf042i49lr6civgbqwv2p7p8bn6k2919vg4r"))))
+         "1vsmgxnw7dpvma51896n63yaf9sncmf885ax2jfcg89ssin6vdmf"))
+       ;; An RFC 5114 constant was accidentally renamed in version 2.7.0.
+       ;; See https://github.com/ARMmbed/mbedtls/pull/1362.
+       (modules '((guix build utils)))
+       (snippet
+        '(begin
+           (substitute* "include/mbedtls/dhm.h"
+             (("#define MBEDTLS_DHM_RFC5114_MODP_P")
+              "#define MBEDTLS_DHM_RFC5114_MODP_2048_P"))))))
     (build-system cmake-build-system)
     (arguments
      `(#:configure-flags

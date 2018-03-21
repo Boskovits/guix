@@ -1,7 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
@@ -64,6 +64,10 @@
             ntp-service
             ntp-service-type
 
+            openntpd-configuration
+            openntpd-configuration?
+            openntpd-service-type
+
             inetd-configuration
             inetd-entry
             inetd-service-type
@@ -73,11 +77,6 @@
             tor-hidden-service
             tor-service
             tor-service-type
-
-            bitlbee-configuration
-            bitlbee-configuration?
-            bitlbee-service
-            bitlbee-service-type
 
             wicd-service-type
             wicd-service
@@ -453,6 +452,102 @@ make an initial adjustment of more than 1,000 seconds."
 
 
 ;;;
+;;; OpenNTPD.
+;;;
+
+(define-record-type* <openntpd-configuration>
+  openntpd-configuration make-openntpd-configuration
+  openntpd-configuration?
+  (openntpd                openntpd-configuration-openntpd
+                           (default openntpd))
+  (listen-on               openntpd-listen-on
+                           (default '("127.0.0.1"
+                                      "::1")))
+  (query-from              openntpd-query-from
+                           (default '()))
+  (sensor                  openntpd-sensor
+                           (default '()))
+  (server                  openntpd-server
+                           (default %ntp-servers))
+  (servers                 openntpd-servers
+                           (default '()))
+  (constraint-from         openntpd-constraint-from
+                           (default '()))
+  (constraints-from        openntpd-constraints-from
+                           (default '()))
+  (allow-large-adjustment? openntpd-allow-large-adjustment?
+                           (default #f))) ; upstream default
+
+(define (openntpd-shepherd-service config)
+  (match-record config <openntpd-configuration>
+    (openntpd listen-on query-from sensor server servers constraint-from
+              constraints-from allow-large-adjustment?)
+    (let ()
+      (define config
+        (string-join
+          (filter-map
+            (lambda (field value)
+              (string-join
+                (map (cut string-append field <> "\n")
+                     value)))
+            '("listen on " "query from " "sensor " "server " "servers "
+              "constraint from ")
+            (list listen-on query-from sensor server servers constraint-from))
+          ;; The 'constraints from' field needs to be enclosed in double quotes.
+          (string-join
+            (map (cut string-append "constraints from \"" <> "\"\n")
+                 constraints-from))))
+
+      (define ntpd.conf
+        (plain-file "ntpd.conf" config))
+
+      (list (shepherd-service
+              (provision '(ntpd))
+              (documentation "Run the Network Time Protocol (NTP) daemon.")
+              (requirement '(user-processes networking))
+              (start #~(make-forkexec-constructor
+                         (list (string-append #$openntpd "/sbin/ntpd")
+                               "-f" #$ntpd.conf
+                               "-d" ;; don't daemonize
+                               #$@(if allow-large-adjustment?
+                                    '("-s")
+                                    '()))
+                         ;; When ntpd is daemonized it repeatedly tries to respawn
+                         ;; while running, leading shepherd to disable it.  To
+                         ;; prevent spamming stderr, redirect output to logfile.
+                         #:log-file "/var/log/ntpd"))
+              (stop #~(make-kill-destructor)))))))
+
+(define (openntpd-service-activation config)
+  "Return the activation gexp for CONFIG."
+  (with-imported-modules '((guix build utils))
+    #~(begin
+        (use-modules (guix build utils))
+
+        (mkdir-p "/var/db")
+        (mkdir-p "/var/run")
+        (unless (file-exists? "/var/db/ntpd.drift")
+          (with-output-to-file "/var/db/ntpd.drift"
+                               (lambda _
+                                 (format #t "0.0")))))))
+
+(define openntpd-service-type
+  (service-type (name 'openntpd)
+                (extensions
+                 (list (service-extension shepherd-root-service-type
+                                          openntpd-shepherd-service)
+                       (service-extension account-service-type
+                                          (const %ntp-accounts))
+                       (service-extension activation-service-type
+                                          openntpd-service-activation)))
+                (default-value (openntpd-configuration))
+                (description
+                 "Run the @command{ntpd}, the Network Time Protocol (NTP)
+daemon, as implemented by @uref{http://www.openntpd.org, OpenNTPD}.  The
+daemon will keep the system clock synchronized with that of the given servers.")))
+
+
+;;;
 ;;; Inetd.
 ;;;
 
@@ -735,114 +830,6 @@ See @uref{https://www.torproject.org/docs/tor-hidden-service.html.en, the Tor
 project's documentation} for more information."
   (service tor-hidden-service-type
            (hidden-service name mapping)))
-
-
-;;;
-;;; BitlBee.
-;;;
-
-(define-record-type* <bitlbee-configuration>
-  bitlbee-configuration make-bitlbee-configuration
-  bitlbee-configuration?
-  (bitlbee bitlbee-configuration-bitlbee
-           (default bitlbee))
-  (interface bitlbee-configuration-interface
-             (default "127.0.0.1"))
-  (port bitlbee-configuration-port
-        (default 6667))
-  (extra-settings bitlbee-configuration-extra-settings
-                  (default "")))
-
-(define bitlbee-shepherd-service
-  (match-lambda
-    (($ <bitlbee-configuration> bitlbee interface port extra-settings)
-     (let ((conf (plain-file "bitlbee.conf"
-                             (string-append "
-  [settings]
-  User = bitlbee
-  ConfigDir = /var/lib/bitlbee
-  DaemonInterface = " interface "
-  DaemonPort = " (number->string port) "
-" extra-settings))))
-
-       (with-imported-modules (source-module-closure
-                               '((gnu build shepherd)
-                                 (gnu system file-systems)))
-         (list (shepherd-service
-                (provision '(bitlbee))
-
-                ;; Note: If networking is not up, then /etc/resolv.conf
-                ;; doesn't get mapped in the container, hence the dependency
-                ;; on 'networking'.
-                (requirement '(user-processes networking))
-
-                (modules '((gnu build shepherd)
-                           (gnu system file-systems)))
-                (start #~(make-forkexec-constructor/container
-                          (list #$(file-append bitlbee "/sbin/bitlbee")
-                                "-n" "-F" "-u" "bitlbee" "-c" #$conf)
-
-                          #:pid-file "/var/run/bitlbee.pid"
-                          #:mappings (list (file-system-mapping
-                                            (source "/var/lib/bitlbee")
-                                            (target source)
-                                            (writable? #t)))))
-                (stop  #~(make-kill-destructor)))))))))
-
-(define %bitlbee-accounts
-  ;; User group and account to run BitlBee.
-  (list (user-group (name "bitlbee") (system? #t))
-        (user-account
-         (name "bitlbee")
-         (group "bitlbee")
-         (system? #t)
-         (comment "BitlBee daemon user")
-         (home-directory "/var/empty")
-         (shell (file-append shadow "/sbin/nologin")))))
-
-(define %bitlbee-activation
-  ;; Activation gexp for BitlBee.
-  #~(begin
-      (use-modules (guix build utils))
-
-      ;; This directory is used to store OTR data.
-      (mkdir-p "/var/lib/bitlbee")
-      (let ((user (getpwnam "bitlbee")))
-        (chown "/var/lib/bitlbee"
-               (passwd:uid user) (passwd:gid user)))))
-
-(define bitlbee-service-type
-  (service-type (name 'bitlbee)
-                (extensions
-                 (list (service-extension shepherd-root-service-type
-                                          bitlbee-shepherd-service)
-                       (service-extension account-service-type
-                                          (const %bitlbee-accounts))
-                       (service-extension activation-service-type
-                                          (const %bitlbee-activation))))
-                (default-value (bitlbee-configuration))
-                (description
-                 "Run @url{http://bitlbee.org,BitlBee}, a daemon that acts as
-a gateway between IRC and chat networks.")))
-
-(define* (bitlbee-service #:key (bitlbee bitlbee)
-                          (interface "127.0.0.1") (port 6667)
-                          (extra-settings ""))
-  "Return a service that runs @url{http://bitlbee.org,BitlBee}, a daemon that
-acts as a gateway between IRC and chat networks.
-
-The daemon will listen to the interface corresponding to the IP address
-specified in @var{interface}, on @var{port}.  @code{127.0.0.1} means that only
-local clients can connect, whereas @code{0.0.0.0} means that connections can
-come from any networking interface.
-
-In addition, @var{extra-settings} specifies a string to append to the
-configuration file."
-  (service bitlbee-service-type
-           (bitlbee-configuration
-            (bitlbee bitlbee)
-            (interface interface) (port port)
-            (extra-settings extra-settings))))
 
 
 ;;;

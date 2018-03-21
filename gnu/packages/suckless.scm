@@ -2,11 +2,12 @@
 ;;; Copyright © 2013 Cyril Roelandt <tipecaml@gmail.com>
 ;;; Copyright © 2015 Amirouche Boubekki <amirouche@hypermove.net>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2015 Dmitry Bogatov <KAction@gnu.org>
 ;;; Copyright © 2015 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2016 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Alex Griffin <a@ajgrf.com>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -50,14 +51,14 @@
 (define-public blind
   (package
     (name "blind")
-    (version "1.0")
+    (version "1.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://dl.suckless.org/tools/blind-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1b36k8fg2gmabm69jckqja49i8y4rcbccgvv2wija15ciszrm1x9"))))
+                "0nncvzyipvkkd7zlgzwbjygp82frzs2hvbnk71gxf671np607y94"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f                      ; no check target
@@ -137,14 +138,14 @@ optimising the environment for the application in use and the task performed.")
 (define-public dmenu
   (package
     (name "dmenu")
-    (version "4.7")
+    (version "4.8")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://dl.suckless.org/tools/dmenu-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1fgph549i0yw62x02jhfc8qmqk2rnzcnm46bxq6jig1cvkw3amm7"))))
+                "0qfvfrj10xlwd9hkvb57wshryan65bl6423h0qhiw1h76rf5lqgy"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f ; no tests
@@ -351,7 +352,7 @@ few minutes.")
 (define-public xbattmon
   (package
     (name "xbattmon")
-    (version "0.9")
+    (version "1.1")
     (source
      (origin
        (method url-fetch)
@@ -359,7 +360,7 @@ few minutes.")
                            name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0n2rrjq03pgqrdkl7cz5snsfdanf4s58w9h6dbvnl7p8bbd3j2kn"))))
+         "1zr6y8lml9xkx0a3dbbsds2qz1bjxvskp7wsckkf8mlsqrbb3xsg"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; No tests
@@ -563,7 +564,7 @@ environment variable.")
 (define-public fortify-headers
   (package
     (name "fortify-headers")
-    (version "0.8")
+    (version "0.9")
     (source
      (origin
        (method url-fetch)
@@ -571,7 +572,7 @@ environment variable.")
                            name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1cacdczpjb49c4i1168g541wnl3i3gbpv2m2wbnmw5wddlyhgkdg"))))
+         "1z517ajy34l2k5lz2gvhbmia9xjgagffi4s22azqxnlmgb1g2xfg"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; No tests

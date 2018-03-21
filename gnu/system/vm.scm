@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2016 Christopher Allan Webber <cwebber@dustycloud.org>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
@@ -30,6 +30,8 @@
   #:use-module (guix records)
   #:use-module (guix modules)
   #:use-module (guix utils)
+  #:use-module (guix hash)
+  #:use-module (guix base32)
 
   #:use-module ((gnu build vm)
                 #:select (qemu-command))
@@ -142,8 +144,9 @@ made available under the /xchg CIFS share."
        (initrd       (if initrd                   ; use the default initrd?
                          (return initrd)
                          (base-initrd %linux-vm-file-systems
+                                      #:on-error 'backtrace
                                       #:linux linux
-                                      #:virtio? #t
+                                      #:linux-modules %base-initrd-modules
                                       #:qemu-networking? #t))))
 
     (define builder
@@ -346,7 +349,7 @@ the image."
                                (label "GNU-ESP")             ;cosmetic only
                                ;; Use "vfat" here since this property is used
                                ;; when mounting. The actual FAT-ness is based
-                               ;; on filesystem size (16 in this case).
+                               ;; on file system size (16 in this case).
                                (file-system "vfat")
                                (flags '(esp))))))))
              (initialize-hard-disk "/dev/vda"
@@ -503,18 +506,24 @@ of the GNU system as described by OS."
                     (string-prefix? "/dev/" source))))
             (operating-system-file-systems os)))
 
-  (let ((os (operating-system (inherit os)
-              ;; Use an initrd with the whole QEMU shebang.
-              (initrd (lambda (file-systems . rest)
-                        (apply (operating-system-initrd os)
-                               file-systems
-                               #:virtio? #t
-                               rest)))
+  (define root-uuid
+    ;; UUID of the root file system.
+    (operating-system-uuid os
+                           (if (string=? file-system-type "iso9660")
+                               'iso9660
+                               'dce)))
 
-              ;; Force our own root file system.
+
+  (let ((os (operating-system (inherit os)
+              ;; Assume we have an initrd with the whole QEMU shebang.
+
+              ;; Force our own root file system.  Refer to it by UUID so that
+              ;; it works regardless of how the image is used ("qemu -hda",
+              ;; Xen, etc.).
               (file-systems (cons (file-system
                                     (mount-point "/")
-                                    (device "/dev/sda1")
+                                    (device root-uuid)
+                                    (title 'uuid)
                                     (type file-system-type))
                                   file-systems-to-keep)))))
     (mlet* %store-monad
@@ -526,6 +535,7 @@ of the GNU system as described by OS."
                                  (operating-system-bootloader os))
                    #:disk-image-size disk-image-size
                    #:file-system-type file-system-type
+                   #:file-system-uuid root-uuid
                    #:inputs `(("system" ,os-drv)
                               ("bootcfg" ,bootcfg))
                    #:copy-inputs? #t))))
@@ -537,13 +547,13 @@ of the GNU system as described by OS."
 
 (define (file-system->mount-tag fs)
   "Return a 9p mount tag for host file system FS."
-  ;; QEMU mount tags cannot contain slashes and cannot start with '_'.
-  ;; Compute an identifier that corresponds to the rules.
+  ;; QEMU mount tags must be ASCII, at most 31-byte long, cannot contain
+  ;; slashes, and cannot start with '_'.  Compute an identifier that
+  ;; corresponds to the rules.
   (string-append "TAG"
-                 (string-map (match-lambda
-                              (#\/ #\_)
-                              (chr chr))
-                             fs)))
+                 (string-drop (bytevector->base32-string
+                               (sha1 (string->utf8 fs)))
+                              4)))
 
 (define (mapping->file-system mapping)
   "Return a 9p file system that realizes MAPPING."
@@ -602,7 +612,6 @@ environment with the store shared with the host.  MAPPINGS is a list of
               (apply (operating-system-initrd os)
                      file-systems
                      #:volatile-root? #t
-                     #:virtio? #t
                      rest)))
 
     ;; Disable swap.

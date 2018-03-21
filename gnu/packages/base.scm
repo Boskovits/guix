@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2012 Nikita Karetnikov <nikita@karetnikov.org>
 ;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
@@ -7,10 +7,12 @@
 ;;; Copyright © 2014, 2015 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Jan Nieuwenhuizen <janneke@gnu.org>
+;;; Copyright © 2016 Alex Vong <alexvong1995@gmail.com>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
+;;; Copyright © 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -39,6 +41,7 @@
   #:use-module (gnu packages compression)
   #:use-module (gnu packages perl)
   #:use-module (gnu packages linux)
+  #:use-module (gnu packages pcre)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages hurd)
   #:use-module (gnu packages pkg-config)
@@ -93,6 +96,7 @@ command-line arguments, multiple languages, and so on.")
             (patches (search-patches "grep-timing-sensitive-test.patch"))))
    (build-system gnu-build-system)
    (native-inputs `(("perl" ,perl)))             ;some of the tests require it
+   (inputs `(("pcre" ,pcre)))
    (arguments
     `(#:phases
       (modify-phases %standard-phases
@@ -534,6 +538,7 @@ store.")
    ;; Note: Always use a dot after the minor version since various places rely
    ;; on "version-major+minor" to determine where locales are found.
    (version "2.26.105-g0890d5379c")
+   (replacement glibc-2.26-patched)
    (source (origin
             (method url-fetch)
             (uri (string-append "https://alpha.gnu.org/gnu/guix/mirror/"
@@ -836,6 +841,14 @@ GLIBC/HURD for a Hurd host"
 ;; Below are old libc versions, which we use mostly to build locale data in
 ;; the old format (which the new libc cannot cope with.)
 
+(define glibc-2.26-patched
+  (package
+    (inherit glibc)
+    (source (origin
+              (inherit (package-source glibc))
+              (patches (cons (search-patch "glibc-allow-kernel-2.6.32.patch")
+                             (origin-patches (package-source glibc))))))))
+
 (define-public glibc-2.25
   (package
     (inherit glibc)
@@ -851,7 +864,6 @@ GLIBC/HURD for a Hurd host"
                                        "glibc-versioned-locpath.patch"
                                        "glibc-o-largefile.patch"
                                        "glibc-vectorized-strcspn-guards.patch"
-                                       "glibc-CVE-2015-5180.patch"
                                        "glibc-CVE-2017-1000366-pt1.patch"
                                        "glibc-CVE-2017-1000366-pt2.patch"
                                        "glibc-CVE-2017-1000366-pt3.patch"))))))
@@ -1079,7 +1091,7 @@ command.")
 (define-public tzdata
   (package
     (name "tzdata")
-    (version "2017c")
+    (version "2018c")
     (source (origin
              (method url-fetch)
              (uri (string-append
@@ -1087,8 +1099,81 @@ command.")
                    version ".tar.gz"))
              (sha256
               (base32
-               "02yrrfj0p7ar885ja41ylijzbr8wc6kz6kzlw8c670i9m693ym6n"))))
+               "1xik57rdi7kqa0wb5jbz7vyjyxpr88lw1g4kscj0ylpgnzjc6998"))))
     (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f
+       #:make-flags (let ((out (assoc-ref %outputs "out"))
+                          (tmp (getenv "TMPDIR")))
+                      (list (string-append "TOPDIR=" out)
+                            (string-append "TZDIR=" out "/share/zoneinfo")
+                            (string-append "TZDEFAULT=" out
+                                           "/share/zoneinfo/localtime")
+
+                            ;; Likewise for the C library routines.
+                            (string-append "LIBDIR=" tmp "/lib")
+                            (string-append "MANDIR=" tmp "/man")
+
+                            "AWK=awk"
+                            "CC=gcc"))
+       #:modules ((guix build utils)
+                  (guix build gnu-build-system)
+                  (srfi srfi-1))
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'unpack
+           (lambda* (#:key source inputs #:allow-other-keys)
+             (and (zero? (system* "tar" "xvf" source))
+                  (zero? (system* "tar" "xvf" (assoc-ref inputs "tzcode"))))))
+         (add-after 'install 'post-install
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Move data in the right place.
+             (let ((out (assoc-ref outputs "out")))
+               ;; Discard zic, dump, and tzselect, already
+               ;; provided by glibc.
+               (delete-file-recursively (string-append out "/usr"))
+               (symlink (string-append out "/share/zoneinfo")
+                        (string-append out "/share/zoneinfo/posix"))
+               (delete-file-recursively
+                (string-append out "/share/zoneinfo-posix"))
+               (copy-recursively (string-append out "/share/zoneinfo-leaps")
+                                 (string-append out "/share/zoneinfo/right"))
+               (delete-file-recursively
+                (string-append out "/share/zoneinfo-leaps")))))
+         (delete 'configure))))
+    (inputs `(("tzcode" ,(origin
+                          (method url-fetch)
+                          (uri (string-append
+                                "http://www.iana.org/time-zones/repository/releases/tzcode"
+                                version ".tar.gz"))
+                          (sha256
+                           (base32
+                            "0rg6s1vlgwd8sjhla55hx2h5m2xbx0shm347pkbg4vsaz707zyii"))))))
+    (home-page "https://www.iana.org/time-zones")
+    (synopsis "Database of current and historical time zones")
+    (description "The Time Zone Database (often called tz or zoneinfo)
+contains code and data that represent the history of local time for many
+representative locations around the globe.  It is updated periodically to
+reflect changes made by political bodies to time zone boundaries, UTC offsets,
+and daylight-saving rules.")
+    (license public-domain)))
+
+;;; A "fixed" version of tzdata, which is used in the test suites of glib and R
+;;; and a few other places. We can update this whenever we are able to rebuild
+;;; thousands of packages (for example, in a core-updates rebuild). This package
+;;; will typically be obsolete and should never be referred to by a built
+;;; package.
+(define-public tzdata-for-tests
+  (hidden-package (package (inherit tzdata)
+    (version "2017c")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (string-append "https://www.iana.org/time-zones/repository"
+                            "/releases/tzdata" version ".tar.gz"))
+        (sha256
+         (base32
+          "02yrrfj0p7ar885ja41ylijzbr8wc6kz6kzlw8c670i9m693ym6n"))))
     (arguments
      '(#:tests? #f
        #:make-flags (let ((out (assoc-ref %outputs "out"))
@@ -1135,41 +1220,7 @@ command.")
                                 version ".tar.gz"))
                           (sha256
                            (base32
-                            "1dvrq0b2hz7cjqdyd7x21wpy4qcng3rvysr61ij0c2g64fyb9s41"))))))
-    (home-page "https://www.iana.org/time-zones")
-    (synopsis "Database of current and historical time zones")
-    (description "The Time Zone Database (often called tz or zoneinfo)
-contains code and data that represent the history of local time for many
-representative locations around the globe.  It is updated periodically to
-reflect changes made by political bodies to time zone boundaries, UTC offsets,
-and daylight-saving rules.")
-    (license public-domain)))
-
-;;; A "fixed" version of tzdata, which is used in the test suites of glib and R
-;;; and a few other places. We can update this whenever we are able to rebuild
-;;; thousands of packages (for example, in a core-updates rebuild). This package
-;;; will typically be obsolete and should never be referred to by a built
-;;; package.
-(define-public tzdata-for-tests
-  (hidden-package (package (inherit tzdata)
-    (version "2017c")
-    (source
-      (origin
-        (method url-fetch)
-        (uri (string-append "https://www.iana.org/time-zones/repository"
-                            "/releases/tzdata" version ".tar.gz"))
-        (sha256
-         (base32
-          "02yrrfj0p7ar885ja41ylijzbr8wc6kz6kzlw8c670i9m693ym6n"))))
-    (inputs `(("tzcode" ,(origin
-                          (method url-fetch)
-                          (uri (string-append
-                                "http://www.iana.org/time-zones/repository/releases/tzcode"
-                                version ".tar.gz"))
-                          (sha256
-                           (base32
                             "1dvrq0b2hz7cjqdyd7x21wpy4qcng3rvysr61ij0c2g64fyb9s41")))))))))
-
 
 (define-public libiconv
   (package

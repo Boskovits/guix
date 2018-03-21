@@ -47,6 +47,20 @@ AC_ARG_WITH([zsh-completion-dir],
   [zshcompletiondir='${datadir}/zsh/site-functions'])
 AC_SUBST([zshcompletiondir])
 
+AC_ARG_WITH([fish-completion-dir],
+  AC_HELP_STRING([--with-fish-completion-dir=DIR],
+    [name of the Fish completion directory]),
+  [fishcompletiondir="$withval"],
+  [fishcompletiondir='${datadir}/fish/vendor_completions.d'])
+AC_SUBST([fishcompletiondir])
+
+AC_ARG_WITH([selinux-policy-dir],
+  AC_HELP_STRING([--with-selinux-policy-dir=DIR],
+    [name of the SELinux policy directory]),
+  [selinux_policydir="$withval"],
+  [selinux_policydir='${datadir}/selinux/'])
+AC_SUBST([selinux_policydir])
+
 dnl Better be verbose.
 AC_MSG_CHECKING([for the store directory])
 AC_MSG_RESULT([$storedir])
@@ -84,7 +98,7 @@ if test "x$GUILD" = "x"; then
 fi
 
 if test "x$GUILE_EFFECTIVE_VERSION" = "x2.0"; then
-  PKG_CHECK_MODULES([GUILE], [guile-2.0 >= 2.0.9])
+  PKG_CHECK_MODULES([GUILE], [guile-2.0 >= 2.0.13])
 fi
 
 dnl Installation directories for .scm and .go files.
@@ -112,6 +126,12 @@ AM_CONDITIONAL([HAVE_GUILE_JSON], [test "x$have_guile_json" = "xyes"])
 
 dnl Make sure we have a full-fledged Guile.
 GUIX_ASSERT_GUILE_FEATURES([regex posix socket net-db threads])
+
+dnl Make sure we don't suffer from the bug in 'equal?' wrt. syntax objects
+dnl found in 2.2.1.  See <https://bugs.gnu.org/29903>.
+GUIX_ASSERT_SYNTAX_OBJECT_EQUAL
+
+AC_PROG_SED
 
 dnl Decompressors, for use by the substituter and other modules.
 AC_PATH_PROG([GZIP], [gzip])
@@ -259,9 +279,9 @@ esac
 AC_CONFIG_FILES([Makefile
                  po/guix/Makefile.in
                  po/packages/Makefile.in
-		 guix/config.scm])
+                 etc/guix-daemon.cil
+                 guix/config.scm])
 
-AC_CONFIG_FILES([scripts/guix], [chmod +x scripts/guix])
 AC_CONFIG_FILES([test-env:build-aux/test-env.in], [chmod +x test-env])
 AC_CONFIG_FILES([pre-inst-env:build-aux/pre-inst-env.in],
   [chmod +x pre-inst-env])

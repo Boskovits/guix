@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2012, 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -104,10 +104,12 @@ for `sh' in $PATH, and without nscd, and with static NSS modules."
             ("cross-binutils" ,(cross-binutils target))
             ,@(%final-inputs)))
         `(("libc" ,(glibc-for-bootstrap))
+          ("libc:static" ,(glibc-for-bootstrap) "static")
           ("gcc" ,(package (inherit gcc)
                     (outputs '("out")) ; all in one so libgcc_s is easily found
                     (inputs
-                     `(("libc",(glibc-for-bootstrap))
+                     `(("libc" ,(glibc-for-bootstrap))
+                       ("libc:static" ,(glibc-for-bootstrap) "static")
                        ,@(package-inputs gcc)))))
           ,@(fold alist-delete (%final-inputs) '("libc" "gcc")))))
 
@@ -195,6 +197,18 @@ for `sh' in $PATH, and without nscd, and with static NSS modules."
 				   (("/bin/sh") "sh")
 				   (("execv ") "execvp "))
 				 #t)))))))
+        ;; We don't want to retain a reference to /gnu/store in the bootstrap
+        ;; versions of egrep/fgrep, so we remove the custom phase added since
+        ;; grep@2.25. The effect is 'egrep' and 'fgrep' look for 'grep' in
+        ;; $PATH.
+        (grep (package
+                (inherit grep)
+                (inputs '())                   ;remove PCRE, which is optional
+                (arguments
+                 (substitute-keyword-arguments (package-arguments grep)
+                   ((#:phases phases)
+                    `(modify-phases ,phases
+                       (delete 'fix-egrep-and-fgrep)))))))
         (finalize (compose static-package
                            package-with-relocatable-glibc)))
     `(,@(map (match-lambda
@@ -207,17 +221,7 @@ for `sh' in $PATH, and without nscd, and with static NSS modules."
                ("patch" ,patch)
                ("coreutils" ,coreutils)
                ("sed" ,sed)
-               ;; We don't want to retain a reference to /gnu/store in the
-               ;; bootstrap versions of egrep/fgrep, so we remove the custom
-               ;; phase added since grep@2.25. The effect is 'egrep' and
-               ;; 'fgrep' look for 'grep' in $PATH.
-               ("grep" ,(package
-                          (inherit grep)
-                          (arguments
-                            (substitute-keyword-arguments (package-arguments grep)
-                              ((#:phases phases)
-                               `(modify-phases ,phases
-                                  (delete 'fix-egrep-and-fgrep)))))))
+               ("grep" ,grep)
                ("gawk" ,gawk)))
       ("bash" ,static-bash))))
 
@@ -528,6 +532,13 @@ for `sh' in $PATH, and without nscd, and with static NSS modules."
                       ''("LDFLAGS=-ldl"))
                      ((#:phases phases '%standard-phases)
                       `(modify-phases ,phases
+
+                         ;; Do not record the absolute file name of 'sh' in
+                         ;; (ice-9 popen).  This makes 'open-pipe' unusable in
+                         ;; a build chroot ('open-pipe*' is fine) but avoids
+                         ;; keeping a reference to Bash.
+                         (delete 'pre-configure)
+
                          (add-before 'configure 'static-guile
                            (lambda _
                              (substitute* "libguile/Makefile.in"
@@ -553,7 +564,9 @@ for `sh' in $PATH, and without nscd, and with static NSS modules."
     (name "guile-static-stripped")
     (build-system trivial-build-system)
     (arguments
-     `(#:modules ((guix build utils))
+     ;; The end result should depend on nothing but itself.
+     `(#:allowed-references ("out")
+       #:modules ((guix build utils))
        #:builder
        (let ()
          (use-modules (guix build utils))

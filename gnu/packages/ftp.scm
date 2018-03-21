@@ -2,7 +2,7 @@
 ;;; Copyright © 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -91,14 +91,14 @@ reliability in mind.")
 (define-public ncftp
   (package
     (name "ncftp")
-    (version "3.2.5")
+    (version "3.2.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "ftp://ftp.ncftp.com/ncftp/ncftp-"
-                                  version "-src.tar.bz2"))
+                                  version "-src.tar.xz"))
               (sha256
                (base32
-                "0hlx12i0lwi99qsrx7nccf4nvwjj2gych4yks5y179b1ax0y5sxl"))
+                "1389657cwgw5a3kljnqmhvfh4vr2gcr71dwz1mlhf22xq23hc82z"))
               (modules '((guix build utils)))
               (snippet
                '(begin
@@ -173,7 +173,7 @@ as required.")
 (define-public libfilezilla
   (package
     (name "libfilezilla")
-    (version "0.11.1")
+    (version "0.12.1")
     (source
      (origin
        (method url-fetch)
@@ -181,7 +181,7 @@ as required.")
                            name "/" name "-" version ".tar.bz2"))
        (sha256
         (base32
-         "1xv4is3zaz66h6iblj9pikapsjasjcbxx31bhkgn62xdq1sadfpc"))))
+         "1gbqm42dd0m3fvqz3bk53889479dvn8679zp6ba8a9q2br2wkvv0"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("cppunit" ,cppunit)
@@ -190,13 +190,27 @@ as required.")
     (synopsis "Cross-platform C++ library used by Filezilla client")
     (description
      "This package provides some basic functionality to build high-performing,
-platform-independent programs.")
+platform-independent programs.
+
+Some of the highlights include:
+@itemize
+@item
+A type-safe, multi-threaded event system that's simple to use yet efficient.
+@item
+Timers for periodic events.
+@item
+A @code{datetime} class that not only tracks timestamp but also their accuracy,
+which simplifies dealing with timestamps originating from different sources.
+@item
+Simple process handling for spawning child processes with redirected input and
+output.
+@end itemize\n")
     (license gpl2+)))
 
 (define-public filezilla
   (package
     (name "filezilla")
-    (version "3.27.1")
+    (version "3.29.0")
     (source
      (origin
        (method url-fetch)
@@ -205,7 +219,7 @@ platform-independent programs.")
                            "/FileZilla_" version "_src" ".tar.bz2"))
        (sha256
         (base32
-         "14lsplbp9fy7lk6cpwi3aj6jskz4j82h67x0fik82z1bns0zm2a3"))))
+         "0najf2w6p5j4qc8jmglx6j63mph749s5p90lz2nkmwwwy5sfvlga"))))
     (build-system gnu-build-system)
     (arguments
       ;; Don't let filezilla phone home to check for updates.

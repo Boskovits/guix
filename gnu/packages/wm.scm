@@ -9,12 +9,13 @@
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016 Carlo Zancanaro <carlo@zancanaro.id.au>
 ;;; Copyright © 2016, 2017 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017, 2018 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 doncatnip <gnopap@gmail.com>
 ;;; Copyright © 2016 Ivan Vilata i Balaguer <ivan@selidor.net>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -45,6 +46,7 @@
   #:use-module (gnu packages haskell-check)
   #:use-module (gnu packages haskell-web)
   #:use-module (gnu packages autotools)
+  #:use-module (gnu packages bison)
   #:use-module (gnu packages gawk)
   #:use-module (gnu packages base)
   #:use-module (gnu packages pkg-config)
@@ -173,14 +175,14 @@ commands would.")
 (define-public i3-wm
   (package
     (name "i3-wm")
-    (version "4.14.1")
+    (version "4.15")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://i3wm.org/downloads/i3-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1cazmfbbx6n8c81h6x6pdayq3mxs2ml3adz165z8vapkc72kl1nh"))))
+                "09jk70hsdxab24lqvj2f30ijrkbv3f6q9xi5dcsax1dw3x6m4z91"))))
     (build-system gnu-build-system)
     (arguments
      `(#:make-flags
@@ -503,27 +505,34 @@ tiled on several screens.")
 (define-public xmobar
   (package
     (name "xmobar")
-    (version "0.24.5")
+    (version "0.25")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://hackage/package/xmobar/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0sdzfj2wa4wpig1i2i5n9qpwm90jp88qifsmaa7j37yhhs6snfir"))))
+                "0382r4vzqkz76jlp2069rdbwf4gh1a22r9w4rkphcn5qflw0dlb6"))))
     (build-system haskell-build-system)
     (inputs
-     `(("ghc-http" ,ghc-http)
+     `(("ghc-hinotify" ,ghc-hinotify)
+       ("ghc-http" ,ghc-http)
+       ("ghc-iwlib" ,ghc-iwlib)
        ("ghc-parsec" ,ghc-parsec)
        ("ghc-regex-compat" ,ghc-regex-compat)
        ("ghc-stm" ,ghc-stm)
        ("ghc-x11-xft" ,ghc-x11-xft)
-       ("ghc-hinotify" ,ghc-hinotify)
-       ("libxpm" ,libxpm)
-       ("wireless-tools" ,wireless-tools)))
+       ("libxpm" ,libxpm)))
     (arguments
      `(#:configure-flags
-       '("--flags=with_utf8 with_xft with_xpm with_inotify with_iwlib")))
+       (list (string-append "--flags="
+                            (string-join (list "with_inotify"
+                                               "with_iwlib"
+                                               "with_utf8"
+                                               "with_weather"
+                                               "with_xft"
+                                               "with_xpm")
+                                         " ")))))
     (home-page "http://xmobar.org")
     (synopsis "Minimalistic text based status bar")
     (description
@@ -701,7 +710,7 @@ experience.")
               ("libxdg-basedir" ,libxdg-basedir)
               ("libxkbcommon" ,libxkbcommon)
               ("lua" ,lua)
-              ("lua-lgi",lua-lgi)
+              ("lua-lgi" ,lua-lgi)
               ("pango" ,pango)
               ("startup-notification" ,startup-notification)
               ("xcb-util" ,xcb-util)
@@ -809,8 +818,8 @@ all of them.  Currently supported window managers include:
     (source
      (origin
        (method url-fetch)
-       (uri (string-append "https://github.com/engla/keybinder/releases/"
-                           "download/v" version "/keybinder-"
+       (uri (string-append "https://github.com/kupferlauncher/keybinder"
+                           "/releases/download/v" version "/keybinder-"
                            version ".tar.gz"))
        (file-name (string-append name "-" version ".tar.gz"))
        (sha256
@@ -828,7 +837,7 @@ all of them.  Currently supported window managers include:
     (description
      "Keybinder is a library for registering global keyboard shortcuts.
 Keybinder works with GTK-based applications using the X Window System.")
-    (home-page "https://github.com/engla/keybinder")
+    (home-page "https://github.com/kupferlauncher/keybinder")
     (license license:gpl2+)))
 
 (define-public spectrwm
@@ -906,4 +915,56 @@ It is inspired by Xmonad and dwm.  Its major features include:
 @item Customizable colors and border width
 @end itemize\n")
     (home-page "https://github.com/conformal/spectrwm")
+    (license license:isc)))
+
+(define-public cwm
+  (package
+    (name "cwm")
+    (version "6.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "http://chneukirchen.org/releases/cwm-"
+                           version ".tar.gz"))
+       (sha256
+        (base32
+         "1b8k2hjxpb0bzqjh2wj6mn2nf2360zacf8z19sw2rw5lxvmfy89x"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:make-flags (list "CC=gcc"
+                          (string-append "PREFIX=" %output))
+       #:tests? #f
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-after 'build 'install-xsession
+           (lambda* (#:key outputs #:allow-other-keys)
+             ;; Add a .desktop file to xsessions.
+             (let* ((output (assoc-ref outputs "out"))
+                    (xsessions (string-append output "/share/xsessions")))
+               (mkdir-p xsessions)
+               (with-output-to-file
+                   (string-append xsessions "/cwm.desktop")
+                 (lambda _
+                   (format #t
+                           "[Desktop Entry]~@
+                     Name=cwm~@
+                     Comment=OpenBSD Calm Window Manager fork~@
+                     Exec=~a/bin/cwm~@
+                     TryExec=~@*~a/bin/cwm~@
+                     Icon=~@
+                     Type=Application~%"
+                           output)))
+               #t))))))
+    (inputs
+     `(("libxft" ,libxft)
+       ("libxrandr" ,libxrandr)
+       ("libxinerama" ,libxinerama)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("bison" ,bison)))
+    (home-page "https://github.com/chneukirchen/cwm")
+    (synopsis "OpenBSD fork of the calmwm window manager")
+    (description "Cwm is a stacking window manager for X11.  It is an OpenBSD
+project derived from the original Calm Window Manager.")
     (license license:isc)))

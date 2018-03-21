@@ -17,7 +17,7 @@
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Petter <petter@mykolab.ch>
 ;;; Copyright © 2017 Mekeor Melire <mekeor.melire@gmail.com>
-;;; Copyright © 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Marek Benc <dusxmt@gmx.com>
 ;;; Copyright © 2017 Mike Gerwitz <mtg@gnu.org>
@@ -319,7 +319,7 @@ rasterisation.")
 (define-public libdrm
   (package
     (name "libdrm")
-    (version "2.4.89")
+    (version "2.4.91")
     (source
       (origin
         (method url-fetch)
@@ -329,7 +329,7 @@ rasterisation.")
                ".tar.bz2"))
         (sha256
          (base32
-          "0bm06vqqjbb06mlz2f2h4man0xp0dz928pyycs8q1d5vma19g7v2"))
+          "0068dn47c478vm1lyyhy02gilrpsma0xmcblhvs0dzqyrk80wjk3"))
         (patches (search-patches "libdrm-symbol-check.patch"))))
     (build-system gnu-build-system)
     (arguments
@@ -406,7 +406,7 @@ tracking.")
     (inputs
      `(("libx11" ,libx11)
        ("xcb-util" ,xcb-util)))
-    (home-page "http://www.freedesktop.org/wiki/Software/startup-notification/")
+    (home-page "https://www.freedesktop.org/wiki/Software/startup-notification/")
     (synopsis "Application startup notification and feedback library")
     (description
      "Startup-notification contains a reference implementation of the startup
@@ -722,7 +722,7 @@ transparent text on your screen.")
     (inputs
      `(("libx11" ,libx11)
        ("guile" ,guile-2.0)))
-    (home-page "http://www.nongnu.org/xbindkeys/")
+    (home-page "https://www.nongnu.org/xbindkeys/")
     (synopsis "Associate a combination of keys with a shell command")
     (description
      "XBindKeys is a program that allows you to launch shell commands with
@@ -885,14 +885,14 @@ Escape key when Left Control is pressed and released on its own.")
 (define-public libwacom
   (package
     (name "libwacom")
-    (version "0.26")
+    (version "0.29")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/linuxwacom/libwacom/"
                                   name "-" version ".tar.bz2"))
               (sha256
                (base32
-                "0xpvkjvzaj9blcmw8ha46616bzfivj99kwzvr91clxd6iaf11r63"))))
+                "1diklgcjhmvcxi9p1ifp6wcnyr6k7z9jhrlzfhzjqd6zipk01slw"))))
     (build-system glib-or-gtk-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -917,7 +917,7 @@ Wacom tablet applet.")
 (define-public xf86-input-wacom
   (package
     (name "xf86-input-wacom")
-    (version "0.35.0")
+    (version "0.36.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -925,7 +925,7 @@ Wacom tablet applet.")
                     name "-" version ".tar.bz2"))
               (sha256
                (base32
-                "0za44snc0zirq65a4lxsmg7blp1bynj6j835hm459x8yx1qhmxjm"))))
+                "1xi39hl8ddgj9m7m2k2ll2r3wh0k0aq45fvrsv43651bhz9cbrza"))))
     (arguments
      `(#:configure-flags
        (list (string-append "--with-sdkdir="
@@ -987,7 +987,7 @@ color temperature should be set to match the lamps in your room.")
 (define-public xscreensaver
   (package
     (name "xscreensaver")
-    (version "5.37")
+    (version "5.38")
     (source
      (origin
        (method url-fetch)
@@ -996,7 +996,7 @@ color temperature should be set to match the lamps in your room.")
                        version ".tar.gz"))
        (sha256
         (base32
-         "1ng5ddzb4k2h1w54pvk9hzxvnxxmc54bc4a2ibk974nzjjjaxivs"))))
+         "1f58h5rgjbxr4hh40m6zkpkzbzg68l7nqzjwal0b17yysafbmsf6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f  ; no check target
@@ -1101,7 +1101,7 @@ connectivity of the X server running on a particular @code{DISPLAY}.")
 (define-public rofi
   (package
     (name "rofi")
-    (version "1.4.2")
+    (version "1.5.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/DaveDavenport/rofi/"
@@ -1109,7 +1109,7 @@ connectivity of the X server running on a particular @code{DISPLAY}.")
                                   version "/rofi-" version ".tar.xz"))
               (sha256
                (base32
-                "1129cbg76g56c6ckzj5y5haf92jxhx3b71cr3qmhrb0n8g4gi38s"))))
+                "0wx118banbwfqdwc5y44fkp3hxg97gj3vma16528slhy408hkg7i"))))
     (build-system gnu-build-system)
     (inputs
      `(("pango" ,pango)
@@ -1126,6 +1126,7 @@ connectivity of the X server running on a particular @code{DISPLAY}.")
      `(("bison" ,bison)
        ("check" ,check)
        ("flex" ,flex)
+       ("glib:bin" ,glib "bin")
        ("pkg-config" ,pkg-config)))
     (arguments
      `(#:parallel-tests? #f ; May fail in some circumstances.
@@ -1136,8 +1137,9 @@ connectivity of the X server running on a particular @code{DISPLAY}.")
              (substitute* '("test/helper-expand.c")
                (("~root") "/root")
                (("~") "")
-               (("g_get_home_dir \\(\\)") "\"/\"")))))))
-    (home-page "https://davedavenport.github.io/rofi/")
+               (("g_get_home_dir \\(\\)") "\"/\""))
+             #t)))))
+    (home-page "https://github.com/DaveDavenport/rofi")
     (synopsis "Application launcher")
     (description "Rofi is a minimalist application launcher.  It memorizes which
 applications you regularly use and also allows you to search for an application
@@ -1309,9 +1311,9 @@ XCB util-xrm module provides the following libraries:
                         (install-file "README" doc)
                         ;; Avoid unspecified return value.
                         #t))))))
-    (inputs `(("libx11", libx11)
-              ("libxext", libxext)
-              ("libxxf86vm", libxxf86vm)))
+    (inputs `(("libx11" ,libx11)
+              ("libxext" ,libxext)
+              ("libxxf86vm" ,libxxf86vm)))
     (synopsis "Tiny monitor calibration loader for XFree86 (or X.org)")
     (description "xcalib is a tiny tool to load the content of vcgt-Tags in ICC
 profiles to the video card's gamma ramp.  It does work with most video card

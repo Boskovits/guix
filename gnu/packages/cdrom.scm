@@ -8,7 +8,8 @@
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -97,14 +98,14 @@ caching facility provided by the library.")
 (define-public libcdio
   (package
     (name "libcdio")
-    (version "0.94")
+    (version "2.0.0")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnu/libcdio/libcdio-"
-                                 version ".tar.gz"))
+                                 version ".tar.bz2"))
              (sha256
               (base32
-               "0nh222bnj0hgdic5nvr8l9j194mh5niqy15rypwrdbk6z01wkqln"))))
+               "0jr8ppdm80c533nzmrpz3iffnpc6nhvsria1di9f4jg1l19a03fd"))))
     (build-system gnu-build-system)
     (inputs
      `(("ncurses" ,ncurses)
@@ -127,14 +128,14 @@ extraction from CDs.")
 (define-public libcdio-paranoia
   (package
     (name "libcdio-paranoia")
-    (version "10.2+0.93+1")
+    (version "10.2+0.94+2")
     (source (origin
              (method url-fetch)
              (uri (string-append "mirror://gnu/libcdio/libcdio-paranoia-"
-                                 version ".tar.bz2"))
+                                 version ".tar.gz"))
              (sha256
               (base32
-               "14x4b4jk5b0zvcalrg02y4jmbkmmlb07qfmk5hph9k18b8frn7gc"))))
+               "0h8rr1ir05r29rgawa1ccw335668k4s3zq4yg9095svyx7n843yn"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (propagated-inputs `(("libcdio" ,libcdio)))
@@ -160,9 +161,7 @@ libcdio.")
     (inputs
      `(("acl" ,acl)
        ("readline" ,readline)
-       ("bzip2" ,bzip2)
-       ("zlib" ,zlib)
-       ("libcdio" ,libcdio)))
+       ("zlib" ,zlib)))
     (home-page "https://www.gnu.org/software/xorriso/")
     (synopsis "Create, manipulate, burn ISO-9660 file systems")
     (description
@@ -350,7 +349,7 @@ capacity is user-selectable.")
 (define-public dvdstyler
   (package
     (name "dvdstyler")
-    (version "3.0.3")
+    (version "3.0.4")
     (source
      (origin
        (method url-fetch)
@@ -358,17 +357,18 @@ capacity is user-selectable.")
                             version "/DVDStyler-" version ".tar.bz2"))
        (sha256
         (base32
-         "1j432kszmwmsd3nz398h5514dbm5vsrn4rr3iil72ckjj1h3i00q"))))
+         "0lwc0hn94m9r8fi07sjqz3fr618l6lnw3zsakxw7nlgnxbjsk7pi"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:configure-flags (list (string-append "XMLTO="
-                                              (assoc-ref %build-inputs "xmlto")
-                                              "/bin/xmlto"
-                                              " --searchpath "
-                                              (assoc-ref %build-inputs "docbook-xsl")
-                                              "/xml/xsl/docbook-xsl-1.79.1/htmlhelp:"
-                                              (assoc-ref %build-inputs "docbook-xml")
-                                              "/xml/dtd/docbook"))
+     `(#:configure-flags
+       (list (string-append "XMLTO="
+                            (assoc-ref %build-inputs "xmlto")
+                            "/bin/xmlto --searchpath "
+                            (assoc-ref %build-inputs "docbook-xsl")
+                            "/xml/xsl/docbook-xsl-" ,(package-version docbook-xsl)
+                            "/htmlhelp:"
+                            (assoc-ref %build-inputs "docbook-xml")
+                            "/xml/dtd/docbook"))
        #:phases
        (modify-phases %standard-phases
          (add-after 'install 'wrap-program
@@ -694,3 +694,54 @@ distributed with CD images and are used to describe how tracks are
 laid out on the image.")
     (home-page "https://www.gnu.org/software/ccd2cue/")
     (license gpl3+)))
+
+(define-public libburn
+  (package
+    (name "libburn")
+    (version "1.4.8")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append "http://files.libburnia-project.org/releases/"
+                                 "libburn-" version ".tar.gz"))
+             (sha256
+              (base32
+               "19lxnzn8bz70glrrrn2hs43gf5g7gfbcka9rcbckhv1pb7is509y"))))
+    (build-system gnu-build-system)
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "https://dev.lovelyhq.com/libburnia/libburn")
+    (synopsis "Library for reading and writing optical discs")
+    (description
+     "Libburn is a library for reading and writing optical discs.
+Supported media are: CD-R, CD-RW, DVD-RAM, DVD+RW, DVD+R, DVD+R/DL,
+DVD-RW, DVD-R, DVD-R/DL, BD-R, and BD-RE.")
+    (license gpl2)))
+
+(define-public libisofs
+  (package
+    (name "libisofs")
+    (version "1.4.8")
+    (source (origin
+             (method url-fetch)
+             (uri (string-append "http://files.libburnia-project.org/releases/"
+                                 "libisofs-" version ".tar.gz"))
+             (sha256
+              (base32
+               "0scvqb72qq24wcg814p1iw1dknldl21hr1hxsc1wy9vc6vgyk7fw"))))
+    (build-system gnu-build-system)
+    (inputs
+     `(("zlib" ,zlib)
+       ("acl" ,acl)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "https://dev.lovelyhq.com/libburnia/libisofs")
+    (synopsis "Library to create ISO 9660 images")
+    (description
+     "Libisofs creates ISO 9660 (also known as ECMA-119) file system images
+which can either be written to POSIX file objects or handed over to
+libburn for being written directly to optical media.
+It can read metadata of ISO 9660 filesystems, manipulate them, and use them
+to produce new complete file system images or add-on images to be appended
+to the read file system image.
+Supported extensions to ISO 9660 are Rock Ridge, Joliet, AAIP, zisofs.")
+    (license gpl2+)))

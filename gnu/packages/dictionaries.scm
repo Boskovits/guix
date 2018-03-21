@@ -1,7 +1,9 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014, 2015, 2016 Ludovic Courtès <ludo@gnu.org>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Sou Bunnbu <iyzsong@gmail.com>
+;;; Copyright © 2017, 2018 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -90,14 +92,14 @@ acronyms distributed as an info document.")
 (define-public gcide
   (package
     (name "gcide")
-    (version "0.51")
+    (version "0.52")
     (source (origin
               (method url-fetch)
               (uri (string-append
                     "mirror://gnu/gcide/gcide-" version ".tar.xz"))
               (sha256
                (base32
-                "1wm0s51ygc6480dq8gwahzr35ls8jgpf34yiwl5yqcaa0i19fdv7"))))
+                "1n3bp91sik66z3ca7mjqbr9nck3hg5ck0c8g84xc0qnfpx5vznh2"))))
     (build-system trivial-build-system)
     (arguments
      '(#:builder (begin
@@ -150,14 +152,14 @@ work, such as sentence length and other readability measures.")
 (define-public ding
   (package
     (name "ding")
-    (version "1.8")
+    (version "1.8.1")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://ftp.tu-chemnitz.de/pub/Local/urz/" name
                                   "/" name "-" version ".tar.gz"))
               (sha256
                (base32
-                "00z97ndwmzsgig9q6y98y8nbxy76pyi9qyj5qfpbbck24gakpz5l"))))
+                "0chjqs3z9zs1w3l7b5lsaj682rgnkf9kibcbzhggqqcn1pbvl5sq"))))
     (build-system gnu-build-system)
     (inputs `(("tk" ,tk)))
     (arguments
@@ -210,7 +212,7 @@ It comes with a German-English dictionary with approximately 270,000 entries.")
 (define-public grammalecte
   (package
     (name "grammalecte")
-    (version "0.6.1")
+    (version "0.6.2")
     (source
      (origin
        (method url-fetch/zipbomb)
@@ -218,20 +220,8 @@ It comes with a German-English dictionary with approximately 270,000 entries.")
                            "Grammalecte-fr-v" version ".zip"))
        (sha256
         (base32
-         "0bl342i7nqbg8swk3fxashg9liyp3jdnix59pndhy41cpm1xln4i"))))
+         "0pvblclvbxbfgmq0cvmpmzpf6bi6r41arndwprl7ab9kci9hi8j2"))))
     (build-system python-build-system)
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'fix-setup.py
-           ;; FIXME: "setup.py" contains a typo in 0.6.1 release. The
-           ;; issue was reported and fixed upstream
-           ;; (https://dicollecte.org/thread.php?prj=fr&t=674). This
-           ;; phase can be removed in next release.
-           (lambda _
-             (substitute* "setup.py"
-               (("server_options\\.") "grammalecte-server-options."))
-             #t)))))
     (home-page "https://www.dicollecte.org")
     (synopsis  "French spelling and grammar checker")
     (description "Grammalecte is a grammar checker dedicated to the French

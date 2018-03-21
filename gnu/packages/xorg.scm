@@ -7,13 +7,14 @@
 ;;; Copyright © 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2015 Cyrill Schenkel <cyrill.schenkel@gmail.com>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016 ng0 <ng0@we.make.ritual.n0.is>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016 David Craven <david@craven.ch>
 ;;; Copyright © 2016, 2017 John Darrington <jmd@gnu.org>
-;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
-;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
+;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -356,7 +357,7 @@ provided.")
 (define-public editres
   (package
     (name "editres")
-    (version "1.0.6")
+    (version "1.0.7")
     (source
       (origin
         (method url-fetch)
@@ -366,7 +367,7 @@ provided.")
                ".tar.bz2"))
         (sha256
          (base32
-          "1w2d5hb5pw9ii2jlf4yjlp899402zfwc8hdkpdr3i1fy1cjd2riv"))))
+          "04awfwmy3f9f0bchidc4ssbgrbicn5gzasg3jydpfnp5513d76h8"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -917,7 +918,7 @@ rendering commands to the X server.")
 (define-public iceauth
   (package
     (name "iceauth")
-    (version "1.0.7")
+    (version "1.0.8")
     (source
       (origin
         (method url-fetch)
@@ -927,7 +928,7 @@ rendering commands to the X server.")
                ".tar.bz2"))
         (sha256
           (base32
-            "02izdyzhwpgiyjd8brzilwvwnfr72ncjb6mzz3y1icwrxqnsy5hj"))))
+            "1ik0mdidmyvy48hn8p2hwvf3535rf3m96hhf0mvcqrbj44x23vp6"))))
     (build-system gnu-build-system)
     (inputs
       `(("libice" ,libice)))
@@ -1027,7 +1028,7 @@ of new capabilities and controls for text keyboards.")
 (define-public libxshmfence
   (package
     (name "libxshmfence")
-    (version "1.2")
+    (version "1.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1035,7 +1036,7 @@ of new capabilities and controls for text keyboards.")
                     name "-" version ".tar.bz2"))
               (sha256
                (base32
-                "032b0nlkdrpbimdld4gqvhqx53rzn8fawvf1ybhzn7lcswgjs6yj"))))
+                "1ir0j92mnd1nk37mrv9bz5swnccqldicgszvfsh62jd14q6k115q"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (inputs `(("xproto" ,xproto)))
@@ -1557,7 +1558,7 @@ input from UTF-8 into the locale's encoding.")
 (define-public mkfontscale
   (package
     (name "mkfontscale")
-    (version "1.1.2")
+    (version "1.1.3")
     (source
       (origin
         (method url-fetch)
@@ -1567,7 +1568,7 @@ input from UTF-8 into the locale's encoding.")
                ".tar.bz2"))
         (sha256
           (base32
-            "081z8lwh9c1gyrx3ad12whnpv3jpfbqsc366mswpfm48mwl54vcc"))))
+            "0siag28jpm8hj62bgjvw81sjfgrc7vcy2h7127bl4iazxrlxz60y"))))
     (build-system gnu-build-system)
     (inputs
       `(("zlib" ,zlib)
@@ -1999,7 +2000,7 @@ information used in connecting to the X server.")
 (define-public xbacklight
   (package
     (name "xbacklight")
-    (version "1.2.1")
+    (version "1.2.2")
     (source
       (origin
         (method url-fetch)
@@ -2009,7 +2010,7 @@ information used in connecting to the X server.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0arnd1j8vzhzmw72mqhjjcb2qwcbs9qphsy3ps593ajyld8wzxhp"))))
+            "0pmzaz4kp38qv2lqiw5rnqhwzmwrq65m1x5j001mmv99wh9isnk1"))))
     (build-system gnu-build-system)
     (inputs
      `(("libxcb" ,libxcb)
@@ -2029,7 +2030,7 @@ the same way.")
 (define-public xbitmaps
   (package
     (name "xbitmaps")
-    (version "1.1.1")
+    (version "1.1.2")
     (source
       (origin
         (method url-fetch)
@@ -2039,7 +2040,7 @@ the same way.")
                ".tar.bz2"))
         (sha256
           (base32
-            "178ym90kwidia6nas4qr5n5yqh698vv8r02js0r4vg3b6lsb0w9n"))))
+            "1vh73sc13s7w5r6gnc6irca56s7998bja7wgdivkfn8jccawgw5r"))))
     (build-system gnu-build-system)
     (native-inputs `(("pkg-config" ,pkg-config)))
     (home-page "https://www.x.org/wiki/")
@@ -2176,7 +2177,7 @@ X11 Inter-Client Communication Conventions Manual (ICCCM).")
 (define-public xcursor-themes
   (package
     (name "xcursor-themes")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
       (origin
         (method url-fetch)
@@ -2186,7 +2187,7 @@ X11 Inter-Client Communication Conventions Manual (ICCCM).")
                ".tar.bz2"))
         (sha256
           (base32
-            "11mv661nj1p22sqkv87ryj2lcx4m68a04b0rs6iqh3fzp42jrzg3"))))
+            "0whjiq6d5z4z75zh37pji6llfcyrg6q3mg9zx5zqyncnj39q30xf"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxcursor" ,libxcursor)
@@ -2275,7 +2276,7 @@ available.")
 (define-public xdriinfo
   (package
     (name "xdriinfo")
-    (version "1.0.5")
+    (version "1.0.6")
     (source
       (origin
         (method url-fetch)
@@ -2285,7 +2286,7 @@ available.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0681d0y8liqakkpz7mmsf689jcxrvs5291r20qi78mc9xxk3gfjc"))))
+            "0lcx8h3zd11m4w8wf7dyp89826d437iz78cyrix436bqx31x5k6r"))))
     (build-system gnu-build-system)
     (inputs
       `(("mesa" ,mesa)
@@ -3400,7 +3401,7 @@ X server.")
 (define-public xf86-video-vesa
   (package
     (name "xf86-video-vesa")
-    (version "2.3.4")
+    (version "2.4.0")
     (source
       (origin
         (method url-fetch)
@@ -3410,7 +3411,7 @@ X server.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1haiw8r1z8ihk68d0jqph2wsld13w4qkl86biq46fvyxg7cg9pbv"))))
+            "1373vsxn6qh00na0s9c09kf09gj78rzi98zq93id8v5zsya3qi5z"))))
     (build-system gnu-build-system)
     (inputs `(("xorg-server" ,xorg-server)))
     (native-inputs `(("pkg-config" ,pkg-config)))
@@ -3706,7 +3707,7 @@ alternative implementations like XRandR or TwinView.")
 (define xkbcomp-intermediate ; used as input for xkeyboard-config
   (package
     (name "xkbcomp-intermediate")
-    (version "1.4.0")
+    (version "1.4.1")
     (source
       (origin
         (method url-fetch)
@@ -3716,7 +3717,7 @@ alternative implementations like XRandR or TwinView.")
                ".tar.bz2"))
         (sha256
          (base32
-          "0syfc6zscvai824mzihlnrqxhkcr27dzkpy8zndavi83iischsdw"))))
+          "0djp7bb0ch2ddwmc1bkg4fddxdvamiiz375x0r0ni5dcb37w93bl"))))
     (build-system gnu-build-system)
     (inputs
       `(("xproto" ,xproto)
@@ -3820,7 +3821,7 @@ extension to the X11 protocol.  It includes:
 (define-public xkeyboard-config
   (package
     (name "xkeyboard-config")
-    (version "2.22")
+    (version "2.23.1")
     (source
       (origin
         (method url-fetch)
@@ -3830,7 +3831,7 @@ extension to the X11 protocol.  It includes:
               ".tar.bz2"))
         (sha256
           (base32
-            "1garmbyfjp0han04l2l90zzwlfbdgdxl6r1qnic36i5wkycckbny"))))
+            "1wq27cs1c9y7d1d7zp5yhq29paj9smajdb68lyvm28d2zq2vqjra"))))
     (build-system gnu-build-system)
     (inputs
       `(("gettext" ,gettext-minimal)
@@ -3852,7 +3853,7 @@ can be combined together using the 'rules' component of this database.")
 (define-public xkill
   (package
     (name "xkill")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
       (origin
         (method url-fetch)
@@ -3862,7 +3863,7 @@ can be combined together using the 'rules' component of this database.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0bl1ky8ps9jg842j4mnmf4zbx8nkvk0h77w7bqjlpwij9wq2mvw8"))))
+            "0szzd9nzn0ybkhnfyizb876irwnjsnb78rcaxx6prb71jmmbpw65"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxmu" ,libxmu)
@@ -3907,7 +3908,7 @@ programs that have displayed undesired windows on a user's screen.")
 (define-public xlsclients
   (package
     (name "xlsclients")
-    (version "1.1.3")
+    (version "1.1.4")
     (source
       (origin
         (method url-fetch)
@@ -3917,7 +3918,7 @@ programs that have displayed undesired windows on a user's screen.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0g9x7rrggs741x9xwvv1k9qayma980d88nhdqw7j3pn3qvy6d5jx"))))
+            "1h8931sn34mcip6vpi4v7hdmr1r58gkbw4s2p97w98kykks2lgvp"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxcb" ,libxcb)))
@@ -3934,7 +3935,7 @@ running on X server.")
 (define-public xlsfonts
   (package
     (name "xlsfonts")
-    (version "1.0.5")
+    (version "1.0.6")
     (source
      (origin
        (method url-fetch)
@@ -3944,7 +3945,7 @@ running on X server.")
              ".tar.bz2"))
        (sha256
         (base32
-         "1yi774g6r1kafsbnxbkrwyndd3i60362ck1fps9ywz076pn5naa0"))))
+         "0s6kxgv78chkwsqmhw929f4pf91gq63f4yvixxnan1h00cx0pf49"))))
     (build-system gnu-build-system)
     (inputs
      `(("xproto" ,xproto)
@@ -3961,7 +3962,7 @@ protocol.")
 (define-public xfontsel
   (package
     (name "xfontsel")
-    (version "1.0.5")
+    (version "1.0.6")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -3969,7 +3970,7 @@ protocol.")
                     version ".tar.bz2"))
               (sha256
                (base32
-                "1grir464hy52a71r3mpm9mzvkf7nwr3vk0b1vc27pd3gp588a38p"))))
+                "0700lf6hx7dg88wq1yll7zjvf9gbwh06xff20yffkxb289y0pai5"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -4093,7 +4094,7 @@ refers to the included common xorg.css stylesheet.")
 (define-public xpr
   (package
     (name "xpr")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
       (origin
         (method url-fetch)
@@ -4103,7 +4104,7 @@ refers to the included common xorg.css stylesheet.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1dbcv26w2yand2qy7b3h5rbvw1mdmdd57jw88v53sgdr3vrqvngy"))))
+            "07qy9lwjvxighcmg6qvjkgagad3wwvidrfx0jz85lgynz3qy0dmr"))))
     (build-system gnu-build-system)
     (inputs
       `(("xproto" ,xproto)
@@ -4122,7 +4123,7 @@ it for output on various types of printers.")
 (define-public xprop
   (package
     (name "xprop")
-    (version "1.2.2")
+    (version "1.2.3")
     (source
       (origin
         (method url-fetch)
@@ -4132,7 +4133,7 @@ it for output on various types of printers.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1ilvhqfjcg6f1hqahjkp8qaay9rhvmv2blvj3w9asraq0aqqivlv"))))
+            "06sjgahjiz85v0k0pmv5x05chc591xynl5ah1bqzz1bdr0lgnanj"))))
     (build-system gnu-build-system)
     (inputs
       `(("xproto" ,xproto)
@@ -4179,7 +4180,7 @@ and Reflect (RandR) extension.")
 (define-public xrdb
   (package
     (name "xrdb")
-    (version "1.1.0")
+    (version "1.1.1")
     (source
       (origin
         (method url-fetch)
@@ -4189,7 +4190,7 @@ and Reflect (RandR) extension.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0nsnr90wazcdd50nc5dqswy0bmq6qcj14nnrhyi7rln9pxmpp0kk"))))
+            "1dqp486nd5sagbg572kl0k839nwvpqnb7jvppyb7jj5vrpkss8rd"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxmu" ,libxmu)
@@ -4210,7 +4211,7 @@ file.")
 (define-public xrefresh
   (package
     (name "xrefresh")
-    (version "1.0.5")
+    (version "1.0.6")
     (source
       (origin
         (method url-fetch)
@@ -4220,7 +4221,7 @@ file.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1mlinwgvql6s1rbf46yckbfr9j22d3c3z7jx3n6ix7ca18dnf4rj"))))
+            "0lv3rlshh7s0z3aqx5ahnnf8cl082m934bk7gv881mz8nydznz98"))))
     (build-system gnu-build-system)
     (inputs
       `(("libx11" ,libx11)))
@@ -4238,7 +4239,7 @@ up your screen.")
 (define-public xset
   (package
     (name "xset")
-    (version "1.2.3")
+    (version "1.2.4")
     (source
       (origin
         (method url-fetch)
@@ -4248,7 +4249,7 @@ up your screen.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0qw0iic27bz3yz2wynf1gxs70hhkcf9c4jrv7zhlg1mq57xz90j3"))))
+            "0my987wjvra7l92ry6q44ky383yg3phzxhdbn3lqhapm1ll9bzg4"))))
     (build-system gnu-build-system)
     (inputs
       `(("xproto" ,xproto)
@@ -4267,7 +4268,7 @@ up your screen.")
 (define-public xsetroot
   (package
     (name "xsetroot")
-    (version "1.1.1")
+    (version "1.1.2")
     (source
       (origin
         (method url-fetch)
@@ -4277,7 +4278,7 @@ up your screen.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1nf3ii31m1knimbidaaym8p61fq3blv8rrdr2775yhcclym5s8ds"))))
+            "0z21mqvmdl6rl63q77479wgkfygnll57liza1i3va7sr4fx45i0h"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxmu" ,libxmu)
@@ -4352,7 +4353,7 @@ extension.")
 (define-public xwd
   (package
     (name "xwd")
-    (version "1.0.6")
+    (version "1.0.7")
     (source
       (origin
         (method url-fetch)
@@ -4362,7 +4363,7 @@ extension.")
                ".tar.bz2"))
         (sha256
           (base32
-            "0ybx48agdvjp9lgwvcw79r1x6jbqbyl3fliy3i5xwy4d4si9dcrv"))))
+            "1537i8q8pgf0sjklakzfvjwrq5b246qjywrx9ll8xfg0p6w1as6d"))))
     (build-system gnu-build-system)
     (inputs
       `(("libxt" ,libxt)
@@ -4385,7 +4386,7 @@ dump and twice whenthe dump is completed.")
 (define-public xwininfo
   (package
     (name "xwininfo")
-    (version "1.1.3")
+    (version "1.1.4")
     (source
       (origin
         (method url-fetch)
@@ -4395,7 +4396,7 @@ dump and twice whenthe dump is completed.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1y1zn8ijqslb5lfpbq4bb78kllhch8in98ps7n8fg3dxjpmb13i1"))))
+            "00avrpw4h5mr1klp41lv2j4dmq465v6l5kb5bhm4k5ml8sm9i543"))))
     (build-system gnu-build-system)
     (inputs
       `(("libx11" ,libx11)
@@ -4413,7 +4414,7 @@ Various information is displayed depending on which options are selected.")
 (define-public xwud
   (package
     (name "xwud")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
       (origin
         (method url-fetch)
@@ -4423,7 +4424,7 @@ Various information is displayed depending on which options are selected.")
                ".tar.bz2"))
         (sha256
           (base32
-            "1ggql6maivah58kwsh3z9x1hvzxm1a8888xx4s78cl77ryfa1cyn"))))
+            "1a8hdgy40smvblnh3s9f0vkqckl68nmivx7d48zk34m8z18p16cr"))))
     (build-system gnu-build-system)
     (inputs
       `(("xproto" ,xproto)
@@ -4767,6 +4768,27 @@ but are depended upon by many other X Window System packages to provide
 common definitions and porting layer.")
     (license license:x11)))
 
+(define-public xorgproto
+  (package
+    (name "xorgproto")
+    (version "2018.4")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://xorg/individual/proto/"
+                                  name "-" version ".tar.bz2"))
+              (sha256
+               (base32
+                "180mqkp70i44rkmj430pmn9idssvffrgv4y5h19fm698a7h8bs7y"))))
+    (build-system gnu-build-system)
+    (propagated-inputs
+     ;; To get util-macros in (almost?) all package inputs.
+     `(("util-macros" ,util-macros)))
+    (home-page "https://cgit.freedesktop.org/xorg/proto/xorgproto")
+    (synopsis "Xorg protocol headers")
+    (description
+     "This package provides the headers and specification documents defining
+the core protocol and (many) extensions for the X Window System.")
+    (license license:x11)))
 
 
 ;; packages of height 2 in the propagated-inputs tree
@@ -5399,17 +5421,17 @@ Intrinsics (Xt) Library.")
 (define-public twm
   (package
     (name "twm")
-    (version "1.0.9")
+    (version "1.0.10")
     (source
      (origin
        (method url-fetch)
        (uri (string-append
              "mirror://xorg/individual/app/" name "-"
              version
-             ".tar.gz"))
+             ".tar.bz2"))
        (sha256
         (base32
-         "1s1r00x8add3f27xjqxg6q7mwplwrb72gakbh4y6j052as25wchw"))))
+         "1ms5cj1w3g26zg6bxdv1j9hl0pxr4300qnv003cz1q3cl7ffljb4"))))
     (build-system gnu-build-system)
     (inputs
      `(("libxt" ,libxt)
@@ -5628,14 +5650,14 @@ The XCB util-wm module provides the following libraries:
 (define-public xinit
   (package
     (name "xinit")
-    (version "1.3.4")
+    (version "1.4.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://xorg/individual/app/xinit-"
                                   version ".tar.bz2"))
               (sha256
                (base32
-                "1cq2g469mb2cfgr8k57960yrn90bl33vfqri4pdh2zm0jxrqvn3m"))))
+                "1vw2wlg74ig52naw0cha3pgzcwwk25l834j42cg8m5zmybp3a213"))))
     (build-system gnu-build-system)
     (inputs
      `(("xproto" ,xproto)
@@ -5717,7 +5739,7 @@ of an X11 screen.")
 (define-public xmessage
   (package
     (name "xmessage")
-    (version "1.0.4")
+    (version "1.0.5")
     (source
      (origin
        (method url-fetch)
@@ -5727,7 +5749,7 @@ of an X11 screen.")
              ".tar.gz"))
        (sha256
         (base32
-         "1jmcac1xbwplbxfl75sr6w3zqhx1khpdzlqippjsr31cjp1rjc48"))))
+         "0sw0b0cbrjl44brw7qi1jkm61xd7a1lpj04418c6iqk6mf83llwr"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags
@@ -5748,20 +5770,22 @@ to answer a question.  Xmessage can also exit after a specified time.")
 (define-public xterm
   (package
     (name "xterm")
-    (version "330")
+    (version "331")
     (source (origin
               (method url-fetch)
-              (uri (string-append "ftp://ftp.invisible-island.net/xterm/"
-                                  "xterm-" version ".tgz"))
+              (uri (list
+                    (string-append "http://invisible-mirror.net/archives/xterm/"
+                                   name "-" version ".tgz")
+                    (string-append "ftp://ftp.invisible-island.net/xterm/"
+                                   name "-" version ".tgz")))
               (sha256
                (base32
-                "1psnfmqd23v9gxj8a98nzrgvymrk0p1whwqi92gy15bbkzrgkvks"))))
+                "047gk58hvj64974sg259ss5gixj7pac6halmjfz4cc6r1yimds4s"))))
     (build-system gnu-build-system)
     (arguments
-     '(#:configure-flags '("--enable-wide-chars" "--enable-256-color"
-                           "--enable-load-vt-fonts" "--enable-i18n"
-                           "--enable-doublechars" "--enable-luit"
-                           "--enable-mini-luit")
+     '(#:configure-flags '("--enable-wide-chars" "--enable-load-vt-fonts"
+                           "--enable-i18n" "--enable-doublechars"
+                           "--enable-luit" "--enable-mini-luit")
        #:tests? #f))
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -5778,7 +5802,7 @@ to answer a question.  Xmessage can also exit after a specified time.")
        ("libXt" ,libxt)
        ("xproto" ,xproto)
        ("libXaw" ,libxaw)))
-    (home-page "http://invisible-island.net/xterm/")
+    (home-page "https://invisible-island.net/xterm/")
     (synopsis "Terminal emulator for the X Window System")
     (description
      "The xterm program is a terminal emulator for the X Window System.  It
@@ -5789,7 +5813,7 @@ programs that cannot use the window system directly.")
 (define-public perl-x11-xcb
   (package
     (name "perl-x11-xcb")
-    (version "0.16")
+    (version "0.17")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -5797,7 +5821,7 @@ programs that cannot use the window system directly.")
                     "X11-XCB-" version ".tar.gz"))
               (sha256
                (base32
-                "14mnvr1001py2z1n43l18yaw0plwvjg5pcsyc7k81sa0amw8ahzw"))))
+                "12qyf98s5hbybmh0mblpz50c00i68srq73w5rw31m2dhclj8n96q"))))
     (build-system perl-build-system)
     (arguments
      '(;; Disable parallel build to prevent a race condition.
@@ -5920,7 +5944,7 @@ basic eye-candy effects.")
 (define-public xpra
   (package
     (name "xpra")
-    (version "2.2.1")
+    (version "2.2.5")
     (source
      (origin
        (method url-fetch)
@@ -5928,7 +5952,7 @@ basic eye-candy effects.")
                            version ".tar.xz"))
        (sha256
         (base32
-         "052w92w21ywgip5p90nifn8vxqzg09by4a0ai22znhqm5mqh7qc1"))))
+         "1q2l00nc3bgwlhjzkbk4a8x2l8z9w1799yn31icsx5hrgh98a1js"))))
     (build-system python-build-system)
     (inputs `(("ffmpeg" ,ffmpeg)
               ("flac" ,flac)
@@ -5959,7 +5983,7 @@ basic eye-candy effects.")
               ("python2-rencode" ,python2-rencode)
               ("xorg-server" ,xorg-server)))
     (native-inputs `(("pkg-config" ,pkg-config)
-                     ("python2-cython", python2-cython)))
+                     ("python2-cython" ,python2-cython)))
     (arguments
      `(#:python ,python-2 ;; no full Python 3 support yet
        #:configure-flags '("--with-tests"
@@ -5994,12 +6018,14 @@ basic eye-candy effects.")
              (substitute* "setup.py"
                (("/usr/lib/")
                 (string-append (assoc-ref outputs "out") "/lib/")))
+             ;; Use Xvfb with '-nolisten local' to disable abstract X11 sockets.
              (substitute* "./xpra/scripts/config.py"
                ((":.*join.*xvfb.*")
                 (string-append ": \"" (assoc-ref inputs "xorg-server")
                                "/bin/Xvfb +extension Composite"
                                " -screen 0 5760x2560x24+32 -dpi 96 -nolisten"
-                               " tcp -noreset -auth $XAUTHORITY\",\n")))
+                               " tcp -nolisten local -noreset -auth"
+                               " $XAUTHORITY\",\n")))
              (substitute* "./xpra/scripts/config.py"
                (("socket-dir.*: \"\",")
                 "socket-dir\"        : \"~/.xpra\","))

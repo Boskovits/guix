@@ -1,5 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2018 Joshua Sierles, Nextjournal <joshua@nextjournal.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -18,6 +19,7 @@
 
 (define-module (gnu packages graph)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
@@ -32,7 +34,10 @@
   #:use-module (gnu packages maths)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages python)
+  #:use-module (gnu packages python-web)
   #:use-module (gnu packages statistics)
+  #:use-module (gnu packages time)
   #:use-module (gnu packages xml))
 
 (define-public igraph
@@ -137,7 +142,7 @@ more.")
      `(("r-igraph" ,r-igraph)
        ("r-matrix" ,r-matrix)
        ("r-scatterplot3d" ,r-scatterplot3d)))
-    (home-page "http://www.r-project.org")
+    (home-page "https://www.r-project.org")
     (synopsis "Diffusion map")
     (description "This package implements the diffusion map method of data
 parametrization, including creation and visualization of diffusion maps,
@@ -172,3 +177,60 @@ model.")
      "This package interfaces R with the graphviz library for plotting R graph
 objects from the @code{graph} package.")
     (license license:epl1.0)))
+
+(define-public r-rbiofabric
+  (let ((commit "666c2ae8b0a537c006592d067fac6285f71890ac")
+        (revision "1"))
+    (package
+      (name "r-rbiofabric")
+      (version (string-append "0.3-" revision "." (string-take commit 7)))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/wjrl/RBioFabric.git")
+                      (commit commit)))
+                (file-name (string-append name "-" version "-checkout"))
+                (sha256
+                 (base32
+                  "1yahqrcrqpbcywv73y9rlmyz8apdnp08afialibrr93ch0p06f8z"))))
+      (build-system r-build-system)
+      (propagated-inputs
+       `(("r-igraph" ,r-igraph)))
+      (home-page "http://www.biofabric.org/")
+      (synopsis "BioFabric network visualization")
+      (description "This package provides an implementation of the function
+@code{bioFabric} for creating scalable network digrams where nodes are
+represented by horizontal lines, and edges are represented by vertical
+lines.")
+      (license license:expat))))
+
+(define-public python-plotly
+  (package
+    (name "python-plotly")
+    (version "2.4.0")
+    (source
+      (origin
+        (method url-fetch)
+        (uri (pypi-uri "plotly" version))
+        (sha256
+         (base32
+          "0n18116jz6bl5n9cq23vabv1gcbh1x3yficdnfq55v0z4cwy0zlf"))))
+    (build-system python-build-system)
+    (arguments
+     '(#:tests? #f)) ; The tests are not distributed in the release
+    (propagated-inputs
+     `(("python-decorator" ,python-decorator)
+       ("python-nbformat" ,python-nbformat)
+       ("python-pytz" ,python-pytz)
+       ("python-requests" ,python-requests)
+       ("python-six" ,python-six)))
+    (home-page "https://plot.ly/python/")
+    (synopsis "Interactive plotting library for Python")
+    (description "Plotly's Python graphing library makes interactive,
+publication-quality graphs online.  Examples of how to make line plots, scatter
+plots, area charts, bar charts, error bars, box plots, histograms, heatmaps,
+subplots, multiple-axes, polar charts, and bubble charts. ")
+    (license license:expat)))
+
+(define-public python2-plotly
+  (package-with-python2 python-plotly))

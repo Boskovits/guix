@@ -2,8 +2,8 @@
 ;;; Copyright © 2013, 2014, 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
-;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;;
@@ -47,14 +47,14 @@
 (define-public tor
   (package
     (name "tor")
-    (version "0.3.1.9")
+    (version "0.3.2.10")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://dist.torproject.org/tor-"
                                  version ".tar.gz"))
              (sha256
               (base32
-               "09ixizsr635qyshvrn1m5asjkaz4fm8dx80lc3ajyy0fi7vh86vf"))))
+               "1vnb2wkcmm8rnz0fqi3k7arl60mpycs8rjn8hvbgv56g3p1pgpv0"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags (list "--enable-gcc-hardening"
@@ -146,7 +146,8 @@ rejects UDP traffic from the application you're using.")
            (lambda _
              ;; Unfortunately, this is not a tarball produced by
              ;; "make dist".
-             (zero? (system* "autoreconf" "-vfi")))))
+             (invoke "autoreconf" "-vfi")
+             #t)))
        #:tests? #f))
     (inputs
      `(("w3m" ,w3m)
@@ -230,7 +231,9 @@ networks.")
            ;; After all the patching we run the tests after installing.
            ;; This is also a known issue:
            ;; https://github.com/micahflee/onionshare/issues/284
-           (lambda _ (zero? (system* "nosetests" "test")))))))
+           (lambda _
+             (invoke "nosetests" "test")
+             #t)))))
     (native-inputs
      `(("python-nose" ,python-nose)))
     (inputs

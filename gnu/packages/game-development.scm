@@ -4,11 +4,11 @@
 ;;; Copyright © 2015 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2015, 2016, 2017 David Thompson <davet@gnu.org>
-;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016, 2017 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Julian Graham <joolean@gmail.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Manolis Fragkiskos Ragkousis <manolis837@gmail.com>
 ;;; Copyright © 2017 Peter Mikkelsen <petermikkelsen10@gmail.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
@@ -40,50 +40,50 @@
   #:use-module (guix build-system python)
   #:use-module (guix build-system scons)
   #:use-module (gnu packages)
+  #:use-module (gnu packages audio)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages compression)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages databases)
   #:use-module (gnu packages documentation)
+  #:use-module (gnu packages fltk)
   #:use-module (gnu packages fonts)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages fribidi)
+  #:use-module (gnu packages gl)
   #:use-module (gnu packages glib)
+  #:use-module (gnu packages gnome)
   #:use-module (gnu packages gnunet)
   #:use-module (gnu packages graphics)
   #:use-module (gnu packages graphviz)
+  #:use-module (gnu packages gtk)
   #:use-module (gnu packages guile)
+  #:use-module (gnu packages image)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages lua)
   #:use-module (gnu packages m4)
+  #:use-module (gnu packages mp3)
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages music)
   #:use-module (gnu packages ncurses)
+  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages pulseaudio)
   #:use-module (gnu packages python)
   #:use-module (gnu packages qt)
-  #:use-module (gnu packages video)
-  #:use-module (gnu packages compression)
-  #:use-module (gnu packages gl)
-  #:use-module (gnu packages linux)
-  #:use-module (gnu packages xorg)
-  #:use-module (gnu packages xdisorg)
-  #:use-module (gnu packages fontutils)
-  #:use-module (gnu packages image)
-  #:use-module (gnu packages audio)
-  #:use-module (gnu packages pulseaudio)
-  #:use-module (gnu packages gnome)
-  #:use-module (gnu packages gtk)
   #:use-module (gnu packages sdl)
-  #:use-module (gnu packages pkg-config)
+  #:use-module (gnu packages tls)
+  #:use-module (gnu packages video)
+  #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xiph)
-  #:use-module (gnu packages lua)
-  #:use-module (gnu packages mp3)
   #:use-module (gnu packages xml)
-  #:use-module (gnu packages tls))
+  #:use-module (gnu packages xorg))
 
 (define-public bullet
   (package
     (name "bullet")
-    (version "2.86.1")
+    (version "2.87")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/bulletphysics/bullet3/"
@@ -91,7 +91,7 @@
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0nghzcl84p8di215p7xj0gy1hyy072hw2xk9cnmav9hv6bjb4n60"))))
+                "15azjc1jj8ak9ad7c5sbp9nv5gpqjsa0s9pc0bwy63w490f1b323"))))
     (build-system cmake-build-system)
     (arguments
      '(#:configure-flags (list (string-append
@@ -102,7 +102,7 @@
      `(("glu" ,glu)
        ("libx11" ,libx11)
        ("mesa" ,mesa)))
-    (home-page "http://bulletphysics.org/")
+    (home-page "https://pybullet.org/wordpress/")
     (synopsis "3D physics engine library")
     (description
      "Bullet is a physics engine library usable for collision detection.  It
@@ -112,7 +112,7 @@ is used in some video games and movies.")
 (define-public deutex
   (package
    (name "deutex")
-   (version "5.1.0")
+   (version "5.1.1")
    (source (origin
             (method url-fetch)
             (uri (string-append "https://github.com/Doom-Utils/" name
@@ -120,7 +120,7 @@ is used in some video games and movies.")
                                 name "-" version ".tar.xz"))
             (sha256
              (base32
-              "0hwkm0q2w16ddmiwh7x3jcfp58zjb40a5dh7c3sybwm9bar37pn1"))))
+              "0yqzlb3imkdzy8yd7xc69xk9ajf4dhiz3a9ssphyf4c9rcr440wj"))))
    (build-system gnu-build-system)
    (native-inputs `(("asciidoc" ,asciidoc)))
    (home-page "https://github.com/Doom-Utils/deutex")
@@ -240,7 +240,7 @@ PCM data.")
               ("ncurses" ,ncurses)
               ("sdl" ,sdl)
               ("zlib" ,zlib)))
-    (home-page "http://www.nongnu.org/gzochi/")
+    (home-page "https://www.nongnu.org/gzochi/")
     (synopsis "Scalable middleware for multiplayer games")
     (description
      "gzochi is a framework for developing massively multiplayer online games.
@@ -386,7 +386,7 @@ support.")
 (define-public tiled
   (package
     (name "tiled")
-    (version "1.1.0")
+    (version "1.1.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/bjorn/tiled/archive/v"
@@ -394,7 +394,7 @@ support.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1xxvy5xyi32pbdva1hp05xq5l8403ck8hqdkv52lbscy92avvvp8"))))
+                "08bxl6vc7ynnji4r6ij9ayr2jixvfhv4daplw5p96s0gkhdqd90k"))))
     (build-system gnu-build-system)
     (inputs
      `(("qtbase" ,qtbase)
@@ -547,7 +547,15 @@ archive on a per-file basis.")
                                  "love-" version "-linux-src.tar.gz"))
              (sha256
               (base32
-               "11x346pw0gqad8nmkmywzx4xpcbfc3dslbrdw5x94n1i25mk0sxj"))))
+               "11x346pw0gqad8nmkmywzx4xpcbfc3dslbrdw5x94n1i25mk0sxj"))
+             (modules '((guix build utils)))
+             (snippet
+              '(begin
+                 ;; Build with luajit 2.1.0-beta3.  Fixed in love 0.11.
+                 ;; See <https://bitbucket.org/rude/love/issues/1277>.
+                 (substitute* "src/libraries/luasocket/libluasocket/lua.h"
+                   (("> 501") ">= 501"))
+                 #t))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1056,7 +1064,7 @@ games.")
 (define-public godot
   (package
     (name "godot")
-    (version "2.1.4")
+    (version "3.0.1")
     (source (origin
               (method url-fetch)
               (uri
@@ -1064,11 +1072,16 @@ games.")
                               version "-stable.tar.gz"))
               (file-name (string-append name "-" version))
               (sha256
-               (base32 "1mz89nafc1m7srbqvy7iagxrxmqvf5hbqi7i0lwaapkx6q0kpkq7"))))
+               (base32
+                "0k8c12nzhl98i9il9s3awbwdamkrwxk0s47jr7n8a3z93rpszd2p"))))
     (build-system scons-build-system)
     (arguments
      `(#:scons ,scons-python2
        #:scons-flags (list "platform=x11"
+                           ,@(if (string-prefix? "aarch64" (or (%current-target-system)
+                                                               (%current-system)))
+                               `("CCFLAGS=-DNO_THREADS")
+                               '())
                            ;; Avoid using many of the bundled libs.
                            ;; Note: These options can be found in the SConstruct file.
                            "builtin_freetype=no"
@@ -1103,16 +1116,16 @@ games.")
                  (if (file-exists? "godot.x11.tools.64")
                      (rename-file "godot.x11.tools.64" "godot")
                      (rename-file "godot.x11.tools.32" "godot"))
-                 (install-file "godot" bin)))))
+                 (install-file "godot" bin))
+               #t)))
          (add-after 'install 'install-godot-desktop
            (lambda* (#:key outputs #:allow-other-keys)
              (let* ((out (assoc-ref outputs "out"))
                     (desktop (string-append out "/share/applications"))
                     (icon-dir (string-append out "/share/pixmaps")))
-               (mkdir-p desktop)
-               (mkdir-p icon-dir)
                (rename-file "icon.png" "godot.png")
                (install-file "godot.png" icon-dir)
+               (mkdir-p desktop)
                (with-output-to-file
                    (string-append desktop "/godot.desktop")
                  (lambda _
@@ -1136,6 +1149,7 @@ games.")
               ("libwebp" ,libwebp)
               ("libx11" ,libx11)
               ("libxcursor" ,libxcursor)
+              ("libxi" ,libxi)
               ("libxinerama" ,libxinerama)
               ("libxrandr" ,libxrandr)
               ("mesa" ,mesa)
@@ -1150,3 +1164,55 @@ features design tools such as a visual editor, can import 3D models and
 provide high-quality 3D rendering, it contains an animation editor, and can be
 scripted in a Python-like language.")
     (license license:expat)))
+
+(define-public eureka
+  (package
+    (name "eureka")
+    (version "1.21")
+    (source (origin
+              (method url-fetch)
+              (uri (string-append "mirror://sourceforge/eureka-editor/Eureka/"
+                                  version "/eureka-"
+                                  ;; version without dots e.g 1.21 => 121
+                                  (string-join (string-split version #\.) "")
+                                  "-source.tar.gz"))
+              (sha256
+               (base32
+                "1a7pf7xi56fcz7jc8layih5gq5m66g2ss4x5j61kzgip07j6rkir"))))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:tests? #f
+       #:make-flags
+       (let ((out (assoc-ref %outputs "out")))
+         (list (string-append "PREFIX=" out)))
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)
+         (add-before 'build 'prepare-install-directories
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let ((out (assoc-ref outputs "out")))
+               (mkdir-p (string-append out "/bin"))
+               (mkdir-p (string-append out "/share"))
+
+               (with-fluids ((%default-port-encoding #f))
+                 (substitute* "./src/main.cc"
+                   (("/usr/local") out)))
+
+               (substitute* "Makefile"
+                 (("-o root") ""))))))))
+    (inputs `(("mesa" ,mesa)
+              ("libxft" ,libxft)
+              ("libxinerama" ,libxinerama)
+              ("libfontconfig" ,fontconfig)
+              ("libjpeg" ,libjpeg)
+              ("libpng" ,libpng)
+              ("fltk" ,fltk)
+              ("zlib" ,zlib)))
+    (native-inputs `(("pkg-config" ,pkg-config)
+                     ("xdg-utils" ,xdg-utils)))
+    (synopsis "Doom map editor")
+    (description "Eureka is a map editor for the classic DOOM games, and a few
+related games such as Heretic and Hexen.  It comes with a 3d preview mode and
+a 2D editor view.")
+    (home-page "http://eureka-editor.sourceforge.net/")
+    (license license:gpl2+)))

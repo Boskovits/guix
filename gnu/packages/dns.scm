@@ -4,7 +4,7 @@
 ;;; Copyright © 2016 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
-;;; Copyright © 2016 ng0 <ng0@we.make.ritual.n0.is>
+;;; Copyright © 2016 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016, 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
@@ -59,7 +59,7 @@
 (define-public dnsmasq
   (package
     (name "dnsmasq")
-    (version "2.78")
+    (version "2.79")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -67,7 +67,7 @@
                     version ".tar.xz"))
               (sha256
                (base32
-                "0ar5h5v3kas2qx2wgy5iqin15gc4jhqrqs067xacgc3lii1rz549"))))
+                "07w6cw706yyahwvbvslhkrbjf2ynv567cgy9pal8bz8lrbsp9bbq"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -79,16 +79,15 @@
        #:make-flags (list (string-append "PREFIX=" (assoc-ref %outputs "out"))
                           "CC=gcc"
                           "COPTS=\"-DHAVE_DBUS\"")
-       ;; No 'check' target.
-       #:tests? #f))
+       #:tests? #f))                    ; no ‘check’ target
     (home-page "http://www.thekelleys.org.uk/dnsmasq/doc.html")
     (synopsis "Small caching DNS proxy and DHCP/TFTP server")
     (description
-     "Dnsmasq is a lightweight DNS forwarder and DHCP server.  It is designed
-to provide DNS and optionally, DHCP, to a small network.  It can serve the
+     "Dnsmasq is a light-weight DNS forwarder and DHCP server.  It is designed
+to provide DNS and, optionally, DHCP to a small network.  It can serve the
 names of local machines which are not in the global DNS.  The DHCP server
 integrates with the DNS server and allows machines with DHCP-allocated
-addresses to appear in the DNS with names configured either in each host or in
+addresses to appear in the DNS with names configured either on each host or in
 a central configuration file.  Dnsmasq supports static and dynamic DHCP leases
 and BOOTP/TFTP for network booting of diskless machines.")
     ;; Source files only say GPL2 and GPL3 are allowed.
@@ -99,7 +98,7 @@ and BOOTP/TFTP for network booting of diskless machines.")
 (define-public isc-bind
   (package
     (name "bind")
-    (version "9.11.2")
+    (version "9.12.1")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -107,7 +106,7 @@ and BOOTP/TFTP for network booting of diskless machines.")
                     version ".tar.gz"))
               (sha256
                (base32
-                "0yn7wgi2y8mpmvbjbkl4va7p0xsnn48m4yjx6ynb1hzp423asikz"))))
+                "043mjcw405qa0ghm5dkhfsq35gsy279724fz3mjqpr1mbi14dr0n"))))
     (build-system gnu-build-system)
     (outputs `("out" "utils"))
     (inputs
@@ -149,7 +148,8 @@ and BOOTP/TFTP for network booting of diskless machines.")
          ;;          (system "bin/tests/system/ifconfig.sh up")))
          (replace 'check
            (lambda _
-             (zero? (system* "make" "force-test")))))))
+             (invoke "make" "force-test")
+             #t)))))
     (synopsis "An implementation of the Domain Name System")
     (description "BIND is an implementation of the @dfn{Domain Name System}
 (DNS) protocols for the Internet.  It is a reference implementation of those
@@ -284,7 +284,7 @@ asynchronous fashion.")
 (define-public unbound
   (package
     (name "unbound")
-    (version "1.6.7")
+    (version "1.6.8")
     (source
      (origin
        (method url-fetch)
@@ -292,7 +292,7 @@ asynchronous fashion.")
                            version ".tar.gz"))
        (sha256
         (base32
-         "17qwfmlls0w9kpkya3dlpn44b3kr87wsswzg3gawc13hh8yx8ysf"))))
+         "0jfxhh4gc5amhndikskz1s7da27ycn442j3l20bm992n7zijid73"))))
     (build-system gnu-build-system)
     (outputs '("out" "python"))
     (native-inputs
@@ -443,34 +443,41 @@ served by AS112.  Stub and forward zones are supported.")
 (define-public yadifa
   (package
     (name "yadifa")
-    (version "2.2.6")
+    (version "2.3.8")
     (source
-     (let ((build "7246"))
+     (let ((build "7713"))
        (origin
          (method url-fetch)
          (uri
           (string-append "http://cdn.yadifa.eu/sites/default/files/releases/"
                          name "-" version "-" build ".tar.gz"))
          (sha256
-          (base32
-           "041a35f5jz2wcn8pxk1m7b2qln2wbvj4ddwb0a53lqabl912xi6p")))))
+          (base32 "15xhzg4crjcxascwpz6y8qpqcgypzv2p9bspdskp4nx1x1y4316c")))))
     (build-system gnu-build-system)
     (native-inputs
      `(("which" ,which)))
     (inputs
      `(("openssl" ,openssl)))
     (arguments
-     `(#:phases (modify-phases %standard-phases
-                  (add-before 'configure 'omit-example-configurations
-                              (lambda _
-                                (substitute* "Makefile.in"
-                                  ((" (etc|var)") ""))
-                                #t)))
-       #:configure-flags (list "--sysconfdir=/etc"      "--localstatedir=/var"
-                               "--enable-shared"        "--disable-static"
-                               "--enable-messages"      "--enable-ctrl"
-                               "--enable-nsec"          "--enable-nsec3"
-                               "--enable-tsig"          "--enable-caching")))
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'omit-example-configurations
+           (lambda _
+             (substitute* "Makefile.in"
+               ((" (etc|var)") ""))
+             #t)))
+       #:configure-flags
+       (list "--sysconfdir=/etc"
+             "--localstatedir=/var"
+             "--disable-build-timestamp" ; build reproducibly
+             "--enable-shared"
+             "--disable-static"
+             "--enable-acl"
+             "--enable-caching"
+             "--enable-ctrl"            ; enable remote control
+             "--enable-nsec"
+             "--enable-nsec3"
+             "--enable-tsig")))
     (home-page "http://www.yadifa.eu/")
     (synopsis "Authoritative DNS name server")
     (description "YADIFA is an authoritative name server for the @dfn{Domain
@@ -483,14 +490,14 @@ Extensions} (DNSSEC).")
 (define-public knot
   (package
     (name "knot")
-    (version "2.6.4")
+    (version "2.6.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://secure.nic.cz/files/knot-dns/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "0siqfm6iibx5yfshw40wa2dvmh99bibda6bmj96mbkby0jskf38x"))
+                "0ilxwhy7a7jdzynq586pwlgcvqd1j6ycqy9qrwvypfp20rkngk9k"))
               (modules '((guix build utils)))
               (snippet
                '(begin

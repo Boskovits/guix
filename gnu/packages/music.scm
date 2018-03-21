@@ -1,6 +1,6 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2014 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
+;;; Copyright © 2015, 2016, 2017, 2018 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2015 Paul van der Walt <paul@denknerd.org>
 ;;; Copyright © 2016 Al McElrath <hello@yrns.org>
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
@@ -8,12 +8,14 @@
 ;;; Copyright © 2016, 2017 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2016 John J. Foerch <jjfoerch@earthlink.net>
 ;;; Copyright © 2016 Alex Griffin <a@ajgrf.com>
-;;; Copyright © 2017 ng0 <contact.ng0@cryptolab.net>
+;;; Copyright © 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017 Rodger Fox <thylakoid@openmailbox.org>
-;;; Copyright © 2017 Nicolas Goaziou <mail@nicolasgoaziou.fr>
+;;; Copyright © 2017, 2018 Nicolas Goaziou <mail@nicolasgoaziou.fr>
 ;;; Copyright © 2017 Pierre Langlois <pierre.langlois@gmx.com>
 ;;; Copyright © 2017 Arun Isaac <arunisaac@systemreboot.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2018 nee <nee.git@hidamari.blue>
+;;; Copyright © 2018 Stefan Reichör <stefan@xsteve.at>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -113,6 +115,7 @@
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages tex)
   #:use-module (gnu packages tls)
+  #:use-module (gnu packages version-control)
   #:use-module (gnu packages video)
   #:use-module (gnu packages web)
   #:use-module (gnu packages wxwidgets)
@@ -132,11 +135,13 @@
               (sha256
                (base32
                 "1cs3z6frx2ch7rm5ammx9p0rxcjrbj1vq14hvcbimpaw39rdsn3d"))))
-    (build-system gnu-build-system)
+    (build-system scons-build-system)
     (arguments
      `(#:tests? #f  ;no tests
+       #:scons-flags
+       (list (string-append "prefix=" (assoc-ref %outputs "out")))
+       #:scons ,scons-python2
        #:phases
-       ;; TODO: Add scons-build-system and use it here.
        (modify-phases %standard-phases
          (delete 'configure)
          (add-after 'unpack 'scons-propagate-environment
@@ -159,26 +164,18 @@
                                " or \"score/\" in file"
                                " or \"Documentation/\" in file")))
              #t))
-         (replace 'build (lambda _ (zero? (system* "scons"))))
-         (replace 'install
+         (add-after 'install 'fix-directory-permissions
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
-               (and
-                (zero? (system* "scons"
-                                (string-append "prefix=" out)
-                                "install"))
-                ;; Fix directory permissions
-                (begin
-                  (chmod (string-append out "/share/Aria/Documentation") #o555)
-                  (chmod (string-append out "/share/Aria/score") #o555)
-                  #t))))))))
+               (chmod (string-append out "/share/Aria/Documentation") #o555)
+               (chmod (string-append out "/share/Aria/score") #o555)
+               #t))))))
     (inputs
      `(("wxwidgets" ,wxwidgets)
        ("glib" ,glib)
        ("alsa-lib" ,alsa-lib)))
     (native-inputs
-     `(("scons" ,scons)
-       ("pkg-config" ,pkg-config)))
+     `(("pkg-config" ,pkg-config)))
     (home-page "http://ariamaestosa.sourceforge.net/")
     (synopsis "MIDI sequencer and editor")
     (description
@@ -229,18 +226,19 @@ score, keyboard, guitar, drum and controller views.")
                        "sha2" ;; Replaced by openssl.
                        "taglib"
                        "tinysvcmdns")))
-                (patches (search-patches "clementine-use-openssl.patch"))))
+                (patches (search-patches "clementine-use-openssl.patch"
+                                         "clementine-remove-crypto++-dependency.patch"))))
       (build-system cmake-build-system)
       (arguments
        '(#:test-target "clementine_test"
          #:configure-flags
-         (let ((crypto (assoc-ref %build-inputs "crypto++")))
-           (list "-DENABLE_VISUALISATIONS=OFF" ; requires unpackaged "projectm"
-                 "-DCRYPTOPP_FOUND=TRUE"
-                 (string-append "-DCRYPTOPP_INCLUDE_DIRS=" crypto "/include")
-                 (string-append "-DCRYPTOPP_LIBRARY_DIRS=" crypto "/lib")
-                 (string-append "-DCRYPTOPP_LIBRARIES=" crypto "/lib/libcryptopp.a")
-                 "-DUSE_SYSTEM_SHA2=TRUE"))
+         (list ;; Requires unpackaged "projectm"
+               "-DENABLE_VISUALISATIONS=OFF"
+               ;; Otherwise it may try to download a non-free library at run-time.
+               ;; TODO In an origin snippet, remove the code that performs the
+               ;; download.
+               "-DHAVE_SPOTIFY_DOWNLOADER=FALSE"
+               "-DUSE_SYSTEM_SHA2=TRUE")
          #:phases
          (modify-phases %standard-phases
            (add-after 'install 'wrap-program
@@ -257,7 +255,6 @@ score, keyboard, guitar, drum and controller views.")
       (inputs
        `(("boost" ,boost)
          ("chromaprint" ,chromaprint)
-         ("crypto++" ,crypto++)
          ("fftw" ,fftw)
          ("glib" ,glib)
          ("glu" ,glu)
@@ -402,7 +399,7 @@ many input formats and provides a customisable Vi-style user interface.")
                             "Clarinet in Bb.denemo"))
              #t)))))
     (native-inputs
-     `(("glib:bin", glib "bin")   ; for gtester
+     `(("glib:bin" ,glib "bin")   ; for gtester
        ("pkg-config" ,pkg-config)))
     (inputs
      `(("alsa-lib" ,alsa-lib)
@@ -420,7 +417,7 @@ many input formats and provides a customisable Vi-style user interface.")
        ("libsndfile" ,libsndfile)
        ("libtool" ,libtool)
        ("libxml2" ,libxml2)
-       ("lilypond", lilypond)
+       ("lilypond" ,lilypond)
        ("portaudio" ,portaudio)
        ("portmidi" ,portmidi)
        ("rubberband" ,rubberband)))
@@ -444,6 +441,7 @@ background while you work.")
               (uri (string-append
                     "https://github.com/hydrogen-music/hydrogen/archive/"
                     version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
                 "1dy2jfkdw0nchars4xi4isrz66fqn53a9qk13bqza7lhmsg3s3qy"))))
@@ -1053,22 +1051,10 @@ complete studio.")
          (add-after 'unpack 'fix-configuration
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* "default.config"
-               (("csound=csound")
-                (string-append "csound="
-                               (assoc-ref inputs "csound")
-                               "/bin/csound"))
-               (("/usr/bin/aplay")
-                (string-append (assoc-ref inputs "aplay")
-                               "/bin/aplay"))
-               (("/usr/bin/timidity")
-                (string-append (assoc-ref inputs "timidity")
-                               "/bin/timidity"))
-               (("/usr/bin/mpg123")
-                (string-append (assoc-ref inputs "mpg123")
-                               "/bin/mpg123"))
-               (("/usr/bin/ogg123")
-                (string-append (assoc-ref inputs "ogg123")
-                               "/bin/ogg123")))
+               (("/usr/bin/aplay") "aplay")
+               (("/usr/bin/timidity") "timidity")
+               (("/usr/bin/mpg123") "mpg123")
+               (("/usr/bin/ogg123") "ogg123"))
              #t))
          (add-before 'build 'patch-python-shebangs
            (lambda _
@@ -1108,13 +1094,7 @@ for path in [path for path in sys.path if 'site-packages' in path]: site.addsite
        ("pygtk" ,python2-pygtk)
        ("gettext" ,gettext-minimal)
        ("gtk" ,gtk+)
-       ("lilypond" ,lilypond)
-       ;; players needed at runtime
-       ("aplay" ,alsa-utils)
-       ("csound" ,csound) ; optional, needed for some exercises
-       ("mpg123" ,mpg123)
-       ("ogg123" ,vorbis-tools)
-       ("timidity" ,timidity++)))
+       ("lilypond" ,lilypond)))
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("txt2man" ,txt2man)
@@ -1185,6 +1165,14 @@ add_library( rapidjson INTERFACE IMPORTED )"))
                              "exclude:Score/ViewFilter/ViewFilter"
                              "exclude:Formats/PowerTabOldImport/Directions"
                              ))))
+         ;; FIXME: This bug has been fixed upstream, but no release has been
+         ;; made yet.  See https://github.com/powertab/powertabeditor/issues/257
+         (add-after 'unpack 'fix-boost-bug
+           (lambda _
+             (substitute* "source/score/voiceutils.cpp"
+               (("boost::rational<int> duration\\(4, pos.getDurationType\\(\\)\\);")
+                "boost::rational<int> duration(4, static_cast<int>(pos.getDurationType()));"))
+             #t))
          (add-before 'configure 'remove-third-party-libs
            (lambda* (#:key inputs #:allow-other-keys)
              ;; Link with required static libraries, because we're not
@@ -1266,7 +1254,7 @@ users to select LV2 plugins and run them with jalv.")
 (define-public synthv1
   (package
     (name "synthv1")
-    (version "0.8.5")
+    (version "0.8.6")
     (source (origin
               (method url-fetch)
               (uri
@@ -1274,7 +1262,7 @@ users to select LV2 plugins and run them with jalv.")
                               "/synthv1-" version ".tar.gz"))
               (sha256
                (base32
-                "0mvrqk6jy7h2wg442ixwm49w7x15rs4066c2ljrz4kvxlzp5z69i"))))
+                "141ah1gnv5r2k846v5ay15q9q90h01p74240a56vlxqh20z43g92"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; There are no tests.
@@ -1300,7 +1288,7 @@ oscillators and stereo effects.")
 (define-public drumkv1
   (package
     (name "drumkv1")
-    (version "0.8.5")
+    (version "0.8.6")
     (source (origin
               (method url-fetch)
               (uri
@@ -1308,7 +1296,7 @@ oscillators and stereo effects.")
                               "/drumkv1-" version ".tar.gz"))
               (sha256
                (base32
-                "06xqqm1ylmpp2s7xk7xav325gc50kxlvh9vf1343b0n3i8xkgjfg"))))
+                "0fwxrfyp15a4m77mzz4mwj36mhdrj646whlrkvcys33p2w75f8cq"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; There are no tests.
@@ -1335,7 +1323,7 @@ effects.")
 (define-public samplv1
   (package
     (name "samplv1")
-    (version "0.8.5")
+    (version "0.8.6")
     (source (origin
               (method url-fetch)
               (uri
@@ -1343,7 +1331,7 @@ effects.")
                               "/samplv1-" version ".tar.gz"))
               (sha256
                (base32
-                "1gscwybsbaqbnylmgf2baf71cm2g7a0pd11rqmk3cz9hi3lyjric"))))
+                "035bq7yfg1yirsqk63zwkzjw9dxl52lrzq9y0w7nga0vb11xdfij"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; There are no tests.
@@ -1365,6 +1353,42 @@ effects.")
     (description
      "Samplv1 is an old-school polyphonic sampler synthesizer with stereo
 effects.")
+    (license license:gpl2+)))
+
+(define-public padthv1
+  (package
+    (name "padthv1")
+    (version "0.8.6")
+    (source (origin
+              (method url-fetch)
+              (uri
+               (string-append "mirror://sourceforge/padthv1/padthv1/" version
+                              "/padthv1-" version ".tar.gz"))
+              (sha256
+               (base32
+                "1mikab2f9n5q1sfgnp3sbm1rf3v57k4085lsgh0a5gzga2h4hwxq"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f ; There are no tests.
+       #:configure-flags
+       '("CXXFLAGS=-std=gnu++11")))
+    (inputs
+     `(("jack" ,jack-1)
+       ("lv2" ,lv2)
+       ("alsa-lib" ,alsa-lib)
+       ("non-session-manager" ,non-session-manager)
+       ("liblo" ,liblo)
+       ("fftw" ,fftw)
+       ("qtbase" ,qtbase)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("qttools" ,qttools)))
+    (home-page "http://padthv1.sourceforge.net")
+    (synopsis "Polyphonic additive synthesizer")
+    (description
+     "Padthv1 is an old-school polyphonic additive synthesizer with stereo
+effects.  Padthv1 is based on the PADsynth algorithm by Paul Nasca, as a
+special variant of additive synthesis.")
     (license license:gpl2+)))
 
 (define-public amsynth
@@ -1415,7 +1439,7 @@ reverb effects.")
 (define-public setbfree
   (package
     (name "setbfree")
-    (version "0.8.4")
+    (version "0.8.5")
     (source (origin
               (method url-fetch)
               (uri
@@ -1424,7 +1448,7 @@ reverb effects.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1g4s1920kb2q5gpp82l2vxia29qa8g8zvdjgrca8ypynvxpzn65f"))))
+                "0qfccny0hh9lq54272mzmxvfz2jmzcgigjkjwn6v9h6n00gi5bw4"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; no "check" target
@@ -1730,10 +1754,10 @@ projects.")
               (patches (list (search-patch "portmidi-modular-build.patch")))))
     (build-system cmake-build-system)
     (arguments
-     `(#:tests? #f ; tests cannot be linked
+     `(#:tests? #f                      ; tests cannot be linked
+       #:build-type "Release"           ; needed to have PMALSA set
        #:configure-flags
        (list "-DPORTMIDI_ENABLE_JAVA=Off"
-             "-DCMAKE_BUILD_TYPE=Release"    ; needed to have PMALSA set
              "-DPORTMIDI_ENABLE_TEST=Off"))) ; tests fail linking
     (inputs
      `(("alsa-lib" ,alsa-lib)))
@@ -1928,7 +1952,7 @@ capabilities, custom envelopes, effects, etc.")
 (define-public yoshimi
   (package
     (name "yoshimi")
-    (version "1.5.5")
+    (version "1.5.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "mirror://sourceforge/yoshimi/"
@@ -1936,7 +1960,7 @@ capabilities, custom envelopes, effects, etc.")
                                   "/yoshimi-" version ".tar.bz2"))
               (sha256
                (base32
-                "0h71x9742bswifwll7bma1fz648fd5xd0yfp7byvsczy6zhjz5pf"))))
+                "0bjfhfslpa2hjrc9h38m7dlr62953w9n4cvkgvfy495cbym12dak"))))
     (build-system cmake-build-system)
     (arguments
      `(#:tests? #f ; there are no tests
@@ -1956,17 +1980,7 @@ capabilities, custom envelopes, effects, etc.")
               (("-msse -msse2 -mfpmath=sse") "")
               (("-march=(athlon64|core2)" flag)
                (string-append flag " -msse -msse2 -mfpmath=sse")))
-            #t))
-         ;; Yoshimi tries to find ncurses with pkg-config, but our ncurses
-         ;; package does not install .pc files.
-         (add-after 'unpack 'find-ncurses
-           (lambda _
-             (substitute* "src/CMakeLists.txt"
-               (("LIBNCURSES REQUIRED") "LIBNCURSES")
-               (("NCURSES REQUIRED") "NCURSES")
-               (("FATAL_ERROR \"libncurses") "STATUS \"libncurses")
-               (("\\$\\{NCURSES_LIBRARIES\\}") "ncurses"))
-             #t)))))
+            #t)))))
     (inputs
      `(("boost" ,boost)
        ("fftwf" ,fftwf)
@@ -1986,7 +2000,7 @@ capabilities, custom envelopes, effects, etc.")
     (home-page "http://yoshimi.sourceforge.net/")
     (synopsis "Multi-paradigm software synthesizer")
     (description
-     "Yoshimi is a fork of ZynAddSubFX, a feature heavy realtime software
+     "Yoshimi is a fork of ZynAddSubFX, a feature-heavy real-time software
 synthesizer.  It offers three synthesizer engines, multitimbral and polyphonic
 synths, microtonal capabilities, custom envelopes, effects, etc.  Yoshimi
 improves on support for JACK features, such as JACK MIDI.")
@@ -2140,14 +2154,14 @@ from the command line.")
 (define-public qtractor
   (package
     (name "qtractor")
-    (version "0.8.5")
+    (version "0.8.6")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://downloads.sourceforge.net/qtractor/"
                                   "qtractor-" version ".tar.gz"))
               (sha256
                (base32
-                "0anhsd3gg8cxbf31mn2mimf19ycbbxqvd7ldizk93yq2zfbzzqqa"))))
+                "0qf75bccsyplx6fcaz48k6027yp06zhl8ixhhjdbr30xgpslnjm3"))))
     (build-system gnu-build-system)
     (arguments `(#:tests? #f)) ; no "check" target
     (inputs
@@ -2304,6 +2318,33 @@ analogue-like user interface.")
 socket or command line.")
       (license license:gpl3+))))
 
+(define-public curseradio
+  (let ((commit "1bd4bd0faeec675e0647bac9a100b526cba19f8d")
+        (revision "1"))
+    (package
+      (name "curseradio")
+      (version (git-version "0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/chronitis/curseradio.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "11bf0jnj8h2fxhpdp498189r4s6b47vy4wripv0z4nx7lxajl88i"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-lxml" ,python-lxml)
+       ("python-requests" ,python-requests)
+       ("python-pyxdg" ,python-pyxdg)
+       ("mpv" ,mpv)))
+    (home-page "https://github.com/chronitis/curseradio")
+    (synopsis "Command-line Internet radio player")
+    (description "Curseradio is a Curses-based radio player that uses a
+tune-in sender list from @url{http://opml.radiotime.com}.")
+    (license license:expat))))
+
 (define-public pianobar
   (package
     (name "pianobar")
@@ -2459,6 +2500,48 @@ websites such as Libre.fm.")
 (define-public python2-pylast
   (package-with-python2 python-pylast))
 
+(define-public instantmusic
+  (let ((commit "300891d09c703525215fa5a116b9294af1c923c8")
+        (revision "1"))
+    (package
+      (name "instantmusic")
+      (version (git-version "1.0" revision commit))
+      (source (origin
+                (method git-fetch)
+                (uri (git-reference
+                      (url "https://github.com/yask123/Instant-Music-Downloader.git")
+                      (commit commit)))
+                (file-name (git-file-name name version))
+                (sha256
+                 (base32
+                  "0j7qivaa04bpdz3anmgci5833dgiyfqqwq9fdrpl9m68b34gl773"))))
+    (build-system python-build-system)
+    (propagated-inputs
+     `(("python-requests" ,python-requests)
+       ("eyed3" ,eyed3)
+       ("python-beautifulsoup4" ,python-beautifulsoup4)
+       ("youtube-dl" ,youtube-dl)))
+    (arguments
+     '(#:modules ((guix build python-build-system)
+                  (guix build utils)
+                  (srfi srfi-26))
+       #:phases (modify-phases %standard-phases
+                  (add-before 'build 'change-directory
+                    (lambda _
+                      (chdir "instantmusic-0.1") #t))
+                  (add-before 'check 'fix-file-permissions
+                    (lambda _
+                      ;; Fix some read-only files that would cause a build failure
+                      (for-each (cut chmod <> #o644)
+                                (find-files "instantmusic.egg-info"
+                                            "PKG-INFO|.*\\.txt"))
+                      #t)))))
+    (home-page "http://iyask.me/Instant-Music-Downloader/")
+    (synopsis "Command-line program to download a song from YouTube")
+    (description "InstantMusic downloads a song from YouTube in MP3 format.
+Songs can be searched by artist, name or even by a part of the song text.")
+    (license license:expat))))
+
 (define-public beets
   (package
     (name "beets")
@@ -2527,7 +2610,9 @@ of tools for manipulating and accessing your music.")
                     (("add_subdirectory\\(resources/music\\)") ""))))))
     (build-system cmake-build-system)
     (arguments
-     '(#:tests? #f)) ; no check target
+     '(#:tests? #f ; no check target
+       ;; This flag ensures that MilkyTracker links with the JACK library.
+       #:configure-flags '("-DCMAKE_CXX_FLAGS=-ljack")))
     (inputs
      `(("alsa-lib" ,alsa-lib)
        ("jack" ,jack-1)
@@ -3460,6 +3545,62 @@ sample library.")
     (home-page "https://musescore.org")
     (license license:gpl2)))
 
+(define-public muse-sequencer
+  (package
+    (name "muse-sequencer")
+    (version "3.0.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/muse-sequencer/muse.git")
+                    (commit (string-append "muse_"
+                                           (string-map (lambda (c)
+                                                         (if (char=? c #\.)
+                                                             #\_ c)) version)))))
+              (file-name (string-append name "-" version "-checkout"))
+              (sha256
+               (base32
+                "1nninz8qyqlxxjdnrm79y3gr3056pga9l2fsqh674jd3cjvafya3"))))
+    (build-system cmake-build-system)
+    (arguments
+     `(#:tests? #f ; there is no test target
+       #:configure-flags
+       (list "-DENABLE_LV2_SUPPLIED=OFF"
+             "-DENABLE_RTAUDIO=OFF"    ; FIXME: not packaged
+             "-DENABLE_INSTPATCH=OFF"  ; FIXME: not packaged
+             "-DENABLE_VST_NATIVE=OFF")
+       #:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'chdir
+           (lambda _ (chdir "muse3"))))))
+    (inputs
+     `(("alsa-lib" ,alsa-lib)
+       ("lash" ,lash)
+       ("jack" ,jack-1)
+       ("liblo" ,liblo)
+       ("dssi" ,dssi)
+       ("ladspa" ,ladspa)
+       ("lv2" ,lv2)
+       ("lilv" ,lilv)
+       ("sord" ,sord)
+       ("libsndfile" ,libsndfile)
+       ("libsamplerate" ,libsamplerate)
+       ("fluidsynth" ,fluidsynth)
+       ("pcre" ,pcre)
+       ("qtbase" ,qtbase)
+       ("qtsvg" ,qtsvg)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)
+       ("qttools" ,qttools)))
+    (home-page "http://muse-sequencer.org")
+    (synopsis "MIDI/Audio sequencer")
+    (description "MusE is a MIDI/Audio sequencer with recording and editing
+capabilities.  Its audio sequencer supports the LADSPA, DSSI, and LV2 audio
+plugin formats; the MIDI sequencer provides a piano roll, a drum editor, a
+list view, and a score editor.  MusE aims to be a complete multitrack virtual
+studio.")
+    (license license:gpl2+)))
+
 (define-public dssi
   (package
     (name "dssi")
@@ -3475,7 +3616,7 @@ sample library.")
     (build-system gnu-build-system)
     (inputs
      `(("alsa-lib" ,alsa-lib)
-       ("jack-2" ,jack-2)
+       ("jack" ,jack-1)
        ("ladspa" ,ladspa)
        ("libsamplerate" ,libsamplerate)
        ("libsndfile" ,libsndfile)
@@ -3566,7 +3707,7 @@ specification and header.")
        ("dssi" ,dssi)
        ("flac" ,flac)
        ("fftwf" ,fftwf)
-       ("jack-2" ,jack-2)
+       ("jack" ,jack-1)
        ("ladspa" ,ladspa)
        ("liblo" ,liblo)
        ("libsamplerate" ,libsamplerate)
@@ -3587,6 +3728,34 @@ based around a MIDI sequencer that features a rich understanding of music
 notation and includes basic support for digital audio.")
     (home-page "http://www.rosegardenmusic.com/")
     (license license:gpl2)))
+
+(define-public patchmatrix
+  (package
+    (name "patchmatrix")
+    (version "0.12.0")
+    (source (origin
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/OpenMusicKontrollers/patchmatrix.git")
+                    (commit version)))
+              (file-name (string-append "patchmatrix-" version "-checkout"))
+              (sha256
+               (base32
+                "19ivp7h5vq6r1qhmycjxzvrgg7fc4a3v5vb3n4c7afs4z3pj53zi"))))
+    (build-system cmake-build-system)
+    (arguments '(#:tests? #f))          ; no test target
+    (inputs
+     `(("jack" ,jack-1)
+       ("lv2" ,lv2)
+       ("mesa" ,mesa)))
+    (native-inputs
+     `(("pkg-config" ,pkg-config)))
+    (home-page "https://github.com/OpenMusicKontrollers/patchmatrix")
+    (synopsis "Simple JACK patch bay")
+    (description "PatchMatrix is a patch bay for the JACK audio connection
+kit.  It provides a patch bay in flow matrix style for audio, MIDI, CV, and
+OSC connections.")
+    (license license:artistic2.0)))
 
 (define-public sorcer
   (package
@@ -3752,3 +3921,59 @@ for the DSSI Soft Synth Interface.  A brief list of features:
 @end enumerate
 ")
     (license license:gpl2+)))
+
+(define-public libdiscid
+  (package
+    (name "libdiscid")
+    (version "0.6.2")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "http://ftp.musicbrainz.org/pub/musicbrainz/libdiscid/libdiscid-"
+             version ".tar.gz"))
+       (sha256
+        (base32
+         "1f9irlj3dpb5gyfdnb1m4skbjvx4d4hwiz2152f83m0d9jn47r7r"))))
+    (arguments `(#:test-target "check"))
+    (build-system cmake-build-system)
+    (home-page "https://musicbrainz.org/doc/libdiscid")
+    (synopsis "Disc id reader library")
+    (description "libdiscid is a C library for creating MusicBrainz and freedb
+disc IDs from audio CDs.  It reads a CD's table of contents (TOC) and generates
+an identifier which can be used to lookup the CD at MusicBrainz.  Additionally,
+it provides a submission URL for adding the disc ID to the database and gathers
+ISRCs and the MCN (=UPC/EAN) from disc.")
+    (license license:lgpl2.1+)))
+
+(define-public libmusicbrainz
+  (package
+    (name "libmusicbrainz")
+    (version "5.1.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "https://github.com/metabrainz/libmusicbrainz/releases/download/release-"
+             version "/libmusicbrainz-" version ".tar.gz"))
+       (sha256
+        (base32
+         "0ikb9igyyk28jm34raxfzkw2qyn4nzzwsymdyprp7cmvi6g2ajb7"))))
+    (build-system cmake-build-system)
+    (arguments `(#:phases
+                 (modify-phases %standard-phases
+                   (replace 'check
+                     (lambda _
+                       (and
+                        ;; requires network connections
+                        ;; (zero? (system* "tests/mbtest"))
+                        (zero? (system* "tests/ctest"))))))))
+    (inputs `(("neon" ,neon)
+              ("libxml2" ,libxml2)))
+    (native-inputs `(("pkg-config" ,pkg-config)))
+    (home-page "https://musicbrainz.org/doc/libmusicbrainz")
+    (synopsis "MusicBrainz client library")
+    (description "The MusicBrainz Client Library (libmusicbrainz), also known as
+mb_client, is a development library geared towards developers who wish to add
+MusicBrainz lookup capabilities to their applications.")
+    (license license:lgpl2.1+)))

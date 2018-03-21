@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2016 Andreas Enge <andreas@enge.fr>
 ;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
@@ -44,7 +44,12 @@
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-26)
   #:export (installation-os
-            beaglebone-black-installation-os))
+            a20-olinuxino-lime-installation-os
+            a20-olinuxino-lime2-emmc-installation-os
+            a20-olinuxino-micro-installation-os
+            banana-pi-m2-ultra-installation-os
+            beaglebone-black-installation-os
+            nintendo-nes-classic-edition-installation-os))
 
 ;;; Commentary:
 ;;;
@@ -128,7 +133,7 @@ the given target.")
       (stop #~(lambda (target)
                 ;; Delete the temporary directory, but leave everything
                 ;; mounted as there may still be processes using it since
-                ;; 'user-processes' doesn't depend on us.  The 'user-unmount'
+                ;; 'user-processes' doesn't depend on us.  The 'user-file-systems'
                 ;; service will unmount TARGET eventually.
                 (delete-file-recursively
                  (string-append target #$%backing-directory))))))))
@@ -209,7 +214,9 @@ You have been warned.  Thanks for being so brave.\x1b[0m
     (define bare-bones-os
       (load "examples/bare-bones.tmpl"))
 
-    (list (mingetty-service (mingetty-configuration
+    (list (service virtual-terminal-service-type)
+
+          (mingetty-service (mingetty-configuration
                              (tty "tty1")
                              (auto-login "root")))
 
@@ -376,28 +383,56 @@ You have been warned.  Thanks for being so brave.\x1b[0m
                      nvi                          ;:wq!
                      %base-packages))))
 
-(define beaglebone-black-installation-os
+(define* (embedded-installation-os bootloader bootloader-target tty
+                                   #:key (extra-modules '()))
+  "Return an installation os for embedded systems.
+The initrd gets the extra modules EXTRA-MODULES.
+A getty is provided on TTY.
+The bootloader BOOTLOADER is installed to BOOTLOADER-TARGET."
   (operating-system
     (inherit installation-os)
     (bootloader (bootloader-configuration
-                 (bootloader u-boot-beaglebone-black-bootloader)
-                 (target "/dev/sda")))
+                 (bootloader bootloader)
+                 (target bootloader-target)))
     (kernel linux-libre)
-    (initrd (lambda (fs . rest)
-              (apply base-initrd fs
-                     ;; This module is required to mount the sd card.
-                     #:extra-modules (list "omap_hsmmc")
-                     rest)))
-    (services (append
-               ;; mingetty does not work on serial lines.
-               ;; Use agetty with board-specific serial parameters.
-               (list (agetty-service
-                      (agetty-configuration
-                       (extra-options '("-L"))
-                       (baud-rate "115200")
-                       (term "vt100")
-                       (tty "ttyO0"))))
-               (operating-system-user-services installation-os)))))
+    (kernel-arguments
+     (cons (string-append "console=" tty)
+           (operating-system-user-kernel-arguments installation-os)))
+    (initrd-modules (append extra-modules %base-initrd-modules))))
+
+(define beaglebone-black-installation-os
+  (embedded-installation-os u-boot-beaglebone-black-bootloader
+                            "/dev/sda"
+                            "ttyO0"
+                            #:extra-modules
+                            ;; This module is required to mount the sd card.
+                            '("omap_hsmmc")))
+
+
+(define a20-olinuxino-lime-installation-os
+  (embedded-installation-os u-boot-a20-olinuxino-lime-bootloader
+                            "/dev/mmcblk0" ; SD card storage
+                            "ttyS0"))
+
+(define a20-olinuxino-lime2-emmc-installation-os
+  (embedded-installation-os u-boot-a20-olinuxino-lime2-bootloader
+                            "/dev/mmcblk1" ; eMMC storage
+                            "ttyS0"))
+
+(define a20-olinuxino-micro-installation-os
+  (embedded-installation-os u-boot-a20-olinuxino-micro-bootloader
+                            "/dev/mmcblk0" ; SD card storage
+                            "ttyS0"))
+
+(define banana-pi-m2-ultra-installation-os
+  (embedded-installation-os u-boot-banana-pi-m2-ultra-bootloader
+                            "/dev/mmcblk1" ; eMMC storage
+                            "ttyS0"))
+
+(define nintendo-nes-classic-edition-installation-os
+  (embedded-installation-os u-boot-nintendo-nes-classic-edition-bootloader
+                            "/dev/mmcblk0" ; SD card (solder it yourself)
+                            "ttyS0"))
 
 ;; Return the default os here so 'guix system' can consume it directly.
 installation-os

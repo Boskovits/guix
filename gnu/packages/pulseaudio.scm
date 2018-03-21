@@ -54,7 +54,8 @@
                                  version ".tar.gz"))
              (patches (search-patches "libsndfile-armhf-type-checks.patch"
                                       "libsndfile-CVE-2017-8361-8363-8365.patch"
-                                      "libsndfile-CVE-2017-8362.patch"))
+                                      "libsndfile-CVE-2017-8362.patch"
+                                      "libsndfile-CVE-2017-12562.patch"))
              (sha256
               (base32
                "1afzm7jx34jhqn32clc5xghyjglccam2728yxlx37yj2y0lkkwqz"))))
@@ -219,7 +220,7 @@ sound server.")
     (native-inputs
      `(("intltool" ,intltool)
        ("pkg-config" ,pkg-config)))
-    (home-page "http://freedesktop.org/software/pulseaudio/pavucontrol/")
+    (home-page "https://www.freedesktop.org/software/pulseaudio/pavucontrol/")
     (synopsis "PulseAudio volume control")
     (description
      "PulseAudio Volume Control (pavucontrol) provides a GTK+
@@ -270,6 +271,7 @@ sinks.")
               (method url-fetch)
               (uri (string-append "https://github.com/GeorgeFilipkin/"
                                   "pulsemixer/archive/" version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
                 "1lpad90ifr2xfldyf39sbwx1v85rif2gm9w774gwwpjv53zfgk1g"))))

@@ -9,7 +9,7 @@
 ;;; Copyright © 2014, 2017 Eric Bavier <bavier@member.fsf.org>
 ;;; Copyright © 2015, 2016 David Thompson <davet@gnu.org>
 ;;; Copyright © 2016, 2017 Tobias Geerinckx-Rice <me@tobias.gr>
-;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2014, 2015 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2015, 2016, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016 Danny Milosavljevic <dannym+a@scratchpost.org>
@@ -122,14 +122,14 @@ John the Ripper).")
 (define-public python-paramiko
   (package
     (name "python-paramiko")
-    (version "2.1.2")
+    (version "2.1.5")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "paramiko" version))
        (sha256
         (base32
-         "04734n0wy3hxk6rij4fr29in5jmr70nxpc7pqi2ksbjysfz4kbjz"))))
+         "1pf0zxzhgyy4avby3ajg5hp18b0d8iirbkdfw53z0h6w611bp0wk"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -281,14 +281,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography-vectors
   (package
     (name "python-cryptography-vectors")
-    (version "2.0.3")
+    (version "2.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography_vectors" version))
        (sha256
         (base32
-         "1qa117fs1yd50zn2cfxh7d9l999ds0z4h83m9m7j4fk6ffm33f5y"))))
+         "03cpmi5azvipphmva7dxv8k3w7ffblvn5452rs5r6smdhxyiqq6g"))))
     (build-system python-build-system)
     (home-page "https://github.com/pyca/cryptography")
     (synopsis "Test vectors for the cryptography package")
@@ -303,14 +303,14 @@ is used by the Requests library to verify HTTPS requests.")
 (define-public python-cryptography
   (package
     (name "python-cryptography")
-    (version "2.0.3")
+    (version "2.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptography" version))
        (sha256
         (base32
-         "0fnck37zyvbzmccbp7w3jy27jgmij1992j5wyy3gxhw6a11b4jyh"))))
+         "0j2gwr4qxvskip77z4n9nqvr4vi243n3bzij18ay4drc6sg2g87m"))))
     (build-system python-build-system)
     (inputs
      `(("openssl" ,openssl)))
@@ -352,14 +352,14 @@ message digests and key derivation functions.")
 (define-public python-pyopenssl
   (package
     (name "python-pyopenssl")
-    (version "17.3.0")
+    (version "17.5.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pyOpenSSL" version))
        (sha256
         (base32
-         "0xkc1wfnpg6abzllivg3ylhc63npjdy1v81f4kc08bm8cj80nqr9"))))
+         "0wv78mwsdqbxqwdwllf4maqybhbj3vb8328ia04hnb558sxcy41c"))))
     (build-system python-build-system)
     (arguments
      '(#:phases
@@ -450,7 +450,7 @@ python-axolotl.")
 (define-public python-axolotl
   (package
     (name "python-axolotl")
-    (version "0.1.35")
+    (version "0.1.39")
     (source
      (origin
        (method url-fetch)
@@ -458,8 +458,9 @@ python-axolotl.")
              "https://github.com/tgalal/python-axolotl/archive/"
              version ".tar.gz"))
        (file-name (string-append name "-" version ".tar.gz"))
+       (patches (search-patches "python-axolotl-AES-fix.patch"))
        (sha256
-        (base32 "1z8d89p7v40p4bwywjm9h4z28fdvra79ddw06azlkrfjbl7dxmz8"))))
+        (base32 "0badsgkgz0ir3hqynxzsfjgacppi874syvvmgccc6j164053x6zm"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -509,14 +510,14 @@ faster ones are not available.")
 (define-public python-pyaes
   (package
     (name "python-pyaes")
-    (version "1.6.0")
+    (version "1.6.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "pyaes" version))
        (sha256
         (base32
-         "0bp9bjqy1n6ij1zb86wz9lqa1dhla8qr1d7w2kxyn7jbj56sbmcw"))))
+         "13vdaff15k0jyfcss4b4xvfgm8xyv0nrbyw5n1qc7lrqbi0b3h82"))))
     (build-system python-build-system)
     (home-page "https://github.com/ricmoo/pyaes")
     (synopsis "Implementation of AES in Python")
@@ -537,6 +538,7 @@ ECB and OFB).")
         (method url-fetch)
         (uri (string-append "https://github.com/wbond/asn1crypto/archive/"
                             version ".tar.gz"))
+        (file-name (string-append name "-" version ".tar.gz"))
         (sha256
          (base32
           "1kn910896l3knmilla1c9ly20q181s43w1ah08lzkbm1h3j6pcz0"))))
@@ -554,7 +556,7 @@ PKCS#8, PKCS#12, PKCS#5, X.509 and TSP.")
 (define-public python-pynacl
   (package
     (name "python-pynacl")
-    (version "1.1.2")
+    (version "1.2.0")
     (source
      (origin
        (method url-fetch)
@@ -564,7 +566,7 @@ PKCS#8, PKCS#12, PKCS#5, X.509 and TSP.")
        (snippet '(delete-file-recursively "src/libsodium"))
        (sha256
         (base32
-         "135gz0020fqx8fbr9izpwyq49aww202nkqacq0cw61xz99sjpx9j"))))
+         "01vjq0pxyw1mxaqy013hzs8nknmvg3kpzlzmh69jxznyipgvria5"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -574,7 +576,8 @@ PKCS#8, PKCS#12, PKCS#5, X.509 and TSP.")
              (setenv "SODIUM_INSTALL" "system")
              #t)))))
     (native-inputs
-     `(("python-pytest" ,python-pytest)))
+     `(("python-hypothesis" ,python-hypothesis)
+       ("python-pytest" ,python-pytest)))
     (propagated-inputs
      `(("python-cffi" ,python-cffi)
        ("python-six" ,python-six)
@@ -678,3 +681,83 @@ Python.")
 
 (define-public python2-ecpy
   (package-with-python2 python-ecpy))
+
+(define-public python-josepy
+  (package
+    (name "python-josepy")
+    (version "1.0.1")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "josepy" version))
+              (sha256
+               (base32
+                "1k0ahzzaq2rrjiifwbhbp7vm8z4zk0ipgiqwicil80kzlf6bhj4z"))))
+    (build-system python-build-system)
+    (arguments
+     ;; The tests require pytest >= 3.2, which is not yet packaged.
+     '(#:tests? #f))
+    (propagated-inputs
+     `(("python-cryptography" ,python-cryptography)
+       ("python-pyopenssl" ,python-pyopenssl)
+       ("python-six" ,python-six)))
+;; TODO Enable when we have pytest >= 3.2.
+;    (native-inputs
+;     `(("python-coverage" ,python-coverage)
+;       ("python-flake8" ,python-flake8)
+;       ("python-isort" ,python-isort)
+;       ("python-mock" ,python-mock)
+;       ("python-pytest" ,python-pytest-3.0)
+;       ("python-pytest-cov" ,python-pytest-cov)
+;       ("python-pytest-cache" ,python-pytest-cache)
+;       ("python-pytest-flake8" ,python-pytest-flake8)))
+    (home-page "https://github.com/certbot/josepy")
+    (synopsis "JOSE protocol implementation in Python")
+    (description "This package provides a Python implementation of the JOSE
+protocol (Javascript Object Signing and Encryption).")
+    (license license:asl2.0)))
+
+(define-public python2-josepy
+  (package-with-python2 python-josepy))
+
+(define-public python-pycryptodome
+  (package
+    (name "python-pycryptodome")
+    (version "3.5.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pycryptodome" version))
+       (sha256
+        (base32
+         "15mc1h5ij1b6hcqvb048kb4k0ip64n2ky0zz0rml2s78ylv7g5dp"))))
+    (build-system python-build-system)
+    (home-page "https://www.pycryptodome.org")
+    (synopsis "Cryptographic library for Python")
+    (description "This package provides a cryptographic library for Python.
+
+It brings the following enhancements with respect to the last official version
+of PyCrypto:
+
+@itemize
+@item Authenticated encryption modes (GCM, CCM, EAX, SIV, OCB)
+@item Accelerated AES on Intel platforms via AES-NI
+@item First class support for PyPy
+@item Elliptic curves cryptography (NIST P-256 curve only)
+@item Better and more compact API (nonce and iv attributes for ciphers,
+automatic generation of random nonces and IVs, simplified CTR cipher mode, and
+more)
+@item SHA-3 (including SHAKE XOFs) and BLAKE2 hash algorithms
+@item Salsa20 and ChaCha20 stream ciphers
+@item scrypt and HKDF
+@item Deterministic (EC)DSA
+@item Password-protected PKCS#8 key containers
+@item Shamir’s Secret Sharing scheme
+@item Random numbers get sourced directly from the OS (and not from a CSPRNG
+in userspace)
+@item Cleaner RSA and DSA key generation (largely based on FIPS 186-4)
+@item Major clean ups and simplification of the code base
+@end itemize\n")
+    (license license:bsd-2)))
+
+(define-public python2-pycryptodome
+  (package-with-python2 python-pycryptodome))

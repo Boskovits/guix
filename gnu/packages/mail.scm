@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2014, 2015, 2017 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014 Ian Denhardt <ian@zenhack.net>
 ;;; Copyright © 2014 Sou Bunnbu <iyzsong@gmail.com>
@@ -15,15 +15,17 @@
 ;;; Copyright © 2016 Lukas Gradl <lgradl@openmailbox.org>
 ;;; Copyright © 2016 Alex Kost <alezost@gmail.com>
 ;;; Copyright © 2016, 2017 Troy Sankey <sankeytms@gmail.com>
-;;; Copyright © 2016, 2017 ng0 <ng0@n0.is>
+;;; Copyright © 2016, 2017, 2018 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2016 Clément Lassieur <clement@lassieur.org>
-;;; Copyright © 2016, 2017 Arun Isaac <arunisaac@systemreboot.net>
+;;; Copyright © 2016, 2017, 2018 Arun Isaac <arunisaac@systemreboot.net>
 ;;; Copyright © 2016 John Darrington <jmd@gnu.org>
 ;;; Copyright © 2016 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Thomas Danckaert <post@thomasdanckaert.be>
 ;;; Copyright © 2017 Kyle Meyer <kyle@kyleam.com>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Rene Saavedra <rennes@openmailbox.org>
+;;; Copyright © 2018 Pierre Langlois <pierre.langlois@gmx.com>
+;;; Copyright © 2018 Alex Vong <alexvong1995@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -101,6 +103,7 @@
   #:use-module (gnu packages networking)
   #:use-module (gnu packages web)
   #:use-module (gnu packages webkit)
+  #:use-module (gnu packages w3m)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages docbook)
@@ -128,7 +131,15 @@
                                  version ".tar.bz2"))
              (sha256
               (base32
-               "1dn71p85wlyisnwsb485sk3q5v393k3dizsa9fmimskdwjwgk3ch"))))
+               "1dn71p85wlyisnwsb485sk3q5v393k3dizsa9fmimskdwjwgk3ch"))
+             (patches
+              (search-patches "mailutils-uninitialized-memory.patch"))
+             (snippet
+              ;; For a rebuild of the Flex/Bison byproducts touched by the
+              ;; patch above.
+              '(for-each delete-file
+                         '("mh/mh_alias_lex.c"
+                           "libmailutils/cfg/parser.c")))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -181,6 +192,12 @@
        ;; TODO: Add `--with-sql'.
        #:configure-flags '("--sysconfdir=/etc")
        #:parallel-tests? #f))
+    (native-inputs
+     ;; Note: Bison and Flex needed due to
+     ;; 'mailutils-uninitialized-memory.patch'.
+     `(("bison" ,bison)
+       ("flex" ,flex)
+       ("perl" ,perl)))                           ;for 'gylwrap'
     (inputs
      `(("dejagnu" ,dejagnu)
        ("m4" ,m4)
@@ -240,14 +257,14 @@ aliasing facilities to work just as they would on normal mail.")
 (define-public mutt
   (package
     (name "mutt")
-    (version "1.9.2")
+    (version "1.9.3")
     (source (origin
              (method url-fetch)
              (uri (string-append "https://bitbucket.org/mutt/mutt/downloads/"
                                  "mutt-" version ".tar.gz"))
              (sha256
               (base32
-               "15kqxpx8bykqbyw4q33hkz0j2f65v6cl21sl5li2vw5vaaim5qd2"))
+               "1qbngck1pq1jkpnbpcwcb2q2zqrkgp0nd68wwp57bprxjgb8a6j3"))
              (patches (search-patches "mutt-store-references.patch"))))
     (build-system gnu-build-system)
     (inputs
@@ -279,7 +296,7 @@ operating systems.")
 (define-public neomutt
   (package
     (name "neomutt")
-    (version "20171208")
+    (version "20180223")
     (source
      (origin
        (method url-fetch)
@@ -287,7 +304,7 @@ operating systems.")
                            "/archive/" name "-" version ".tar.gz"))
        (sha256
         (base32
-         "0dfp7m794ws6vg029zx7wrrjrscrnmi8cvbzqzgxafl97bbjipwz"))))
+         "1fr7158xhrhasylyxp709g9mdbggdmni3qn3baxvczfg2w003fhh"))))
     (build-system gnu-build-system)
     (inputs
      `(("cyrus-sasl" ,cyrus-sasl)
@@ -302,46 +319,72 @@ operating systems.")
        ("libidn" ,libidn)
        ("libxml2" ,libxml2)
        ("lmdb" ,lmdb)
-       ("docbook-xsl" ,docbook-xsl)
        ("notmuch" ,notmuch)))
     (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
+     `(("automake" ,automake)
        ("gettext-minimal" ,gettext-minimal)
-       ("pkg-config" ,pkg-config)))
+       ("pkg-config" ,pkg-config)
+       ("docbook-xsl" ,docbook-xsl)
+       ("docbook-xml" ,docbook-xml-4.2)
+       ("w3m" ,w3m)
+       ("tcl" ,tcl)))
     (arguments
-     `(#:configure-flags
-       (list "--enable-gpgme"
+     `(#:tests? #f
+       #:configure-flags
+       (list "--gpgme"
 
              ;; database, implies header caching
-             "--without-tokyocabinet"
-             "--without-qdbm"
-             "--without-bdb"
-             "--with-lmdb"
-             (string-append "--with-kyotocabinet="
-                            (assoc-ref %build-inputs "kyotocabinet"))
-             "--with-gdbm"
+             "--disable-tokyocabinet"
+             "--disable-qdbm"
+             "--disable-bdb"
+             "--lmdb"
+             "--kyotocabinet"
 
-             "--with-gnutls"
-             "--without-ssl"
-             "--with-sasl"
+             "--gdbm"
 
-             "--enable-smime"
-             "--enable-notmuch"
-             "--with-idn"
+             "--gnutls"
+             "--disable-ssl"
+             "--sasl"
+             (string-append "--with-sasl="
+                            (assoc-ref %build-inputs "cyrus-sasl"))
+
+
+             "--smime"
+             "--notmuch"
+             "--idn"
 
              ;; If we do not set this, neomutt wants to check
              ;; whether the path exists, which it does not
              ;; in the chroot. The workaround is this.
              "--with-mailpath=/var/mail"
 
-             (string-append "--with-curses="
-                            (assoc-ref %build-inputs "ncurses")))
+             "--with-ui=ncurses"
+             (string-append "--with-ncurses="
+                            (assoc-ref %build-inputs "ncurses"))
+             (string-append "--prefix="
+                            (assoc-ref %outputs "out"))
+             "--debug")
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'autoconf
+         ;; TODO: autosetup is meant to be included in the source,
+         ;; but we should package autosetup and use our own version of it.
+         (add-before 'configure 'fix-sasl-test
            (lambda _
-             (zero? (system* "sh" "autoreconf" "-vfi")))))))
+             ;; Upstream suggestion to fix the failing sasl autosetup test.
+             (substitute* "auto.def"
+               (("cc-with \\[list -cflags -I\\$prefix/include -libs")
+                "cc-with [list -includes stddef.h -cflags -I$prefix/include -libs"))
+             #t))
+         (replace 'configure
+           (lambda* (#:key outputs inputs configure-flags #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (flags `(,@configure-flags))
+                    (bash (which "bash")))
+               (setenv "SHELL" bash)
+               (setenv "CONFIG_SHELL" bash)
+               (apply invoke bash
+                      (string-append (getcwd) "/configure")
+                      flags)))))))
     (home-page "https://www.neomutt.org/")
     (synopsis "Command-line mail reader based on Mutt")
     (description
@@ -429,7 +472,7 @@ and corrections.  It is based on a Bayesian filter.")
 (define-public offlineimap
   (package
     (name "offlineimap")
-    (version "7.1.4")
+    (version "7.1.5")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/OfflineIMAP/offlineimap/"
@@ -437,7 +480,7 @@ and corrections.  It is based on a Bayesian filter.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0m34iks3l9p6shqkgfhfpiccglm6gk5nj98x20pvahl58nclmzn6"))))
+                "1qa3km3s3yhmpgzh76dnzwn22aa8fh39814zgnlyhs07l23ffa4f"))))
     (build-system python-build-system)
     (native-inputs
      `(("asciidoc" ,asciidoc)))
@@ -532,27 +575,27 @@ security functionality including PGP, S/MIME, SSH, and SSL.")
 (define-public mu
   (package
     (name "mu")
-    (version "0.9.18")
+    (version "1.0")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/djcb/mu/releases/"
-                                  "download/" version "/mu-"
-                                  version ".tar.gz"))
+                                  "download/v" version "/mu-"
+                                  version ".tar.xz"))
               (sha256
                (base32
-                "02g82zvxfgn17wzy846bfxj0izjj7yklhwdnhwxy1y2kin4fqnb5"))))
+                "04x5azl19gszw2h7argq666gf9xs4hy9q7w9cbqxvy08n56xqsln"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)
        ("glib" ,glib "bin")             ; for gtester
-       ("emacs" ,emacs-minimal)))
+       ("emacs" ,emacs-minimal)
+       ("tzdata" ,tzdata-for-tests)))   ;for mu/test/test-mu-query.c
     ;; TODO: Add webkit and gtk to build the mug GUI.
     (inputs
      `(("xapian" ,xapian)
        ("guile" ,guile-2.2)
        ("glib" ,glib)
-       ("gmime" ,gmime)
-       ("tzdata" ,tzdata)))             ;for mu/test/test-mu-query.c
+       ("gmime" ,gmime)))
     (arguments
      `(#:modules ((guix build gnu-build-system)
                   (guix build utils)
@@ -693,14 +736,14 @@ invoking @command{notifymuch} from the post-new hook.")
 (define-public notmuch
   (package
     (name "notmuch")
-    (version "0.25.3")
+    (version "0.26")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://notmuchmail.org/releases/notmuch-"
                                   version ".tar.gz"))
               (sha256
                (base32
-                "1fyx20rjpwbf2j1v5fpa5s0rjnwhcgvijzh2qyinp8rlbh1qxmab"))))
+                "1pvn1n7giv8n3xlazi3wpscdqhd2yak0fgv68aj23myr5bnr9s6k"))))
     (build-system gnu-build-system)
     (arguments
      `(#:modules ((guix build gnu-build-system)
@@ -852,7 +895,7 @@ and search library.")
 (define-public getmail
   (package
     (name "getmail")
-    (version "5.4")
+    (version "5.5")
     (source
      (origin
        (method url-fetch)
@@ -860,7 +903,7 @@ and search library.")
                            name "-" version ".tar.gz"))
        (sha256
         (base32
-         "1iwss9z94p165gxr2yw7s9q12a0bn71fcdbikzkykr5s7xxnz2ds"))))
+         "0l43lbnrnyyrq8mlnw37saq6v0mh3nkirdq1dwnsrihykzjjwf70"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f ; no tests
@@ -888,7 +931,7 @@ useful features.")
              (sha256
                (base32 "1sxnaglp5hb0z78sgnfzva4x8m4flqhicvm1dz0krkxdmfsafrsf"))))
     (build-system gnu-build-system)
-    (native-inputs `(("autoconf" ,(autoconf-wrapper))
+    (native-inputs `(("autoconf" ,autoconf-wrapper)
                      ("automake" ,automake)
                      ("libtool" ,libtool)
                      ("pkg-config" ,pkg-config)))
@@ -1049,17 +1092,17 @@ delivery.")
 (define-public exim
   (package
     (name "exim")
-    (version "4.90")
+    (version "4.90.1")
     (source
      (origin
        (method url-fetch)
-       (uri (list (string-append "ftp://ftp.exim.org/pub/exim/exim4/exim-"
+       (uri (list (string-append "https://ftp.exim.org/pub/exim/exim4/exim-"
                                  version ".tar.bz2")
-                  (string-append "ftp://ftp.exim.org/pub/exim/exim4/old/exim-"
+                  (string-append "https://ftp.exim.org/pub/exim/exim4/old/exim-"
                                  version ".tar.bz2")))
        (sha256
         (base32
-         "1cmx2648zhpsc4pznky7qsqbjazd3wn4gpslbl30j56cv1m6rb3x"))))
+         "1w6blvvrd87c649j8xpag034md2w1ib0db9c4ijqbzc5dh2i1xfq"))))
     (build-system gnu-build-system)
     (inputs
      `(("bdb" ,bdb)
@@ -1137,7 +1180,7 @@ facilities for checking incoming mail.")
 (define-public dovecot
   (package
     (name "dovecot")
-    (version "2.3.0")
+    (version "2.3.0.1")
     (source
      (origin
        (method url-fetch)
@@ -1145,7 +1188,7 @@ facilities for checking incoming mail.")
                            (version-major+minor version) "/"
                            name "-" version ".tar.gz"))
        (sha256 (base32
-                "10c5myzgys866c3x6jdr1s9x9pqnjd5vpyz8z384sph21m3wnq6y"))))
+                "0lzisrdgrj5qqwjb7bv99mf2aljm568r6g108yisp0s644z2nxxb"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("pkg-config" ,pkg-config)))
@@ -1332,7 +1375,7 @@ write simple, representation-independent mail handling code.")
 (define-public perl-email-address
   (package
     (name "perl-email-address")
-    (version "1.908")
+    (version "1.909")
     (source
      (origin
        (method url-fetch)
@@ -1340,7 +1383,7 @@ write simple, representation-independent mail handling code.")
                            "Email-Address-" version ".tar.gz"))
        (sha256
         (base32
-         "0i6ljdvpy279hpbqf6lgv4figr376rb2sh4yphj86xkdzsyn1y75"))))
+         "0l7x6sl06j9ffgfz5f9vgms2b5axd4cgp5fj03ivb3kia4km6b3g"))))
     (build-system perl-build-system)
     (home-page "http://search.cpan.org/dist/Email-Address")
     (synopsis "Email address parsing and creation")
@@ -1769,7 +1812,7 @@ in Perl.")
              (patch-shebang "mb2md" (list (string-append perl "/bin")))
              (chmod "mb2md" #o555))
            #t))))
-    (native-inputs `(("gzip", gzip)))
+    (native-inputs `(("gzip" ,gzip)))
     (inputs `(("perl" ,perl)
               ("perl-timedate" ,perl-timedate)))
     (home-page "http://batleth.sapienti-sat.org/projects/mb2md/")
@@ -1916,14 +1959,14 @@ transfer protocols.")
 (define-public opensmtpd
   (package
     (name "opensmtpd")
-    (version "6.0.2p1")
+    (version "6.0.3p1")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://www.opensmtpd.org/archives/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1b4h64w45hpmfq5721smhg4s0shs64gbcjqjpx3fbiw4hz8bdy9a"))))
+                "10bsfsnlg9d9i6l2izdnxp05s3ri8fvwzqxvx1jmarc852382619"))))
     (build-system gnu-build-system)
     (inputs
      `(("bdb" ,bdb)
@@ -1937,10 +1980,10 @@ transfer protocols.")
        ("groff" ,groff)))
     (arguments
      `(#:configure-flags
-       (list "--with-table-db" "--localstatedir=/var"
+       (list "--with-table-db" "--with-auth-pam" "--localstatedir=/var"
              "--with-user-smtpd=smtpd" "--with-user-queue=smtpq"
              "--with-group-queue=smtpq"
-             "--with-path-socket=/var/run"
+             "--with-path-socket=/var/run" ; not default (./configure lies)
              "--with-path-CAfile=/etc/ssl/certs/ca-certificates.crt")
        #:phases
        (modify-phases %standard-phases
@@ -2039,14 +2082,14 @@ for OpenSMTPD to extend its functionality.")
 (define-public python-mailmanclient
   (package
     (name "python-mailmanclient")
-    (version "1.0.1")
+    (version "3.1.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "mailmanclient" version))
        (sha256
         (base32
-         "1cfjh45fgbsax5hjj2inq9nk33dhdvh63xhysc8dhnqidgqgm8c5"))))
+         "0fdfs5g3pf30v2i7w18pdkv9xnfxmfcv66mzv56dck0a1igq07m3"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f)) ; Requires mailman running
@@ -2066,7 +2109,7 @@ the GNU Mailman 3 REST API.")
 (define-public mlmmj
   (package
     (name "mlmmj")
-    (version "1.2.19.0")
+    (version "1.3.0")
     (source
      (origin
        (method url-fetch)
@@ -2074,7 +2117,7 @@ the GNU Mailman 3 REST API.")
                            version ".tar.bz2"))
        (sha256
         (base32
-         "1piwvcxkqadjwk5x8jicaiyz9nngmaj3w13ghdqgaki32xd7zk9v"))))
+         "0hpj10qad821ci11si8xc2qnmkzfn90y13s43fm4fca38f0qjp8w"))))
     (build-system gnu-build-system)
     (inputs
      `(("perl" ,perl))) ; For "contrib/web/"
@@ -2125,14 +2168,14 @@ installation on systems where resources are limited.  Its features include:
 (define-public python2-django-mailman3
   (package
     (name "python2-django-mailman3")
-    (version "1.0.1")
+    (version "1.1.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "django-mailman3" version))
        (sha256
         (base32
-         "1adxyh8knw9knjlh73xq0jpn5adml0ck4alsv0swakm95wfyx46z"))))
+         "1xjdkgfjwhgyrp5nxw65dcpcsr98ygj6856sp0bwkrmyxpd1xxk2"))))
     (build-system python-build-system)
     (arguments
      `(#:phases
@@ -2236,7 +2279,7 @@ on the fly.  Both programs are written in C and are very fast.")
      (origin
        (method url-fetch)
        (uri (string-append
-             "http://jetmore.org/john/code/swaks/files/swaks-"
+             "https://jetmore.org/john/code/swaks/files/swaks-"
              version ".tar.gz"))
        (sha256
         (base32
@@ -2252,7 +2295,7 @@ on the fly.  Both programs are written in C and are very fast.")
          (delete 'configure)
          (replace 'build
            (lambda _
-             (zero? (system* "pod2man" "doc/ref.pod" "swaks.1"))))
+             (invoke "pod2man" "doc/ref.pod" "swaks.1")))
          (replace 'install
            (lambda* (#:key outputs #:allow-other-keys)
              (let ((out (assoc-ref outputs "out")))
@@ -2265,7 +2308,7 @@ on the fly.  Both programs are written in C and are very fast.")
                                           "/bin/swaks")
                `("PERL5LIB" ":" = (,(getenv "PERL5LIB"))))
              #t)))))
-    (home-page "http://jetmore.org/john/code/swaks/")
+    (home-page "https://jetmore.org/john/code/swaks/")
     (synopsis "Featureful SMTP test tool")
     (description "Swaks is a flexible, scriptable, transaction-oriented SMTP
 test tool.  It handles SMTP features and extensions such as TLS,

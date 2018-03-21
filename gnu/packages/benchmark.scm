@@ -1,6 +1,7 @@
 ;;; GNU Guix --- Functional package management for GNU
 ;;; Copyright © 2016, 2017 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Dave Love <fx@gnu.org>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -33,7 +34,7 @@
 (define-public fio
   (package
     (name "fio")
-    (version "3.2")
+    (version "3.5")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -41,7 +42,7 @@
                        "fio-" version ".tar.bz2"))
               (sha256
                (base32
-                "1f5vina9bxn99drda8dhbxng8ypj4ny72xh6mp8rq955d0f8sq0z"))))
+                "1rrzcrn07db4pffvi2q0d0k884bwcapx6r1rfv4yx9066snvx240"))))
     (build-system gnu-build-system)
     (arguments
      '(#:test-target "test"

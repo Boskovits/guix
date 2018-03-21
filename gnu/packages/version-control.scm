@@ -6,16 +6,16 @@
 ;;; Copyright © 2015, 2016 Mathieu Lirzin <mthl@gnu.org>
 ;;; Copyright © 2014, 2015, 2016 Mark H Weaver <mhw@netris.org>
 ;;; Copyright © 2014, 2016 Eric Bavier <bavier@member.fsf.org>
-;;; Copyright © 2015, 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
+;;; Copyright © 2015, 2016, 2017, 2018 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2015 Kyle Meyer <kyle@kyleam.com>
 ;;; Copyright © 2015, 2017 Ricardo Wurmus <rekado@elephly.net>
 ;;; Copyright © 2016, 2017 Leo Famulari <leo@famulari.name>
-;;; Copyright © 2016, 2017 ng0 <contact.ng0@cryptolab.net>
-;;; Copyright © 2017 Tobias Geerinckx-Rice <me@tobias.gr>
+;;; Copyright © 2016, 2017, 2018 Nils Gillmann <ng0@n0.is>
+;;; Copyright © 2017, 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2017 Vasile Dumitrascu <va511e@yahoo.com>
 ;;; Copyright © 2017 Clément Lassieur <clement@lassieur.org>
 ;;; Copyright © 2017 André <eu@euandre.org>
-;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Stefan Reichör <stefan@xsteve.at>
 ;;; Copyright © 2017 Oleg Pykhalov <go.wigust@gmail.com>
 ;;; Copyright © 2018 Gábor Boskovits <boskovits@gmail.com>
@@ -53,6 +53,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages bison)
   #:use-module (gnu packages boost)
+  #:use-module (gnu packages check)
   #:use-module (gnu packages cook)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages docbook)
@@ -139,14 +140,14 @@ as well as the classic centralized workflow.")
    (name "git")
    ;; XXX When updating Git, check if the special 'git:src' input to cgit needs
    ;; to be updated as well.
-   (version "2.15.1")
+   (version "2.16.2")
    (source (origin
             (method url-fetch)
             (uri (string-append "mirror://kernel.org/software/scm/git/git-"
                                 version ".tar.xz"))
             (sha256
              (base32
-              "0p04linqdywdf7m1hqa904fzqvgzplsxlzdqrn96j1j5gpyr174r"))))
+              "05y7480f2p7fkncbhf08zz56jbykcp0ia5gl6y3djs0lsa5mfq2m"))))
    (build-system gnu-build-system)
    (native-inputs
     `(("native-perl" ,perl)
@@ -159,7 +160,7 @@ as well as the classic centralized workflow.")
                 version ".tar.xz"))
           (sha256
            (base32
-            "0mi609plzqqwx271hr9m5j4syggqx255bbzml6ca9j5fadywysvc"))))))
+            "01fbmfsqcv7jmyh80yg3fv5jwv78zvxys9b0fd6bdcy89h9ybvj2"))))))
    (inputs
     `(("curl" ,curl)
       ("expat" ,expat)
@@ -473,7 +474,7 @@ to lock down your entire repository.")
 (define-public git-remote-gcrypt
   (package
    (name "git-remote-gcrypt")
-   (version "1.0.1")
+   (version "1.0.3")
    (source (origin
              (method git-fetch)
              (uri (git-reference
@@ -482,7 +483,7 @@ to lock down your entire repository.")
              (file-name (string-append name "-" version "-checkout"))
              (sha256
               (base32
-               "0znrx77vpm4a8l7yiybsxk5vrawijqqfxmp1p2yhaaw8cbgrj7az"))))
+               "1vay3204729c7wajgn3nxf0s0hzwpdrw14pl6kd8w2ss25gvw2k1"))))
    (build-system trivial-build-system)
    (arguments
     `(#:modules ((guix build utils))
@@ -583,10 +584,10 @@ collaboration using typical untrusted file hosts or services.")
        ("git:src"
         ,(origin
            (method url-fetch)
-           (uri "mirror://kernel.org/software/scm/git/git-2.10.4.tar.xz")
+           (uri "mirror://kernel.org/software/scm/git/git-2.10.5.tar.xz")
            (sha256
             (base32
-             "1pni4mgih5w42813dxljl61s7xmcpdnar34d9m4548hzpljjyd4l"))))
+             "1r2aa19gnrvm2y4fqcvpw1g9l72n48axqmpgv18s6d0y2p72vhzj"))))
        ("openssl" ,openssl)
        ("zlib" ,zlib)))
     (home-page "https://git.zx2c4.com/cgit/")
@@ -634,38 +635,134 @@ default) of the repository.")
   (package-with-python2
    (strip-python2-variant python-ghp-import)))
 
+(define-public python-gitdb
+  (package
+    (name "python-gitdb")
+    (version "2.0.3")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "gitdb2" version))
+              (sha256
+               (base32
+                "02azg62mr99b7cllyjrly77np3vw32y8nrxpa2xjapiyaga2j3mn"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:phases (modify-phases %standard-phases
+                  (add-before 'check 'create-test-repository
+                    (lambda _
+                      (mkdir "/tmp/testrepo")
+                      ;; Some tests require a git repository, so create one.
+                      (with-directory-excursion "/tmp/testrepo"
+                        (do ((filecount 1 (1+ filecount)))
+                            ((> filecount 1000))
+                          (call-with-output-file (string-append
+                                                  "file" (number->string filecount))
+                            (lambda (port)
+                              (format port "~a" filecount))))
+                        (and
+                         (invoke "git" "init")
+                         (invoke "git" "config" "user.name" "Total Git")
+                         (invoke "git" "config" "user.email" "git@localhost")
+                         (invoke "git" "add" "-A")
+                         (invoke "git" "commit" "-q" "-m" "dummy commit")))
+
+                      ;; The repository checkout must be a "bare" clone.
+                      (invoke "git" "clone" "--bare" "/tmp/testrepo"
+                              "/tmp/testrepo.git")))
+                  (replace 'check
+                    (lambda _
+                      (setenv "GITDB_TEST_GIT_REPO_BASE" "/tmp/testrepo.git")
+                      ;; Skip tests that must be run from the gitdb repository.
+                      (setenv "TRAVIS" "1")
+                      (invoke "nosetests" "-v"))))))
+    (propagated-inputs
+     `(("python-smmap2" ,python-smmap2)))
+    (native-inputs
+     `(("git" ,git)
+       ("python-nose" ,python-nose)))
+    (home-page "https://github.com/gitpython-developers/gitdb")
+    (synopsis "Python implementation of the Git object database")
+    (description
+     "GitDB allows you to access @dfn{bare} Git repositories for reading and
+writing.  It aims at allowing full access to loose objects as well as packs
+with performance and scalability in mind.  It operates exclusively on streams,
+allowing to handle large objects with a small memory footprint.")
+    (license license:bsd-3)))
+
+(define-public python2-gitdb
+  (package-with-python2 python-gitdb))
+
+(define-public python-gitpython
+  (package
+    (name "python-gitpython")
+    (version "2.1.8")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "GitPython" version))
+              (sha256
+               (base32
+                "1sbn018mn3y2r58ix5z12na1s02ccprhckb88yq3bdddvqjvqqdd"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f ;XXX: Tests can only be run within the GitPython repository.
+       #:phases (modify-phases %standard-phases
+                  (add-after 'unpack 'embed-git-reference
+                    (lambda* (#:key inputs #:allow-other-keys)
+                      (substitute* "git/cmd.py"
+                        (("git_exec_name = \"git\"")
+                         (string-append "git_exec_name = \""
+                                        (assoc-ref inputs "git")
+                                        "/bin/git\"")))
+                      #t)))))
+    (inputs
+     `(("git" ,git)))
+    (propagated-inputs
+     `(("python-gitdb" ,python-gitdb)))
+    (native-inputs
+     `(("python-ddt" ,python-ddt)
+       ("python-nose" ,python-nose)))
+    (home-page "https://github.com/gitpython-developers/GitPython")
+    (synopsis "Python library for interacting with Git repositories")
+    (description
+     "GitPython is a python library used to interact with Git repositories,
+high-level like git-porcelain, or low-level like git-plumbing.
+
+It provides abstractions of Git objects for easy access of repository data,
+and additionally allows you to access the Git repository more directly using
+either a pure Python implementation, or the faster, but more resource intensive
+@command{git} command implementation.")
+    (license license:bsd-3)))
+
+(define-public python2-gitpython
+  (package-with-python2 python-gitpython))
+
 (define-public shflags
   (package
     (name "shflags")
-    (version "1.2.0")
+    (version "1.2.3")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://github.com/kward/shflags/archive/v"
                                   version ".tar.gz"))
+              (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0zxw12haylaq60a335xlqcs4afw2zrgwqymmpw0m21r51w6irdmr"))))
-    (build-system trivial-build-system)
+                "1h9xfrwwdhzflipfwdcgcc3y7zapdslnyk1rg5y8jm7k144rfrs4"))))
+    (build-system gnu-build-system)
     (native-inputs `(("tar" ,tar)
                      ("gzip" ,gzip)))
     (arguments
-     `(#:modules ((guix build utils))
-       #:builder (begin
-                   (use-modules (guix build utils))
-                   (let* ((source (assoc-ref %build-inputs "source"))
-                          (tar    (assoc-ref %build-inputs "tar"))
-                          (gzip   (assoc-ref %build-inputs "gzip"))
-                          (output (assoc-ref %outputs "out"))
-                          (srcdir (string-append output "/src")))
-                     (begin
-                       (setenv "PATH" (string-append gzip "/bin"))
-                       (system* (string-append tar "/bin/tar") "xzf"
-                                source)
-                       (chdir ,(string-append name "-" version))
-                       (mkdir-p srcdir)
-                       (copy-file "src/shflags"
-                                  (string-append srcdir "/shflags"))
-                       #t)))))
+     `(#:tests? #f                      ; no tests
+       #:phases
+       (modify-phases %standard-phases
+         (delete 'configure)            ; nothing to configure
+         (delete 'build)                ; nothing to build
+         (replace 'install
+           (lambda* (#:key outputs #:allow-other-keys)
+             (let* ((out (assoc-ref outputs "out"))
+                    (src (string-append out "/src")))
+               (install-file "shflags" src)
+               #t))))))
     (home-page "https://github.com/kward/shflags")
     (synopsis "Command-line flags library for shell scripts")
     (description
@@ -689,6 +786,7 @@ will work.")
               (uri (git-reference
                     (url "https://github.com/nvie/gitflow/")
                     (commit "15aab26490facf285acef56cb5d61025eacb3a69")))
+              (file-name (git-file-name name version))
               (sha256
                (base32
                 "01fs97q76fdfnvmrh2cyjhywcs3pykf1dg58sy0frflnsdzs6prx"))))
@@ -806,6 +904,7 @@ though this can be overridden.")
                       ;; are interested in just one for this package.
                       (url "https://github.com/dustin/bindir")
                       (commit commit)))
+                (file-name (git-file-name name version))
                 (sha256
                  (base32
                   "1dcq0y16yznbv4k9h8gg90kv1gkn8r8dbvl4m2rpfd7q5nqhn617"))))
@@ -832,7 +931,7 @@ also walk each side of a merge and test those changes individually.")
 (define-public gitolite
   (package
     (name "gitolite")
-    (version "3.6.6")
+    (version "3.6.7")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -841,7 +940,7 @@ also walk each side of a merge and test those changes individually.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "07q33f86694s0x3k9lcmy1vzfw9appdrlmmb9j3bz4qkrxqdnwb9"))))
+                "1idxipg0df80bhjcxgwxs3lllqnkvhwpinmfv1xvg1l98fxiapgp"))))
     (build-system gnu-build-system)
     (arguments
      '(#:tests? #f ; no tests
@@ -862,7 +961,8 @@ also walk each side of a merge and test those changes individually.")
                         ;; This works because gitolite-shell is in the PATH.
                         (substitute* "src/triggers/post-compile/ssh-authkeys"
                           (("\\$glshell \\$user")
-                           "gitolite-shell $user")))))
+                           "gitolite-shell $user"))
+                        #t)))
                   (replace 'install
                     (lambda* (#:key outputs #:allow-other-keys)
                       (let* ((output (assoc-ref outputs "out"))
@@ -870,7 +970,7 @@ also walk each side of a merge and test those changes individually.")
                              (bindir (string-append output "/bin")))
                         (mkdir-p sharedir)
                         (mkdir-p bindir)
-                        (system* "./install" "-to" sharedir)
+                        (invoke "./install" "-to" sharedir)
                         ;; Create symlinks for executable scripts in /bin.
                         (for-each (lambda (script)
                                     (symlink (string-append sharedir "/" script)
@@ -1184,7 +1284,7 @@ standards-compliant ChangeLog entries based on the changes that it detects.")
                (base32
                 "1vjmda2zfjxg0qkaj8hfqa8g6bfwnn1ja8696rxrjgqq4w69wd95"))))
     (build-system gnu-build-system)
-    (home-page "http://invisible-island.net/diffstat/")
+    (home-page "https://invisible-island.net/diffstat/")
     (synopsis "Make histograms from the output of @command{diff}")
     (description
      "Diffstat reads the output of @command{diff} and displays a histogram of
@@ -1319,22 +1419,33 @@ any project with more than one developer, is one of Aegis's major functions.")
 (define-public reposurgeon
   (package
     (name "reposurgeon")
-    (version "3.37")
+    (version "3.43")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://www.catb.org/~esr/" name "/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "14asjg4xy3mhh5z0r3k7c1wv9y803j2zfq32g5q5m95sf7yzygan"))))
+                "1af0z14wcm4bk5a9ysinbwq2fp3lf5f7i8mvwh7286hr3fnagcaz"))
+              (patches (search-patches
+                        "reposurgeon-add-missing-docbook-files.patch"))))
     (build-system gnu-build-system)
     (arguments
-     `(#:tests? #f                      ;no test suite distributed
-       #:make-flags
-       (list (string-append "target=" (assoc-ref %outputs "out")))
+     `(#:make-flags
+       (list "ECHO=echo"
+             (string-append "target=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
-         (delete 'configure)
+         (add-after 'unpack 'patch-inputs
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((tzdata (assoc-ref inputs "tzdata")))
+               (substitute* "reposurgeon"
+                 (("/usr/share/zoneinfo")
+                  (string-append tzdata "/share/zoneinfo")))
+               (substitute* "test/svn-to-svn"
+                 (("/bin/echo") "echo"))
+               #t)))
+         (delete 'configure)            ; no configure script
          (add-before 'build 'fix-docbook
            (lambda* (#:key inputs #:allow-other-keys)
              (substitute* (find-files "." "\\.xml$")
@@ -1342,19 +1453,32 @@ any project with more than one developer, is one of Aegis's major functions.")
                 (string-append (assoc-ref inputs "docbook-xml")
                                "/xml/dtd/docbook/docbookx.dtd")))
              #t))
+         (add-before 'check 'set-up-test-environment
+           (lambda* (#:key inputs #:allow-other-keys)
+             (let ((tzdata (assoc-ref inputs "tzdata")))
+               (setenv "TZDIR" (string-append tzdata "/share/zoneinfo"))
+               #t)))
          (add-after 'install 'install-emacs-data
            (lambda* (#:key outputs #:allow-other-keys)
              (install-file "reposurgeon-mode.el"
                            (string-append (assoc-ref outputs "out")
                                           "/share/emacs/site-lisp")))))))
     (inputs
-     `(("python" ,python-wrapper)))
+     `(("python" ,python-wrapper)
+       ("tzdata" ,tzdata)))
     (native-inputs
-     `(("asciidoc" ,asciidoc)
-       ("docbook-xml" ,docbook-xml-4.1.2)
+     `( ;; For building documentation.
+       ("asciidoc" ,asciidoc)
+       ("docbook-xml" ,docbook-xml)
        ("docbook-xsl" ,docbook-xsl)
        ("libxml2" ,libxml2)
-       ("xmlto" ,xmlto)))
+       ("xmlto" ,xmlto)
+
+       ;; For tests.
+       ("cvs" ,cvs)
+       ("git" ,git)
+       ("mercurial" ,mercurial)
+       ("subversion" ,subversion)))
     (home-page "http://www.catb.org/~esr/reposurgeon/")
     (synopsis "Edit version-control repository history")
     (description "Reposurgeon enables risky operations that version-control
@@ -1371,7 +1495,7 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
 (define-public tig
   (package
     (name "tig")
-    (version "2.3.0")
+    (version "2.3.3")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1379,7 +1503,7 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
                     version "/tig-" version ".tar.gz"))
               (sha256
                (base32
-                "1vf02snz8qiiqiyqss1z63rzzmwbrc9agcgh21jdq13rja306vv8"))))
+                "1skbhhj1narsnsff1azdylcy6xghxb18mzqysmipcyyvlv2i17fk"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("asciidoc" ,asciidoc)
@@ -1392,7 +1516,7 @@ from Subversion to any supported Distributed Version Control System (DVCS).")
        (modify-phases %standard-phases
          (add-after 'install 'install-doc
            (lambda _
-             (zero? (system* "make" "install-doc")))))
+             (invoke "make" "install-doc"))))
        #:tests? #f)) ; tests require access to /dev/tty
     ;; #:test-target "test"))
     (home-page "https://jonas.github.io/tig/")
@@ -1433,7 +1557,7 @@ modification time.")
 (define-public myrepos
   (package
     (name "myrepos")
-    (version "1.20170129")
+    (version "1.20171231")
     (source
      (origin
        (method git-fetch)
@@ -1442,7 +1566,7 @@ modification time.")
              (commit version)))
        (file-name (string-append name "-" version "-checkout"))
        (sha256
-        (base32 "15i9bs2i25l7ibv530ghy8280kklcgm5kr6j86s7iwcqqckd0czp"))))
+        (base32 "10q7lpx152xnkk701fscn4dq99q9znnmv3bc2482khhjg7z8rps0"))))
     (build-system gnu-build-system)
     (inputs
      `(("perl" ,perl)))
@@ -1523,14 +1647,15 @@ repository\" with git-annex.")
        #:phases (modify-phases %standard-phases
                   (replace 'configure
                     (lambda* (#:key outputs (configure-flags '())
-                                    #:allow-other-keys)
+                              #:allow-other-keys)
                       ;; The 'configure' script is not an autoconf script and
                       ;; chokes on unrecognized options.
-                      (zero? (apply system*
-                                    "./configure"
-                                    (string-append "--prefix="
-                                                   (assoc-ref outputs "out"))
-                                    configure-flags))))
+                      (apply invoke
+                             "./configure"
+                             (string-append "--prefix="
+                                            (assoc-ref outputs "out"))
+                             configure-flags)
+                      #t))
                   (add-before 'check 'test-setup
                     (lambda _
                       (setenv "USER" "guix")
@@ -1548,14 +1673,14 @@ a built-in wiki, built-in file browsing, built-in tickets system, etc.")
 (define-public stagit
   (package
     (name "stagit")
-    (version "0.5")
+    (version "0.7.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://dl.2f30.org/releases/"
                                   name "-" version ".tar.gz"))
               (sha256
                (base32
-                "0ym1dwzn2z23hcg53qh1m1g5pfibrfnnlp3sm3z1v4mhz0pgaj56"))))
+                "1m3s9g1z9szbjrhm8sic91xh6f2bfpi56rskdkqd5wc4wdycpyi5"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f ; No tests
@@ -1579,7 +1704,7 @@ be served with a HTTP file server of your choice.")
 (define-public darcs
   (package
     (name "darcs")
-    (version "2.12.4")
+    (version "2.12.5")
     (source
      (origin
        (method url-fetch)
@@ -1587,7 +1712,7 @@ be served with a HTTP file server of your choice.")
                            "darcs-" version ".tar.gz"))
        (sha256
         (base32
-         "0jfwiwl5k8wspciq1kpmvh5yap4japrf97s9pvhcybxxhaj3ds28"))
+         "0lrm0sal5pl453mkqn8b9fc9l7lwinc140iqihya9g17bk408nrm"))
        (modules '((guix build utils)))
        ;; Remove time-dependent code for reproducibility.
        (snippet
@@ -1602,8 +1727,10 @@ be served with a HTTP file server of your choice.")
     (arguments
      `(#:configure-flags '("-fpkgconfig" "-fcurl" "-flibiconv" "-fthreaded"
                            "-fnetwork-uri" "-fhttp" "--flag=executable"
-                           "--flag=library")
-       #:tests? #f)) ; 20 failing shell tests out of over 400
+                           "--flag=library"
+                           "--allow-newer=shelly")
+       ;; FIXME: darcs is not compatible with the latest QuickCheck
+       #:tests? #f))
     (inputs
      `(("ghc-cmdargs" ,ghc-cmdargs)
        ("ghc-split" ,ghc-split)
@@ -1621,7 +1748,6 @@ be served with a HTTP file server of your choice.")
        ("ghc-bytestring-builder" ,ghc-bytestring-builder)
        ("ghc-cryptohash" ,ghc-cryptohash)
        ("ghc-data-ordlist" ,ghc-data-ordlist)
-       ("ghc-directory" ,ghc-directory)
        ("ghc-fgl" ,ghc-fgl)
        ("ghc-system-filepath" ,ghc-system-filepath)
        ("ghc-graphviz" ,ghc-graphviz)
@@ -1632,7 +1758,6 @@ be served with a HTTP file server of your choice.")
        ("ghc-mtl" ,ghc-mtl)
        ("ghc-old-time" ,ghc-old-time)
        ("ghc-parsec" ,ghc-parsec)
-       ("ghc-process" ,ghc-process)
        ("ghc-random" ,ghc-random)
        ("ghc-regex-applicative" ,ghc-regex-applicative)
        ("ghc-regex-compat-tdfa" ,ghc-regex-compat-tdfa)
@@ -1719,15 +1844,15 @@ network protocols, and core version control algorithms.")
 (define-public gource
   (package
     (name "gource")
-    (version "0.47")
+    (version "0.48")
     (source (origin
               (method url-fetch)
               (uri (string-append
-                    "https://github.com/acaudwell/Gource/archive/"
-                    "gource-" version ".tar.gz"))
+                    "https://github.com/acaudwell/Gource/releases/download"
+                    "/gource-" version "/gource-" version ".tar.gz"))
               (sha256
                (base32
-                "1llqwdnfa1pff8bxk27qsqff1fcg0a9kfdib0rn7p28vl21n1cgj"))))
+                "04qxcm05qiyr9rg2kv6abfy7kkzqr8ziw4iyp1d14lniv93m61dp"))))
     (build-system gnu-build-system)
     (arguments
      `(#:configure-flags

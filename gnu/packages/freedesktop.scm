@@ -8,9 +8,10 @@
 ;;; Copyright © 2016, 2017 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2016 Kei Kebreau <kkebreau@posteo.net>
 ;;; Copyright © 2017 Mark H Weaver <mhw@netris.org>
-;;; Copyright © 2017 Marius Bakke <mbakke@fastmail.com>
+;;; Copyright © 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2017 Rutger Helling <rhelling@mykolab.com>
 ;;; Copyright © 2017 Brendan Tildesley <brendan.tildesley@openmailbox.org>
+;;; Copyright © 2018 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;;
 ;;; This file is part of GNU Guix.
 ;;;
@@ -29,10 +30,12 @@
 
 (define-module (gnu packages freedesktop)
   #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
+  #:use-module (guix build-system meson)
   #:use-module (guix build-system perl)
   #:use-module (guix build-system python)
   #:use-module (gnu packages acl)
@@ -67,16 +70,18 @@
   #:use-module (gnu packages perl)
   #:use-module (gnu packages perl-check)
   #:use-module (gnu packages python)
+  #:use-module (gnu packages valgrind)
   #:use-module (gnu packages w3m)
   #:use-module (gnu packages web)
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xdisorg)
-  #:use-module (gnu packages xorg))
+  #:use-module (gnu packages xorg)
+  #:use-module (srfi srfi-1))
 
 (define-public xdg-utils
   (package
     (name "xdg-utils")
-    (version "1.1.1")
+    (version "1.1.2")
     (source
       (origin
         (method url-fetch)
@@ -85,7 +90,7 @@
                  version ".tar.gz"))
           (sha256
             (base32
-             "09a1pk3ifsndc5qz2kcd1557i137gpgnv3d739pv22vfayi67pdh"))))
+             "1k4b4m3aiyqn9k12a0ihcdahzlspl3zhskmm1d7228dvqvi546cm"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("docbook-xsl" ,docbook-xsl)
@@ -141,26 +146,31 @@ freedesktop.org project.")
 (define-public libinput
   (package
     (name "libinput")
-    (version "1.7.3")
+    (version "1.10.2")
     (source (origin
               (method url-fetch)
               (uri (string-append "https://freedesktop.org/software/libinput/"
                                   name "-" version ".tar.xz"))
               (sha256
                (base32
-                "07fbzxddvhjcch43hdxb24sj7ri96zzpcjalvsicmw0i4wnn2v89"))))
-    (build-system gnu-build-system)
+                "1fbv354ii1g4wc4k7d7gbnalqjpzmk9zlpi8linqrzlf6inpc28m"))))
+    (build-system meson-build-system)
+    (arguments
+     `(#:configure-flags '("-Ddocumentation=false")))
     (native-inputs
-     `(("cairo" ,cairo)
-       ("gtk+" ,gtk+)
-       ("pkg-config" ,pkg-config)))
+     `(("check" ,check)
+       ("pkg-config" ,pkg-config)
+       ("valgrind" ,valgrind)))
     (propagated-inputs
-     `(("libudev" ,eudev))) ; required by libinput.pc
-    (inputs
-     `(("glib" ,glib)
+     `(;; In Requires.private of libinput.pc.
        ("libevdev" ,libevdev)
-       ("mtdev" ,mtdev)
-       ("libwacom" ,libwacom)))
+       ("libudev" ,eudev)
+       ("libwacom" ,libwacom)
+       ("mtdev" ,mtdev)))
+    (inputs
+     `(("cairo" ,cairo)
+       ("glib" ,glib)
+       ("gtk+" ,gtk+)))
     (home-page "https://www.freedesktop.org/wiki/Software/libinput/")
     (synopsis "Input devices handling library")
     (description
@@ -171,14 +181,15 @@ other applications that need to directly deal with input devices.")
 (define-public libinput-minimal
   (package (inherit libinput)
     (name "libinput-minimal")
-    (native-inputs
-     `(("pkg-config" ,pkg-config)))
-    (inputs
-     `(("libevdev" ,libevdev)
-       ("mtdev" ,mtdev)))
+    (inputs '())
+    (propagated-inputs
+     (alist-delete "libwacom" (package-propagated-inputs libinput)))
     (arguments
-      `(#:configure-flags
-        '("--disable-libwacom")))))
+     (substitute-keyword-arguments (package-arguments libinput)
+      ((#:configure-flags flags ''())
+       `(cons* "-Dlibwacom=false"
+               "-Ddebug-gui=false"    ;requires gtk+@3
+               ,flags))))))
 
 (define-public libxdg-basedir
   (package
@@ -258,6 +269,12 @@ the freedesktop.org XDG Base Directory specification.")
        #:make-flags '("PKTTYAGENT=/run/current-system/profile/bin/pkttyagent")
        #:phases
        (modify-phases %standard-phases
+         (add-after 'unpack 'patch-locale-header
+           (lambda _
+             ;; Fix compilation with glibc >= 2.26, which removed xlocale.h.
+             ;; This can be removed for elogind 234.
+             (substitute* "src/basic/parse-util.c"
+               (("xlocale\\.h") "locale.h"))))
          (add-before 'configure 'autogen
            (lambda _
              (and (zero? (system* "intltoolize" "--force" "--automake"))
@@ -350,7 +367,7 @@ of a the system to know what users are logged in, and where.")
        ("glib:bin" ,glib "bin")))
     (inputs
      `(("glib" ,glib)
-       ("bash-completion", bash-completion)
+       ("bash-completion" ,bash-completion)
        ("polkit" ,polkit)))
     (propagated-inputs
      `(("sqlite" ,sqlite)))
@@ -402,7 +419,7 @@ manager for the current system.")
      `(("shared-mime-info" ,shared-mime-info) ;for tests
        ("hicolor-icon-theme" ,hicolor-icon-theme) ;for tests
        ("python-nose" ,python-nose)))
-    (home-page "http://freedesktop.org/wiki/Software/pyxdg")
+    (home-page "https://www.freedesktop.org/wiki/Software/pyxdg")
     (synopsis "Implementations of freedesktop.org standards in Python")
     (description
      "PyXDG is a collection of implementations of freedesktop.org standards in
@@ -733,7 +750,7 @@ message bus.")
     (inputs
      `(("shadow" ,shadow)
        ("polkit" ,polkit)))
-    (home-page "http://www.freedesktop.org/wiki/Software/AccountsService/")
+    (home-page "https://www.freedesktop.org/wiki/Software/AccountsService/")
     (synopsis "D-Bus interface for user account query and manipulation")
     (description
      "The AccountService project provides a set of D-Bus interfaces for querying
@@ -833,7 +850,7 @@ which speak the Qualcomm MSM Interface (QMI) protocol.")
        ("libqmi" ,libqmi)
        ("polkit" ,polkit)))
     (synopsis "Mobile broadband modems manager")
-    (home-page "http://www.freedesktop.org/wiki/Software/ModemManager/")
+    (home-page "https://www.freedesktop.org/wiki/Software/ModemManager/")
     (description
      "ModemManager is a DBus-activated daemon which controls mobile
 broadband (2G/3G/4G) devices and connections.  Whether built-in devices, USB
@@ -875,7 +892,7 @@ modems and setup connections with them.")
        ("sqlite" ,sqlite)
        ("telepathy-glib" ,telepathy-glib)))
     (synopsis "Telepathy logger library")
-    (home-page "http://telepathy.freedesktop.org/")
+    (home-page "https://telepathy.freedesktop.org/")
     (description
      "Telepathy logger is a headless observer client that logs information
 received by the Telepathy framework.  It features pluggable backends to log
@@ -902,7 +919,7 @@ different sorts of messages in different formats.")
        ("python-dbus" ,python2-dbus)))
     (propagated-inputs
      `(("telepathy-glib" ,telepathy-glib)))
-    (home-page "http://telepathy.freedesktop.org/")
+    (home-page "https://telepathy.freedesktop.org/")
     (synopsis "Telepathy IRC connection manager")
     (description
      "Idle is an IRC connection manager for the Telepathy framework.  This
@@ -964,7 +981,7 @@ share connections to real-time communication services without conflicting.")
      `(("colord" ,colord)
        ("gtk+" ,gtk+)))
     (synopsis "GTK integration for libcolord")
-    (home-page "http://www.freedesktop.org/software/colord/")
+    (home-page "https://www.freedesktop.org/software/colord/")
     (description
      "This is a GTK+ convenience library for interacting with colord.  It is
 useful for both applications which need colour management and applications that
@@ -1061,7 +1078,7 @@ to applications simultaneously competing for fingerprint readers.")
      `(("pkg-config" ,pkg-config)))
     (inputs
      `(("glib" ,glib)))
-    (home-page "http://www.freedesktop.org/wiki/Software/desktop-file-utils/")
+    (home-page "https://www.freedesktop.org/wiki/Software/desktop-file-utils/")
     (synopsis "Utilities for working with desktop entries")
     (description
      "This package contains a few command line utilities for working with
@@ -1080,13 +1097,13 @@ update-desktop-database: updates the database containing a cache of MIME types
 (define-public xdg-user-dirs
   (package
     (name "xdg-user-dirs")
-    (version "0.16")
+    (version "0.17")
     (source (origin
               (method url-fetch)
               (uri (string-append "http://user-dirs.freedesktop.org/releases/"
                                     name "-" version ".tar.gz"))
               (sha256
-               (base32 "1rp3c94hxjlfsryvwajklynfnrcvxplhwnjqc7395l89i0nb83vp"))))
+               (base32 "13216b8rfkzak5k6bvpx6jvqv3cnbgpijnjwj8a8d3kq4cl0a1ra"))))
     (build-system gnu-build-system)
     (native-inputs
      `(("gettext" ,gettext-minimal)
@@ -1124,7 +1141,7 @@ manually by a user.")
 (define-public perl-file-basedir
   (package
     (name "perl-file-basedir")
-    (version "0.07")
+    (version "0.08")
     (source
      (origin
        (method url-fetch)
@@ -1132,7 +1149,7 @@ manually by a user.")
                            "File-BaseDir-" version ".tar.gz"))
        (sha256
         (base32
-         "0aq8d4hsaxqibp36f773y6dfck7zd82v85sp8vhi6pjkg3pmf2hj"))))
+         "1qq5ag9zffx8zc5i9b4z03ar80pqj4drgk3vjdlyfapjwb9zqrf0"))))
     (build-system perl-build-system)
     (native-inputs
      `(("perl-module-build" ,perl-module-build)

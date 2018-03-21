@@ -1,5 +1,5 @@
 ;;; GNU Guix --- Functional package management for GNU
-;;; Copyright © 2013, 2014, 2015, 2016, 2017 Ludovic Courtès <ludo@gnu.org>
+;;; Copyright © 2013, 2014, 2015, 2016, 2017, 2018 Ludovic Courtès <ludo@gnu.org>
 ;;; Copyright © 2017 Mathieu Othacehe <m.othacehe@gmail.com>
 ;;;
 ;;; This file is part of GNU Guix.
@@ -37,11 +37,11 @@
   #:export (mount-essential-file-systems
             linux-command-line
             find-long-option
+            find-long-options
             make-essential-device-nodes
             make-static-device-nodes
             configure-qemu-networking
 
-            bind-mount
             device-number
             boot-system))
 
@@ -98,6 +98,16 @@ Return the value associated with OPTION, or #f on failure."
                  arguments)
            (lambda (arg)
              (substring arg (+ 1 (string-index arg #\=)))))))
+
+(define (find-long-options option arguments)
+  "Find OPTIONs among ARGUMENTS, where OPTION is something like \"console\".
+Return the values associated with OPTIONs as a list, or the empty list if
+OPTION doesn't appear in ARGUMENTS."
+  (let ((opt (string-append option "=")))
+    (filter-map (lambda (arg)
+                  (and (string-prefix? opt arg)
+                       (substring arg (+ 1 (string-index arg #\=)))))
+                arguments)))
 
 (define* (make-disk-device-nodes base major #:optional (minor 0))
   "Make the block device nodes around BASE (something like \"/root/dev/sda\")
@@ -188,7 +198,7 @@ with the given MAJOR number, starting with MINOR."
     (lambda args
       (apply report-system-error name args))))
 
-;; Create a device node like the <device-node> passed here on the filesystem.
+;; Create a device node like the <device-node> passed here on the file system.
 (define create-device-node
   (match-lambda
     (($ <device-node> xname type major minor module)
@@ -430,7 +440,8 @@ bailing out.~%root contents: ~s~%" (scandir "/"))
                       qemu-guest-networking?
                       volatile-root?
                       pre-mount
-                      (mounts '()))
+                      (mounts '())
+                      (on-error 'debug))
   "This procedure is meant to be called from an initrd.  Boot a system by
 first loading LINUX-MODULES (a list of module names) from
 LINUX-MODULE-DIRECTORY, then setting up QEMU guest networking if
@@ -444,7 +455,10 @@ if any.
 MOUNTS must be a list of <file-system> objects.
 
 When VOLATILE-ROOT? is true, the root file system is writable but any changes
-to it are lost."
+to it are lost.
+
+ON-ERROR is passed to 'call-with-error-handling'; it determines what happens
+upon error."
   (define (root-mount-point? fs)
     (string=? (file-system-mount-point fs) "/"))
 
@@ -517,6 +531,7 @@ to it are lost."
            (begin
              (display "no boot file passed via '--load'\n")
              (display "entering a warm and cozy REPL\n")
-             (start-repl)))))))
+             (start-repl)))))
+   #:on-error on-error))
 
 ;;; linux-initrd.scm ends here
