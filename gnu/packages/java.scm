@@ -2557,10 +2557,9 @@ HDF5 files, building on the libraries provided by the HDF Group.")
     (name "java-classpathx-servletapi")
     (version "3.0.1")
     (source (origin
-              (method svn-fetch)
-              (uri (svn-reference
-                    (url "svn://svn.savannah.gnu.org/classpathx/trunk")
-                    (revision 1244)))
+              (method url-fetch)
+              (uri (string-append "mirror://gnu/classpathx/servletapi/"
+                                  "servletapi-" version ".tar.gz"))
               (sha256
                (base32
                 "07d8h051siga2f33fra72hk12sbq1bxa4jifjg0qj0vfazjjff0x"))))
@@ -2573,8 +2572,6 @@ HDF5 files, building on the libraries provided by the HDF Group.")
              (string-append "-Ddist=" (assoc-ref %outputs "out")))
        #:phases
        (modify-phases %standard-phases
-         (add-after 'unpack 'chdir
-           (lambda _ (chdir "servletapi") #t))
          (replace 'install
            (lambda* (#:key make-flags #:allow-other-keys)
              (zero? (apply system* `("ant" "dist" ,@make-flags))))))))
