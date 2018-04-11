@@ -18,7 +18,7 @@
 ;;; Copyright © 2016, 2017, 2018 Marius Bakke <mbakke@fastmail.com>
 ;;; Copyright © 2016 Rene Saavedra <rennes@openmailbox.org>
 ;;; Copyright © 2016 Carlos Sánchez de La Lama <csanchezdll@gmail.com>
-;;; Copyright © 2016, 2017 ng0 <ng0@infotropique.org>
+;;; Copyright © 2016, 2017 Nils Gillmann <ng0@n0.is>
 ;;; Copyright © 2017, 2018 Leo Famulari <leo@famulari.name>
 ;;; Copyright © 2017 José Miguel Sánchez García <jmi2k@openmailbox.com>
 ;;; Copyright © 2017 Gábor Boskovits <boskovits@gmail.com>
@@ -284,6 +284,9 @@ for ARCH and optionally VARIANT, or #f if there is no such configuration."
        ("bc" ,bc)
        ("openssl" ,openssl)
        ("kmod" ,kmod)
+       ("elfutils" ,elfutils)  ; Needed to enable CONFIG_STACK_VALIDATION
+       ("flex" ,flex)
+       ("bison" ,bison)
        ;; On x86, build with GCC-7 for full retpoline support.
        ;; FIXME: Remove this when our default compiler has retpoline support.
        ,@(match (system->linux-architecture
@@ -383,8 +386,8 @@ It has been modified to remove all non-free binary blobs.")
 ;; supports qemu "virt" machine and possibly a large number of ARM boards.
 ;; See : https://wiki.debian.org/DebianKernel/ARMMP.
 
-(define %linux-libre-version "4.15.11")
-(define %linux-libre-hash "0nrsmw7x5nsc3906dfvfakkibv8pv09r1sf5ckzbkcbkwpyq62h8")
+(define %linux-libre-version "4.15.16")
+(define %linux-libre-hash "1nzdaypvw8abas6xr6ijk2wc9f0b6q72xw6ypalwx33p7sdqwrzq")
 
 (define-public linux-libre
   (make-linux-libre %linux-libre-version
@@ -392,8 +395,8 @@ It has been modified to remove all non-free binary blobs.")
                     %linux-compatible-systems
                     #:configuration-file kernel-config))
 
-(define %linux-libre-4.14-version "4.14.28")
-(define %linux-libre-4.14-hash "0xg3zsm1yjsvxir8sz7zliz8gcc8d45xh23qyiszl75cfqjl36l3")
+(define %linux-libre-4.14-version "4.14.33")
+(define %linux-libre-4.14-hash "0ps9whsxc20gw5ags18rgkwgy6fzg66by70g8xjds7nijpzgl69m")
 
 (define-public linux-libre-4.14
   (make-linux-libre %linux-libre-4.14-version
@@ -402,20 +405,20 @@ It has been modified to remove all non-free binary blobs.")
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.9
-  (make-linux-libre "4.9.88"
-                    "0qlhd8xw3g00i7krpfndkwxzjszk067h26qsxxsszvxyx2s6gp4x"
+  (make-linux-libre "4.9.93"
+                    "0flmsh4xy7ymyzwm8y4x4id798mx6vy3d6ala7x1bq41hf00075p"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.4
-  (make-linux-libre "4.4.122"
-                    "1ayilv7474vsif3jpb723jbcy4kymv1fpdr96c1g743bad1wkqqq"
+  (make-linux-libre "4.4.127"
+                    "1av536sp6ancx0fy71wpmqv4r66pksrcjbnrcjggard6im4c8pjy"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
 (define-public linux-libre-4.1
-  (make-linux-libre "4.1.50"
-                    "1hl1pk724v2waa55bhxfmxyz9nl6pkcj4dc3l80jfvqdfgr55mm2"
+  (make-linux-libre "4.1.51"
+                    "0l8lpwjpckp44hjyx5qrxqdwwi97gyyc1n6pmk66cr3fpdhnk540"
                     %intel-compatible-systems
                     #:configuration-file kernel-config))
 
@@ -934,14 +937,15 @@ Zerofree requires the file system to be unmounted or mounted read-only.")
 (define-public strace
   (package
     (name "strace")
-    (version "4.21")
+    (version "4.22")
+    (home-page "https://strace.io")
     (source (origin
              (method url-fetch)
-             (uri (string-append "https://github.com/strace/strace/releases/"
-                                 "download/v" version "/strace-" version ".tar.xz"))
+             (uri (string-append home-page "/files/" version
+                                 "/strace-" version ".tar.xz"))
              (sha256
               (base32
-               "0dsw6xcfrmygidp1dj2ch8cl8icrar7789snkb2r8gh78kdqhxjw"))))
+               "17dkpnsjxmys1ydidm9wcvc3wscsz44fmlxw3dclspn9cj9d1306"))))
     (build-system gnu-build-system)
     (arguments
      '(#:phases
@@ -952,7 +956,6 @@ Zerofree requires the file system to be unmounted or mounted read-only.")
                (("/bin/sh") (which "sh")))
              #t)))))
     (native-inputs `(("perl" ,perl)))
-    (home-page "https://strace.io/")
     (synopsis "System call tracer for Linux")
     (description
      "strace is a system call tracer, i.e. a debugging tool which prints out a
@@ -1146,8 +1149,7 @@ configure the Linux 2.4.x and later IPv4 packet filtering ruleset
 This package also includes @command{ip6tables}, which is used to configure the
 IPv6 packet filter.
 
-Both commands are targeted at system administrators.
-")
+Both commands are targeted at system administrators.")
     (license license:gpl2+)))
 
 (define-public ebtables
@@ -1208,7 +1210,7 @@ that the Ethernet protocol is much simpler than the IP protocol.")
 (define-public iproute
   (package
     (name "iproute2")
-    (version "4.15.0")
+    (version "4.16.0")
     (source (origin
               (method url-fetch)
               (uri (string-append
@@ -1216,7 +1218,7 @@ that the Ethernet protocol is much simpler than the IP protocol.")
                     version ".tar.xz"))
               (sha256
                (base32
-                "0mc3g4kj7h3jhwz2b2gdf41gp6bhqn7axh4mnyvhkdnpk5m63m28"))))
+                "02pfalg319jpbjz273ph725br8dnkzpfvi98azi9yd6p1w128p0c"))))
     (build-system gnu-build-system)
     (arguments
      `(#:tests? #f                                ; no test suite
@@ -3768,7 +3770,7 @@ developers.")
 (define-public radeontop
   (package
     (name "radeontop")
-    (version "1.0")
+    (version "1.1")
     (home-page "https://github.com/clbr/radeontop/")
     (source (origin
               (method url-fetch)
@@ -3776,7 +3778,7 @@ developers.")
               (file-name (string-append name "-" version ".tar.gz"))
               (sha256
                (base32
-                "1z38nibirqxrbsfyhfcrnzlcw16cqjp4ds6qnjfxalwayf9fm5x9"))))
+                "1fv06j5c99imvzkac3j40lgjhr5b2i77fnyffhlvj92bli1fm1c6"))))
     (build-system gnu-build-system)
     (arguments
      `(#:phases (modify-phases %standard-phases
@@ -4562,3 +4564,30 @@ text-mode or graphical applications that don't use a display server.
 Also included is @command{fbgrab}, a wrapper around @command{fbcat} that
 emulates the behaviour of Gunnar Monell's older fbgrab utility.")
     (license license:gpl2)))
+
+(define-public libcgroup
+  (package
+    (name "libcgroup")
+    (version "0.41")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append
+             "mirror://sourceforge/libcg/" name "/"
+             version "/" name "-" version ".tar.bz2"))
+       (sha256
+        (base32 "0lgvyq37gq84sk30sg18admxaj0j0p5dq3bl6g74a1ppgvf8pqz4"))))
+    (build-system gnu-build-system)
+    (arguments
+     `(#:tests? #f))
+    (native-inputs
+     `(("bison" ,bison)
+       ("flex" ,flex)))
+    (inputs
+     `(("linux-pam" ,linux-pam)))
+    (home-page "https://sourceforge.net/projects/libcg/")
+    (synopsis "Control groups management tools")
+    (description "Control groups is Linux kernel method for process resource
+restriction, permission handling and more.  This package provides userspace
+interface to this kernel feature.")
+    (license license:lgpl2.1)))
