@@ -3524,7 +3524,8 @@ on the XPP3 API (XML Pull Parser).")))
                 "115l5pqblirdkmzi32dxx7gbcm4jy0s14y5wircr6h8jdr9aix00"))))
     (build-system ant-build-system)
     (propagated-inputs
-     `(("java-aqute-bndlib" ,java-aqute-bndlib)))
+     `(("java-aqute-bndlib" ,java-aqute-bndlib)
+       ("java-aqute-libg" ,java-aqute-libg)))
     (arguments
      `(#:build-target "compile"
        #:tests? #f
@@ -3568,8 +3569,10 @@ complex transformations and code analysis tools.")
     (native-inputs `())
     (propagated-inputs
      `(("java-aqute-bndlib" ,java-aqute-bndlib-bootstrap)
+       ("java-aqute-libg" ,java-aqute-libg-bootstrap)
        ,@(delete `("java-aqute-bndlib" ,java-aqute-bndlib)
-                 (package-inputs java-asm))))))
+                 (delete `("java-aqute-libg", java-aqute-libg)
+                         (package-inputs java-asm)))))))
 
 (define-public java-cglib
   (package
