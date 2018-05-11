@@ -6959,10 +6959,34 @@ it manages project dependencies, gives diffs jars, and much more.")
     (name "java-aqute-libg")
     (arguments
      `(#:jar-name "java-aqute-libg.jar"
-       #:source-dir "aQute.libg/src"
-       #:make-flags (list (string-append "-Dant.build.javac.source=" "1.7")
-                          (string-append "-Dant.build.javac.target=" "1.7"))
-       #:tests? #f)); FIXME: tests are in "aQute.libg/test", not in a java directory
+       #:make-flags (list "-Dant.build.javac.source=1.7"
+                          "-Dant.build.javac.target=1.7")
+       #:tests? #t
+       #:test-dir "test"
+       #:phases
+       (modify-phases %standard-phases
+         (add-before 'configure 'chdir
+           (lambda _
+             (chdir "aQute.libg")
+             #t))
+         (add-before 'check 'create-test-directory
+           (lambda _
+             (rename-file "test" "test.tmp")
+             (mkdir "test")
+             (rename-file "test.tmp" "test/java")
+             #t))
+         (add-before 'check 'fix-sed-wc-test
+           ;;this is a fixup for the path used in
+           ;;the libg-sed-replacertest-testwc
+           (lambda _
+             (substitute* "test/java/aQute/libg/sed/ReplacerTest.java"
+               (("\\;test/") ";test/java/")
+               (("\\\"test/") "\"test/java/"))
+             #t)))))
+    (native-inputs
+     `(("hamcrest" ,java-hamcrest-core)
+       ("java-junit" ,java-junit)
+       ("ant-junit" ,ant-junit)))
     (inputs
      `(("slf4j" ,java-slf4j-api)
        ("osgi-annot" ,java-osgi-annotation)
@@ -6973,6 +6997,10 @@ it manages project dependencies, gives diffs jars, and much more.")
   (package
     (inherit java-aqute-libg)
     (name "java-aqute-libg-bootstrap")
+    (arguments
+     (substitute-keyword-arguments (package-arguments java-aqute-libg)
+       ((#:tests? _) #f)))
+    (native-inputs `())
     (inputs
      `(("slf4j-bootstrap" ,java-slf4j-api-bootstrap)
        ,@(delete `("slf4j" ,java-slf4j-api) (package-inputs java-aqute-libg))))))
